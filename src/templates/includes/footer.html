@@ -1,0 +1,40 @@
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <h5>SuplementoCompare</h5>
+                <p>El comparador de suplementos líder para encontrar los mejores precios y productos de calidad.</p>
+            </div>
+            <div class="col-md-2 mb-4">
+                <h5>Enlaces</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('main.index') }}" class="text-light">Inicio</a></li>
+                    <li><a href="{{ url_for('main.productos') }}" class="text-light">Productos</a></li>
+                    <li><a href="#" class="text-light">Marcas</a></li>
+                    <li><a href="#" class="text-light">Blog</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2 mb-4">
+                <h5>Categorías</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('main.productos', category='proteina') }}" class="text-light">Proteínas</a></li>
+                    <li><a href="{{ url_for('main.productos', category='creatina') }}" class="text-light">Creatinas</a></li>
+                    <li><a href="{{ url_for('main.productos', category='pre-entreno') }}" class="text-light">Pre-entrenos</a></li>
+                    <li><a href="{{ url_for('main.productos', category='quemadores') }}" class="text-light">Quemadores</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5>Suscríbete a nuestra newsletter</h5>
+                <p>Recibe las mejores ofertas y novedades en suplementación.</p>
+                <div class="input-group">
+                    <input type="email" class="form-control" placeholder="Tu email">
+                    <button class="btn btn-secondary">Suscribir</button>
+                </div>
+            </div>
+        </div>
+        <hr class="bg-light">
+        <div class="text-center">
+            <p>© 2023 SuplementoCompare - Todos los derechos reservados</p>
+        </div>
+    </div>
+</footer>

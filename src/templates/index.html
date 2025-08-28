@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - SuplementoCompare{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">Encuentra los mejores suplementos al mejor precio</h1>
+            <p class="lead mb-4">Compara entre miles de productos de las mejores marcas y tiendas</p>
+            <a href="{{ url_for('main.productos') }}" class="btn btn-light btn-lg px-4">Comenzar a comparar</a>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select" id="categoryFilter">
+                                <option selected value="">Tipo de suplemento</option>
+                                <option value="proteina">Proteína</option>
+                                <option value="creatina">Creatina</option>
+                                <option value="pre-entreno">Pre-entreno</option>
+                                <option value="quemadores">Quemadores</option>
+                                <option value="aminoacidos">Aminoácidos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select" id="brandFilter">
+                                <option selected value="">Marca</option>
+                                <option>Optimum Nutrition</option>
+                                <option>MyProtein</option>
+                                <option>Scitec Nutrition</option>
+                                <option>BSN</option>
+                                <option>MuscleTech</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select" id="priceFilter">
+                                <option selected value="">Precio</option>
+                                <option value="0-20">Menos de 20€</option>
+                                <option value="20-40">20€ - 40€</option>
+                                <option value="40-60">40€ - 60€</option>
+                                <option value="60-1000">Más de 60€</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select" id="ratingFilter">
+                                <option selected value="">Valoración</option>
+                                <option value="4">4+ estrellas</option>
+                                <option value="3">3+ estrellas</option>
+                                <option value="2">2+ estrellas</option>
+                                <option value="1">1+ estrella</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Grid -->
+                <h3 class="mb-3">Productos destacados</h3>
+                <div class="row" id="product-grid">
+                    {% for product in products %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="product-card">
+                            <div class="product-image">
+                                <img src="{{ product.image_url or 'https://via.placeholder.com/200x150?text=Suplemento' }}" alt="{{ product.name }}">
+                            </div>
+                            <div class="p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="category-badge bg-{{ product.category_color }} rounded-pill">{{ product.category }}</span>
+                                    <span class="rating">
+                                        <i class="fas fa-star"></i> {{ product.rating }}
+                                    </span>
+                                </div>
+                                <h5>{{ product.name }}</h5>
+                                <p class="text-muted small">{{ product.brand }} - {{ product.size }}</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="price-tag">{{ product.price }}€</span>
+                                    <button class="btn btn-sm compare-btn text-white" data-product-id="{{ product.id }}">
+                                        <i class="fas fa-balance-scale"></i> Comparar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                <nav class="d-flex justify-content-center mt-4">
+                    <ul class="pagination">
+                        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                    </ul>
+                </nav>
+            </div>
+            
+            <!-- Sidebar with Ads -->
+            <div class="col-lg-3">
+                <div class="ad-container">
+                    <h6 class="text-muted mb-3">Anuncios</h6>
+                    <div class="ad-placeholder">
+                        <i class="fas fa-ad fa-2x mb-2"></i>
+                        <p>Espacio publicitario</p>
+                        <small>300x600</small>
+                    </div>
+                </div>
+                
+                <div class="ad-container">
+                    <div class="ad-placeholder">
+                        <i class="fas fa-ad fa-2x mb-2"></i>
+                        <p>Espacio publicitario</p>
+                        <small>300x250</small>
+                    </div>
+                </div>
+                
+                <!-- Price Comparison -->
+                <div class="ad-container">
+                    <h6>Comparador de precios</h6>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Whey Protein</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tienda A</span>
+                                <span>54,99€</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tienda B</span>
+                                <span>52,50€</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tienda C</span>
+                                <span>56,25€</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold mt-2">
+                                <span>Mejor precio:</span>
+                                <span class="text-success">52,50€</span>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.productos') }}" class="btn btn-outline-primary w-100">Ver todas las tiendas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Los scripts específicos de la página de inicio irían aquí
+    document.getElementById('categoryFilter').addEventListener('change', function() {
+        window.location.href = "{{ url_for('main.productos') }}?category=" + this.value;
+    });
+</script>
+{% endblock %}

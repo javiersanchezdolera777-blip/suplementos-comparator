@@ -1,0 +1,147 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --light-bg: #f8f9fa;
+    --dark-text: #2c3e50;
+    --light-text: #ecf0f1;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7f9;
+    color: var(--dark-text);
+    padding-top: 80px;
+}
+
+.navbar {
+    background-color: var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--light-text) !important;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+}
+
+.filter-section {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.product-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+    height: 180px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+}
+
+.product-image img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.price-tag {
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 1.2rem;
+}
+
+.rating {
+    color: #f39c12;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.ad-container {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ad-placeholder {
+    background-color: #f8f9fa;
+    padding: 30px 15px;
+    border: 1px dashed #dee2e6;
+    border-radius: 5px;
+    color: #6c757d;
+}
+
+.footer {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 2rem 0;
+    margin-top: 3rem;
+}
+
+.feature-icon {
+    font-size: 2rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.category-badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
+
+.compare-btn {
+    background-color: var(--accent-color);
+    border: none;
+}
+
+.compare-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Colores para categorías */
+.bg-proteina { background-color: #007bff !important; }
+.bg-creatina { background-color: #28a745 !important; }
+.bg-pre-entreno { background-color: #ffc107 !important; color: #212529; }
+.bg-quemadores { background-color: #dc3545 !important; }
+.bg-aminoacidos { background-color: #17a2b8 !important; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .ad-container {
+        display: none;
+    }
+}
