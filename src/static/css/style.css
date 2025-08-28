@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
+    --primary-color: #130372;
+    --secondary-color: #2b8eff;
+    --accent-color: #ff7300;
     --light-bg: #f8f9fa;
     --dark-text: #2c3e50;
     --light-text: #ecf0f1;
@@ -129,7 +129,7 @@ body {
 }
 
 .compare-btn:hover {
-    background-color: #c0392b;
+    background-color: #492bc0;
 }
 
 /* Colores para categorías */
@@ -138,6 +138,8 @@ body {
 .bg-pre-entreno { background-color: #ffc107 !important; color: #212529; }
 .bg-quemadores { background-color: #dc3545 !important; }
 .bg-aminoacidos { background-color: #17a2b8 !important; }
+.bg-VitaminasYMinerales { background-color: #cef410 !important; }
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

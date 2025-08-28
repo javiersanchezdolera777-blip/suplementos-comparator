@@ -23,6 +23,9 @@
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.productos' and request.args.get('category') == 'quemadores' }}" href="{{ url_for('main.productos', category='quemadores') }}">Quemadores</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.productos' and request.args.get('category') == 'Vitaminas Y Minerales' }}" href="{{ url_for('main.productos', category='Vitaminas Y Minerales') }}">Vitaminas Y Minerales</a>
+                </li>
             </ul>
             <form class="d-flex" action="{{ url_for('main.productos') }}">
                 <input class="form-control me-2" type="search" name="q" placeholder="Buscar suplemento..." value="{{ request.args.get('q', '') }}">
