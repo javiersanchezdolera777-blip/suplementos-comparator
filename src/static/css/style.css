@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #130372;
-    --secondary-color: #2b8eff;
-    --accent-color: #ff7300;
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
     --light-bg: #f8f9fa;
     --dark-text: #2c3e50;
     --light-text: #ecf0f1;
@@ -129,7 +129,7 @@ body {
 }
 
 .compare-btn:hover {
-    background-color: #492bc0;
+    background-color: #c0392b;
 }
 
 /* Colores para categorías */
@@ -138,12 +138,46 @@ body {
 .bg-pre-entreno { background-color: #ffc107 !important; color: #212529; }
 .bg-quemadores { background-color: #dc3545 !important; }
 .bg-aminoacidos { background-color: #17a2b8 !important; }
-.bg-VitaminasYMinerales { background-color: #cef410 !important; }
 
+/* Barra de comparación */
+.comparison-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 15px;
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-top: 3px solid var(--secondary-color);
+}
+
+/* Mejoras para la nueva información de productos */
+.product-info {
+    border-left: 3px solid #3498db;
+    padding-left: 10px;
+    margin-bottom: 8px;
+}
+
+.product-info i {
+    width: 16px;
+    text-align: center;
+    margin-right: 5px;
+    color: #3498db;
+}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .ad-container {
         display: none;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .product-image {
+        height: 150px;
     }
 }

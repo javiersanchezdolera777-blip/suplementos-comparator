@@ -12,6 +12,9 @@
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.index' }}" href="{{ url_for('main.index') }}">Inicio</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.productos' and not request.args.get('category') }}" href="{{ url_for('main.productos') }}">Todos los Productos</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.productos' and request.args.get('category') == 'proteina' }}" href="{{ url_for('main.productos', category='proteina') }}">Proteínas</a>
                 </li>
                 <li class="nav-item">
