@@ -1,0 +1,1 @@
+# suplementos_app-comparator
