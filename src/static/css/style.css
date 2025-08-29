@@ -56,11 +56,12 @@ body {
 
 .product-image {
     height: 180px;
-    background-color: #f8f9fa;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 15px;
+    overflow: hidden;
 }
 
 .product-image img {
@@ -234,33 +235,191 @@ body {
     display: none;
 }
 
-.product-image:after {
-    content: "🖼️ Imagen no disponible";
-    color: #6c757d;
-    font-style: italic;
+
+
+/* ============================================== */
+/* SOLUCIÓN DEFINITIVA - ELIMINAR TEXTO FANTASMA */
+/* ============================================== */
+
+/* Eliminar pseudo-elementos que puedan contener texto */
+.card-img-top::before,
+.card-img-top::after,
+.product-image::before,
+.product-image::after,
+.card-body::before,
+.card-body::after {
+    content: "" !important;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
 }
 
+/* Prevenir que se inyecte texto no deseado */
+.card,
+.product-card,
+.product-image {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Asegurar que las imágenes se vean correctamente */
 .card-img-top {
-    object-fit: contain;
-    height: 180px;
+    object-fit: contain !important;
+    height: 180px !important;
+    width: 100% !important;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef) !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 8px !important;
+}
+
+/* ============================================== */
+/* AJUSTES ESPECÍFICOS POR PÁGINA - NUEVO */
+/* ============================================== */
+
+/* PÁGINA DE PRODUCTOS (productos.html) - Imágenes más pequeñas */
+.productos-page .product-image {
+    height: 150px !important;
+    min-height: 150px !important;
+}
+
+.productos-page .product-image img {
+    max-height: 140px !important;
+    height: 140px !important;
+    padding: 10px !important;
+}
+
+/* PÁGINA DE INICIO (index.html) - Imágenes normales */
+.index-page .product-image {
+    height: 180px !important;
+    min-height: 180px !important;
+}
+
+.index-page .product-image img {
+    max-height: 170px !important;
+    height: 170px !important;
+}
+
+/* PÁGINA DE COMPARACIÓN (comparar.html) - Imágenes pequeñas */
+.comparar-page .product-image {
+    height: 120px !important;
+    min-height: 120px !important;
+}
+
+.comparar-page .product-image img {
+    max-height: 110px !important;
+    height: 110px !important;
+}
+
+/* ============================================== */
+/* MEJORAS PARA TARJETAS DE PRODUCTOS */
+/* ============================================== */
+
+/* Asegurar que las imágenes nunca se desborden */
+.product-card .card-img-top {
+    max-width: 100% !important;
+    width: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+/* Eliminar cualquier borde o efecto no deseado */
+.product-image {
+    border: none !important;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef) !important;
+}
+
+/* Prevenir que aparezca texto no deseado */
+.product-image::after {
+    content: "" !important;
+    display: none !important;
+}
+
+/* ============================================== */
+/* RESPONSIVE ADJUSTMENTS */
+/* ============================================== */
+
+@media (max-width: 768px) {
+    .productos-page .product-image {
+        height: 130px !important;
+        min-height: 130px !important;
+    }
+    
+    .productos-page .product-image img {
+        max-height: 120px !important;
+        height: 120px !important;
+    }
+    
+    .index-page .product-image {
+        height: 160px !important;
+        min-height: 160px !important;
+    }
+    
+    .index-page .product-image img {
+        max-height: 150px !important;
+        height: 150px !important;
+    }
+}
+
+/* ============================================== */
+/* MEJORAS PARA IMÁGENES REALES */
+/* ============================================== */
+
+/* Efectos para imágenes reales */
+.product-image img {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    border-radius: 8px;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+/* Placeholder elegante para mientras cargan */
+.product-image {
     background: linear-gradient(45deg, #f8f9fa, #e9ecef);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Arial, sans-serif;
-    color: #666;
-    text-align: center;
-    padding: 10px;
+    overflow: hidden;
 }
 
-/* Solo muestra texto si la imagen falla */
-.card-img-top:before {
-    content: "Imagen no disponible";
+.product-image:before {
+    content: "🔄 Cargando...";
+    color: #6c757d;
+    font-style: italic;
+    position: absolute;
     display: none;
 }
 
-.card-img-top[src*="placeholder"]:before,
-.card-img-top:not([src]):before,
-.card-img-top[src=""]:before {
+.product-image img[src=""],
+.product-image img:not([src]) {
+    opacity: 0;
+}
+
+.product-image img:not([src]) + :before {
     display: block;
+}
+
+/* Mejorar la visualización de imágenes reales */
+.product-image img.loaded {
+    opacity: 1;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Ajustes específicos para imágenes de diferentes productos */
+.product-card .product-image {
+    position: relative;
+}
+
+/* Loading skeleton para imágenes */
+.product-image.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }

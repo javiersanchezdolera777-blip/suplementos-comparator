@@ -202,3 +202,74 @@ function addToComparisonOld(productId, productName) {
     console.log(`Añadiendo producto ${productName} (ID: ${productId}) a comparación`);
     showNotification(`"${productName}" añadido para comparar`, 'success');
 }
+
+// ==============================================
+// SOLUCIÓN DEFINITIVA PARA TEXTO FANTASMA
+// ==============================================
+
+function eliminarTextoFantasma() {
+    console.log('Ejecutando limpieza de texto fantasma...');
+    
+    // 1. Eliminar elementos con texto "disponible"
+    document.querySelectorAll('*').forEach(element => {
+        if (element.children.length === 0 && element.textContent.includes('disponible')) {
+            console.log('Eliminando texto fantasma:', element.textContent);
+            element.remove();
+        }
+    });
+
+    // 2. Limpiar nodos de texto no deseados
+    document.querySelectorAll('.card, .product-image, .card-body').forEach(container => {
+        Array.from(container.childNodes).forEach(node => {
+            if (node.nodeType === 3 && node.textContent.includes('disponible')) {
+                node.remove();
+            }
+        });
+    });
+}
+
+// Ejecutar al cargar la página y después de 2 segundos
+document.addEventListener('DOMContentLoaded', function() {
+    eliminarTextoFantasma();
+    setTimeout(eliminarTextoFantasma, 2000);
+});
+
+// También ejecutar cuando se cambie dinámicamente el contenido
+new MutationObserver(eliminarTextoFantasma).observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+// ==============================================
+// MEJORA DE CARGA DE IMÁGENES REALES
+// ==============================================
+
+function optimizeImages() {
+    document.querySelectorAll('.product-image img').forEach(img => {
+        // Añadir loading lazy para mejor rendimiento
+        img.loading = 'lazy';
+        
+        // Manejar carga correcta
+        if (img.complete && img.naturalHeight !== 0) {
+            img.classList.add('loaded');
+        } else {
+            img.onload = function() {
+                this.classList.add('loaded');
+                this.parentElement.classList.remove('skeleton');
+            };
+            
+            img.onerror = function() {
+                // Fallback a placeholder elegante
+                this.src = 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop';
+                this.alt = 'Imagen de suplemento deportivo';
+            };
+        }
+    });
+}
+
+// Ejecutar al cargar y después de cambios
+document.addEventListener('DOMContentLoaded', optimizeImages);
+new MutationObserver(optimizeImages).observe(document.body, {
+    childList: true,
+    subtree: true
+});

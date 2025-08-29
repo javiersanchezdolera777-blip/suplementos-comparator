@@ -13,7 +13,7 @@ sample_products = [
         'brand': 'Optimum Nutrition',
         'size': '2.27kg',
         'price': 54.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Whey+Protein',  # ✅ Corregido
+        'image_url': 'https://m.media-amazon.com/images/I/71gZ44j6HYL._AC_SX679_.jpg',
         'objetivo': 'Aumento masa muscular, Recuperación muscular',
         'caracteristicas': 'Sin gluten, Sin lactosa',
         'sabor': 'Chocolate, Vainilla, Fresa'

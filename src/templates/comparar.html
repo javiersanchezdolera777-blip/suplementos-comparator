@@ -21,7 +21,7 @@
                             <th>Producto</th>
                             {% for product in products %}
                             <th class="text-center">
-                                <img src="https://placehold.co/200x150/EFEFEF/666666?text=Whey+Protein" alt="Whey Protein">
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}" style="height: 100px; object-fit: contain;">
                                 <h5 class="mt-2">{{ product.name }}</h5>
                                 <small class="text-muted">{{ product.brand }}</small>
                             </th>
