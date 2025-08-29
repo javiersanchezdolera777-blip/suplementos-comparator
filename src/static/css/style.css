@@ -181,3 +181,86 @@ body {
         height: 150px;
     }
 }
+
+/* Estilos para la tabla de comparación */
+.comparison-table {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.comparison-table th {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.comparison-table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #eee;
+}
+
+.comparison-table tr:last-child td {
+    border-bottom: none;
+}
+
+.comparison-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Para manejar imágenes de productos */
+.product-image {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+}
+
+.product-image img {
+    max-width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+}
+
+/* Estilo para cuando la imagen no carga */
+.product-image img[src=""],
+.product-image img:not([src]) {
+    display: none;
+}
+
+.product-image:after {
+    content: "🖼️ Imagen no disponible";
+    color: #6c757d;
+    font-style: italic;
+}
+
+.card-img-top {
+    object-fit: contain;
+    height: 180px;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: #666;
+    text-align: center;
+    padding: 10px;
+}
+
+/* Solo muestra texto si la imagen falla */
+.card-img-top:before {
+    content: "Imagen no disponible";
+    display: none;
+}
+
+.card-img-top[src*="placeholder"]:before,
+.card-img-top:not([src]):before,
+.card-img-top[src=""]:before {
+    display: block;
+}

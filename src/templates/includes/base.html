@@ -10,6 +10,22 @@
     <!-- Añade esto en el <head> de tu base template -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+<script>
+// Solución inteligente para imágenes
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.card-img-top');
+    
+    images.forEach(img => {
+        // Verificar después de que la página cargue
+        setTimeout(() => {
+            if (img.complete && img.naturalHeight === 0) {
+                // Solo si realmente falló
+                img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIiBzdHJva2U9IiNkZWUyZTYiIHN0cm9rZS13aWR0aD0iMiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2Yzc1N2QiPkltYWdlbjxicj5ubyBkaXNwb25pYmxlPC90ZXh0Pjwvc3ZnPg==';
+            }
+        }, 1000); // Esperar 1 segundo
+    });
+});
+</script>
 <body>
     {% include 'includes/navigation.html' %}
     

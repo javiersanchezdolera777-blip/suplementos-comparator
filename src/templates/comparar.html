@@ -1,0 +1,106 @@
+{% extends "includes/base.html" %}
+
+{% block title %}Comparar Productos - SuplementoCompare{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-balance-scale me-2"></i>Comparador de Productos</h2>
+        <a href="{{ url_for('main.productos') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a productos
+        </a>
+    </div>
+
+    {% if products %}
+    <div class="row">
+        <div class="col-12">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Producto</th>
+                            {% for product in products %}
+                            <th class="text-center">
+                                <img src="https://placehold.co/200x150/EFEFEF/666666?text=Whey+Protein" alt="Whey Protein">
+                                <h5 class="mt-2">{{ product.name }}</h5>
+                                <small class="text-muted">{{ product.brand }}</small>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Precio</strong></td>
+                            {% for product in products %}
+                            <td class="text-center price-tag">€{{ product.price }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td><strong>Categoría</strong></td>
+                            {% for product in products %}
+                            <td class="text-center">
+                                <span class="badge bg-{{ product.category_color }}">{{ product.category }}</span>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td><strong>Objetivo</strong></td>
+                            {% for product in products %}
+                            <td class="text-center">{{ product.objetivo }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td><strong>Características</strong></td>
+                            {% for product in products %}
+                            <td class="text-center">{{ product.caracteristicas }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td><strong>Sabores</strong></td>
+                            {% for product in products %}
+                            <td class="text-center">{{ product.sabor }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td><strong>Acción</strong></td>
+                            {% for product in products %}
+                            <td class="text-center">
+                                <button class="btn btn-primary btn-sm">
+                                    <i class="fas fa-shopping-cart me-1"></i>Comprar
+                                </button>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning text-center">
+                <h4><i class="fas fa-exclamation-triangle me-2"></i>No hay productos para comparar</h4>
+                <p>Selecciona al menos 2 productos para usar el comparador.</p>
+                <a href="{{ url_for('main.productos') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-search me-1"></i>Buscar productos
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.comparison-table th {
+    vertical-align: middle;
+}
+.price-tag {
+    font-weight: 700;
+    color: #e74c3c;
+    font-size: 1.2rem;
+}
+</style>
+{% endblock %}

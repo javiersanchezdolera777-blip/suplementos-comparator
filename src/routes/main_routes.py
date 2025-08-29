@@ -3,7 +3,7 @@ from models.product import Product, db
 
 main_bp = Blueprint('main', __name__)
 
-# Datos de ejemplo para desarrollo CON LOS NUEVOS FILTROS
+# En sample_products, corrige los URLs:
 sample_products = [
     {
         'id': 1,
@@ -13,7 +13,7 @@ sample_products = [
         'brand': 'Optimum Nutrition',
         'size': '2.27kg',
         'price': 54.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=Proteína+Whey',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Whey+Protein',  # ✅ Corregido
         'objetivo': 'Aumento masa muscular, Recuperación muscular',
         'caracteristicas': 'Sin gluten, Sin lactosa',
         'sabor': 'Chocolate, Vainilla, Fresa'
@@ -26,7 +26,7 @@ sample_products = [
         'brand': 'MyProtein',
         'size': '500g',
         'price': 19.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=Creatina+Monohidrato',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Creatina',  # ✅ Corregido
         'objetivo': 'Aumento fuerza, Mejora rendimiento',
         'caracteristicas': 'Vegano, Sin aditivos',
         'sabor': 'Sin sabor'
@@ -39,7 +39,7 @@ sample_products = [
         'brand': 'Vegetarian',
         'size': '1kg',
         'price': 39.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=Proteína+Vegana',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Proteina+Vegana',  # ✅ Corregido
         'objetivo': 'Aumento masa muscular, Definición',
         'caracteristicas': 'Vegano, Sin lactosa, Sin gluten, Orgánico',
         'sabor': 'Chocolate, Vainilla'
@@ -52,7 +52,7 @@ sample_products = [
         'brand': 'Muscletech',
         'size': '120 cápsulas',
         'price': 29.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=Quemador+Termogénico',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Quemador',  # ✅ Corregido
         'objetivo': 'Perder grasa, Definición, Energía',
         'caracteristicas': 'Sin azúcar, Vegano',
         'sabor': 'Naranja, Limón'
@@ -65,7 +65,7 @@ sample_products = [
         'brand': 'Scivation',
         'size': '30 serv',
         'price': 24.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=BCAA+Aminoácidos',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=BCAA',  # ✅ Corregido
         'objetivo': 'Recuperación muscular, Prevenir catabolismo',
         'caracteristicas': 'Sin azúcar, Sin gluten',
         'sabor': 'Sandía, Limón'
@@ -78,12 +78,13 @@ sample_products = [
         'brand': 'C4',
         'size': '30 serv',
         'price': 34.99,
-        'image_url': 'https://via.placeholder.com/200x150?text=Pre-entreno+Explosivo',
+        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=PreEntreno',  # ✅ Corregido
         'objetivo': 'Energía, Foco mental, Rendimiento',
         'caracteristicas': 'Sin azúcar, Vegano',
         'sabor': 'Frutos rojos, Naranja'
     }
 ]
+
 
 @main_bp.route('/')
 def index():
@@ -150,3 +151,20 @@ def api_filtros():
         'objetivos': objetivos,
         'caracteristicas': caracteristicas
     })
+
+@main_bp.route('/comparar')
+def comparar():
+    # Obtener IDs de productos desde la URL
+    product_ids = request.args.get('products', '')
+    
+    # Convertir a lista de IDs
+    product_id_list = product_ids.split('-') if product_ids else []
+    
+    # Buscar productos en los datos de ejemplo (luego será con BD)
+    products_to_compare = []
+    for product_id in product_id_list:
+        product = next((p for p in sample_products if str(p['id']) == product_id), None)
+        if product:
+            products_to_compare.append(product)
+    
+    return render_template('comparar.html', products=products_to_compare)

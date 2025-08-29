@@ -158,7 +158,7 @@ function openComparison() {
     const productIds = comparisonProducts.map(p => p.id).join('-');
     window.location.href = `/comparar?products=${productIds}`;
 }
-
+    
 // ==============================================
 // FUNCIONES EXISTENTES (MANTENIDAS)
 // ==============================================
