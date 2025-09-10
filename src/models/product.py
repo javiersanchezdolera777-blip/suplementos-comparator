@@ -1,26 +1,33 @@
-from flask_sqlalchemy import SQLAlchemy
+# src/models/product.py
+from flask_sqlalchemy import SQLAlchemy  # ← Añade esta línea
 from datetime import datetime
 import json
 
+# ✅ Crear instancia localmente para romper el ciclo
 db = SQLAlchemy()
 
+db.Model.metadata.clear()
+
 class Product(db.Model):
+    __tablename__ = 'product'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    brand = db.Column(db.String(50), nullable=False)
-    price = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(100))
+    brand = db.Column(db.String(100))
+    price = db.Column(db.Float)
     original_price = db.Column(db.Float)
-    rating = db.Column(db.Float, default=0)
-    image_url = db.Column(db.String(300))
-    product_url = db.Column(db.String(300), nullable=False)
-    store = db.Column(db.String(50), nullable=False)
+    rating = db.Column(db.Float, default=0.0)
+    image_url = db.Column(db.String(500))
+    product_url = db.Column(db.String(500))
+    store = db.Column(db.String(100))
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     size = db.Column(db.String(50))
     flavor = db.Column(db.String(50))
+    price_history = db.Column(db.Text)
     
-    # Precios históricos (almacenados como JSON)
-    price_history = db.Column(db.Text, default='[]')
+    def __repr__(self):
+        return f'<Product {self.name}>'
     
     def to_dict(self):
         return {
@@ -34,23 +41,18 @@ class Product(db.Model):
             'image_url': self.image_url,
             'product_url': self.product_url,
             'store': self.store,
-            'last_updated': self.last_updated.isoformat(),
+            'last_updated': self.last_updated.isoformat() if self.last_updated else None,
             'size': self.size,
-            'flavor': self.flavor
+            'flavor': self.flavor,
+            'price_history': json.loads(self.price_history) if self.price_history else []
         }
     
     def update_price(self, new_price):
-        # Guardar historial de precios
-        history = json.loads(self.price_history)
+        history = json.loads(self.price_history) if self.price_history else []
         history.append({
             'price': new_price,
             'date': datetime.utcnow().isoformat()
         })
-        # Mantener solo los últimos 30 días
-        if len(history) > 30:
-            history = history[-30:]
-        
-        self.original_price = self.original_price or new_price
-        self.price = new_price
         self.price_history = json.dumps(history)
+        self.price = new_price
         self.last_updated = datetime.utcnow()

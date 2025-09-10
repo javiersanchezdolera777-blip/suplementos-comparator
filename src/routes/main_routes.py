@@ -1,5 +1,6 @@
+# src/routes/main_routes.py
 from flask import Blueprint, render_template, jsonify, request
-from models.product import Product, db
+from models.product import Product, db  # ← Usar la misma instancia
 
 main_bp = Blueprint('main', __name__)
 
