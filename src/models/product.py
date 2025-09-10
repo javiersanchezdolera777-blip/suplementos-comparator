@@ -1,28 +1,26 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta  # ← AÑADE ESTA IMPORTACIÓN
+from datetime import datetime
 import json
 
 db = SQLAlchemy()
 
 class Product(db.Model):
-    __tablename__ = 'products'
-    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(50), nullable=False)
-    brand = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
+    brand = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    original_price = db.Column(db.Float)
+    rating = db.Column(db.Float, default=0)
     image_url = db.Column(db.String(300))
-    product_url = db.Column(db.String(300))
-    rating = db.Column(db.Float)
+    product_url = db.Column(db.String(300), nullable=False)
+    store = db.Column(db.String(50), nullable=False)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    size = db.Column(db.String(50))
+    flavor = db.Column(db.String(50))
     
-    # NUEVOS CAMPOS para los filtros
-    objetivo = db.Column(db.String(100))  # Aumento masa muscular, Perder grasa, etc.
-    caracteristicas = db.Column(db.String(300))  # Vegano, Sin lactosa, Sin gluten, etc.
-    sabor = db.Column(db.String(100))  # Chocolate, Vainilla, Frutos rojos, etc.
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    prices = db.relationship('PriceHistory', backref='product', lazy=True)
+    # Precios históricos (almacenados como JSON)
+    price_history = db.Column(db.Text, default='[]')
     
     def to_dict(self):
         return {
@@ -30,67 +28,29 @@ class Product(db.Model):
             'name': self.name,
             'category': self.category,
             'brand': self.brand,
-            'current_price': self.current_price,
-            'best_price': self.best_price,
-            'image_url': self.image_url,
-            'rating': self.rating,
-            'objetivo': self.objetivo,
-            'caracteristicas': self.caracteristicas,
-            'sabor': self.sabor,
-            'last_updated': self.last_updated.isoformat() if self.last_updated else None
-        }
-    
-    @property
-    def current_price(self):
-        # Último precio registrado
-        latest_price = PriceHistory.query.filter_by(product_id=self.id)\
-                                        .order_by(PriceHistory.timestamp.desc())\
-                                        .first()
-        return latest_price.price if latest_price else None
-    
-    @property
-    def best_price(self):
-        # Mejor precio histórico
-        best_price = PriceHistory.query.filter_by(product_id=self.id)\
-                                      .order_by(PriceHistory.price.asc())\
-                                      .first()
-        return best_price.price if best_price else None
-    
-    @property
-    def last_updated(self):
-        latest_price = PriceHistory.query.filter_by(product_id=self.id)\
-                                        .order_by(PriceHistory.timestamp.desc())\
-                                        .first()
-        return latest_price.timestamp if latest_price else None
-
-
-class PriceHistory(db.Model):
-    __tablename__ = 'price_history'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    store = db.Column(db.String(100), nullable=False)
-    offer = db.Column(db.Boolean, default=False)
-    discount_percentage = db.Column(db.Integer)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def to_dict(self):
-        return {
             'price': self.price,
+            'original_price': self.original_price,
+            'rating': self.rating,
+            'image_url': self.image_url,
+            'product_url': self.product_url,
             'store': self.store,
-            'offer': self.offer,
-            'discount_percentage': self.discount_percentage,
-            'timestamp': self.timestamp.isoformat()
+            'last_updated': self.last_updated.isoformat(),
+            'size': self.size,
+            'flavor': self.flavor
         }
-
-
-class Store(db.Model):
-    __tablename__ = 'stores'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    base_url = db.Column(db.String(200), nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    scraping_interval = db.Column(db.Integer, default=24)  # horas
-    last_scraped = db.Column(db.DateTime)
+    def update_price(self, new_price):
+        # Guardar historial de precios
+        history = json.loads(self.price_history)
+        history.append({
+            'price': new_price,
+            'date': datetime.utcnow().isoformat()
+        })
+        # Mantener solo los últimos 30 días
+        if len(history) > 30:
+            history = history[-30:]
+        
+        self.original_price = self.original_price or new_price
+        self.price = new_price
+        self.price_history = json.dumps(history)
+        self.last_updated = datetime.utcnow()

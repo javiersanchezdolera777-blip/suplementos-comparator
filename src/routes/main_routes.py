@@ -3,168 +3,42 @@ from models.product import Product, db
 
 main_bp = Blueprint('main', __name__)
 
-# En sample_products, corrige los URLs:
-sample_products = [
-    {
-        'id': 1,
-        'name': 'Whey Gold Standard',
-        'category': 'Proteína',
-        'category_color': 'proteina',
-        'brand': 'Optimum Nutrition',
-        'size': '2.27kg',
-        'price': 54.99,
-        'image_url': 'https://m.media-amazon.com/images/I/71gZ44j6HYL._AC_SX679_.jpg',
-        'objetivo': 'Aumento masa muscular, Recuperación muscular',
-        'caracteristicas': 'Sin gluten, Sin lactosa',
-        'sabor': 'Chocolate, Vainilla, Fresa'
-    },
-    {
-        'id': 2,
-        'name': 'Creatina Monohidrato',
-        'category': 'Creatina',
-        'category_color': 'creatina',
-        'brand': 'MyProtein',
-        'size': '500g',
-        'price': 19.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Creatina',  # ✅ Corregido
-        'objetivo': 'Aumento fuerza, Mejora rendimiento',
-        'caracteristicas': 'Vegano, Sin aditivos',
-        'sabor': 'Sin sabor'
-    },
-    {
-        'id': 3,
-        'name': 'Proteína Vegana',
-        'category': 'Proteína',
-        'category_color': 'proteina',
-        'brand': 'Vegetarian',
-        'size': '1kg',
-        'price': 39.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Proteina+Vegana',  # ✅ Corregido
-        'objetivo': 'Aumento masa muscular, Definición',
-        'caracteristicas': 'Vegano, Sin lactosa, Sin gluten, Orgánico',
-        'sabor': 'Chocolate, Vainilla'
-    },
-    {
-        'id': 4,
-        'name': 'Quemador Termogénico',
-        'category': 'Quemadores',
-        'category_color': 'quemadores',
-        'brand': 'Muscletech',
-        'size': '120 cápsulas',
-        'price': 29.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=Quemador',  # ✅ Corregido
-        'objetivo': 'Perder grasa, Definición, Energía',
-        'caracteristicas': 'Sin azúcar, Vegano',
-        'sabor': 'Naranja, Limón'
-    },
-    {
-        'id': 5,
-        'name': 'BCAA Aminoácidos',
-        'category': 'Aminoácidos',
-        'category_color': 'aminoacidos',
-        'brand': 'Scivation',
-        'size': '30 serv',
-        'price': 24.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=BCAA',  # ✅ Corregido
-        'objetivo': 'Recuperación muscular, Prevenir catabolismo',
-        'caracteristicas': 'Sin azúcar, Sin gluten',
-        'sabor': 'Sandía, Limón'
-    },
-    {
-        'id': 6,
-        'name': 'Pre-entreno Explosivo',
-        'category': 'Pre-entreno',
-        'category_color': 'pre-entreno',
-        'brand': 'C4',
-        'size': '30 serv',
-        'price': 34.99,
-        'image_url': 'https://placehold.co/300x200/EFEFEF/666666?text=PreEntreno',  # ✅ Corregido
-        'objetivo': 'Energía, Foco mental, Rendimiento',
-        'caracteristicas': 'Sin azúcar, Vegano',
-        'sabor': 'Frutos rojos, Naranja'
-    }
-]
-
-
 @main_bp.route('/')
 def index():
-    # Mostrar solo 4 productos destacados en la homepage
-    featured_products = sample_products[:4]
+    # Obtener productos destacados (mejor valoración)
+    featured_products = Product.query.order_by(Product.rating.desc()).limit(6).all()
     return render_template('index.html', products=featured_products)
 
 @main_bp.route('/productos')
 def productos():
     category = request.args.get('category', '')
-    objetivo = request.args.get('objetivo', '')
-    caracteristicas = request.args.get('caracteristicas', '')
     min_price = request.args.get('min_price', 0, type=float)
     max_price = request.args.get('max_price', 1000, type=float)
+    brand = request.args.get('brand', '')
     
-    # Filtrar productos
-    filtered_products = sample_products
+    query = Product.query
     
-    # Filtro por categoría
     if category:
-        filtered_products = [p for p in filtered_products if p['category'].lower() == category.lower()]
+        query = query.filter_by(category=category)
+    if brand:
+        query = query.filter_by(brand=brand)
     
-    # NUEVO: Filtro por objetivo
-    if objetivo:
-        filtered_products = [p for p in filtered_products 
-                           if p.get('objetivo') and objetivo.lower() in p['objetivo'].lower()]
+    query = query.filter(Product.price.between(min_price, max_price))
     
-    # NUEVO: Filtro por características
-    if caracteristicas:
-        filtered_products = [p for p in filtered_products 
-                           if p.get('caracteristicas') and caracteristicas.lower() in p['caracteristicas'].lower()]
+    # Ordenar por mejor valoración o precio
+    sort = request.args.get('sort', 'rating')
+    if sort == 'price_asc':
+        query = query.order_by(Product.price.asc())
+    elif sort == 'price_desc':
+        query = query.order_by(Product.price.desc())
+    else:
+        query = query.order_by(Product.rating.desc())
     
-    # Filtro por precio
-    filtered_products = [p for p in filtered_products if min_price <= p['price'] <= max_price]
-    
-    return render_template('productos.html', products=filtered_products)
+    products = query.all()
+    return render_template('productos.html', products=products)
 
 @main_bp.route('/api/productos')
 def api_productos():
-    # Para API JSON, ahora incluye los nuevos campos
+    # API para filtros avanzados
     products = Product.query.all()
-    return jsonify([{
-        'id': p.id,
-        'name': p.name,
-        'category': p.category,
-        'brand': p.brand,
-        'price': p.current_price,
-        'image_url': p.image_url,
-        'objetivo': p.objetivo,
-        'caracteristicas': p.caracteristicas,
-        'sabor': p.sabor
-    } for p in products])
-
-# NUEVA RUTA: Para obtener opciones de filtros
-@main_bp.route('/api/filtros')
-def api_filtros():
-    # Esto sería dinámico con base de datos real
-    categorias = ['Proteína', 'Creatina', 'Pre-entreno', 'Quemadores', 'Aminoácidos']
-    objetivos = ['Aumento masa muscular', 'Perder grasa', 'Definición', 'Energía', 'Recuperación muscular']
-    caracteristicas = ['Vegano', 'Sin lactosa', 'Sin gluten', 'Sin azúcar', 'Orgánico']
-    
-    return jsonify({
-        'categorias': categorias,
-        'objetivos': objetivos,
-        'caracteristicas': caracteristicas
-    })
-
-@main_bp.route('/comparar')
-def comparar():
-    # Obtener IDs de productos desde la URL
-    product_ids = request.args.get('products', '')
-    
-    # Convertir a lista de IDs
-    product_id_list = product_ids.split('-') if product_ids else []
-    
-    # Buscar productos en los datos de ejemplo (luego será con BD)
-    products_to_compare = []
-    for product_id in product_id_list:
-        product = next((p for p in sample_products if str(p['id']) == product_id), None)
-        if product:
-            products_to_compare.append(product)
-    
-    return render_template('comparar.html', products=products_to_compare)
+    return jsonify([p.to_dict() for p in products])
