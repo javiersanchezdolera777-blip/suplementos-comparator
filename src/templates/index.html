@@ -4,52 +4,19 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-section">
+<section class="hero-section compact-hero">
     <div class="container text-center">
-        <h1 class="display-4 fw-bold mb-4">Encuentra los mejores suplementos al mejor precio</h1>
-        <p class="lead mb-4">Compara entre miles de productos de las mejores marcas y tiendas</p>
-        <a href="{{ url_for('main.productos') }}" class="btn btn-light btn-lg px-4">
+        <h1 class="hero-title">Encuentra los mejores suplementos al mejor precio</h1>
+        <p class="hero-subtitle">Compara entre miles de productos de las mejores marcas y tiendas</p>
+        <a href="{{ url_for('main.productos') }}" class="btn btn-light btn-lg hero-btn">
             <i class="fas fa-search me-2"></i>Comenzar a comparar
         </a>
     </div>
 </section>
 
-<!-- Filtros Rápidos -->
-<section class="container mt-5">
-    <div class="row text-center">
-        <div class="col-md-3 mb-3">
-            <div class="feature-icon">
-                <i class="fas fa-dumbbell"></i>
-            </div>
-            <h5>Tipo de suplemento</h5>
-            <p class="text-muted">Proteína, Creatina, Pre-entreno...</p>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="feature-icon">
-                <i class="fas fa-bullseye"></i>
-            </div>
-            <h5>Objetivo</h5>
-            <p class="text-muted">Masa muscular, Definición, Energía...</p>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="feature-icon">
-                <i class="fas fa-star"></i>
-            </div>
-            <h5>Características</h5>
-            <p class="text-muted">Vegano, Sin lactosa, Sin gluten...</p>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="feature-icon">
-                <i class="fas fa-tag"></i>
-            </div>
-            <h5>Mejor Precio</h5>
-            <p class="text-muted">Encuentra las mejores ofertas</p>
-        </div>
-    </div>
-</section>
 
 <!-- Productos Destacados -->
-<section class="container mt-5">
+<section class="container mt-4">
     <h2 class="text-center mb-4">Productos Destacados</h2>
     
     <div class="row">
@@ -57,7 +24,7 @@
         <div class="col-md-3 mb-4">
             <div class="card product-card h-100">
                 <div class="product-image">
-                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="card-img-top">
+                    <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
                 </div>
                 <div class="card-body">
                     <span class="badge bg-{{ product.category_color }} category-badge mb-2">
@@ -102,6 +69,40 @@
         <a href="{{ url_for('main.productos') }}" class="btn btn-outline-primary">
             Ver todos los productos <i class="fas fa-arrow-right ms-2"></i>
         </a>
+    </div>
+</section>
+
+<!-- Filtros Rápidos -->
+<section class="container mt-5">
+    <div class="row text-center">
+        <div class="col-md-3 mb-3">
+            <div class="feature-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <h5>Tipo de suplemento</h5>
+            <p class="text-muted">Proteína, Creatina, Pre-entreno...</p>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="feature-icon">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <h5>Objetivo</h5>
+            <p class="text-muted">Masa muscular, Definición, Energía...</p>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="feature-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <h5>Características</h5>
+            <p class="text-muted">Vegano, Sin lactosa, Sin gluten...</p>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="feature-icon">
+                <i class="fas fa-tag"></i>
+            </div>
+            <h5>Mejor Precio</h5>
+            <p class="text-muted">Encuentra las mejores ofertas</p>
+        </div>
     </div>
 </section>
 
