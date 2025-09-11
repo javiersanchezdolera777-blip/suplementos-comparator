@@ -10,7 +10,7 @@ print(f"📂 Directorio base: {BASE_DIR}")
 print(f"📂 Directorio src: {SRC_DIR}")
 
 from app import create_app
-from src import db  # ← Importar la instancia centralizada
+from models.product import db  # ← Importar la instancia centralizada
 
 def init_database():
     print("🚀 Iniciando inicialización de la base de datos...")

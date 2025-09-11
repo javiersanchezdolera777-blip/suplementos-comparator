@@ -6,74 +6,142 @@
 <div class="container mt-4">
     <h1 class="text-center mb-4">Comparador de Suplementos</h1>
     
-    <!-- Sección de Filtros -->
+    <!-- Sección de Filtros Mejorada -->
     <div class="row filter-section">
-        <div class="col-md-3">
-            <select class="form-select" id="categoryFilter">
-                <option value="">Tipo de suplemento</option>
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="mainCategoryFilter">
+                <option value="">Categoría Principal</option>
                 <option value="proteína">Proteína</option>
                 <option value="creatina">Creatina</option>
-                <option value="pre-entreno">Pre-entreno</option>
-                <option value="quemadores">Quemadores</option>
                 <option value="aminoácidos">Aminoácidos</option>
+                <option value="pre-entreno">Pre-Entreno</option>
+                <option value="post-entreno">Post-Entreno</option>
+                <option value="vitaminas">Vitaminas y Minerales</option>
+                <option value="control-peso">Control de Peso</option>
+                <option value="barritas">Barritas y Snacks</option>
+                <option value="energía">Energía y Carbohidratos</option>
+                <option value="recuperación">Recuperación</option>
+                <option value="accesorios">Accesorios</option>
             </select>
         </div>
-        <div class="col-md-3">
+        
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="subCategoryFilter">
+                <option value="">Subcategoría</option>
+                <!-- Opciones se cargarán dinámicamente según la categoría principal -->
+            </select>
+        </div>
+        
+        <div class="col-md-3 mb-2">
             <select class="form-select" id="objetivoFilter">
-                <option value="">Objetivo principal</option>
-                <option value="aumento masa muscular">Aumento masa muscular</option>
-                <option value="perder grasa">Perder grasa</option>
+                <option value="">Objetivo</option>
+                <option value="aumento-masa-muscular">Aumento masa muscular</option>
+                <option value="perder-grasa">Perder grasa</option>
                 <option value="definición">Definición muscular</option>
-                <option value="energía">Energía y rendimiento</option>
-                <option value="recuperación">Recuperación muscular</option>
+                <option value="energía-rendimiento">Energía y rendimiento</option>
+                <option value="recuperación-muscular">Recuperación muscular</option>
+                <option value="control-peso">Control de peso</option>
+                <option value="salud-general">Salud general</option>
             </select>
         </div>
-        <div class="col-md-3">
+        
+        <div class="col-md-3 mb-2">
             <select class="form-select" id="caracteristicasFilter">
                 <option value="">Características</option>
                 <option value="vegano">Vegano</option>
-                <option value="sin lactosa">Sin lactosa</option>
-                <option value="sin gluten">Sin gluten</option>
-                <option value="sin azúcar">Sin azúcar</option>
+                <option value="sin-lactosa">Sin lactosa</option>
+                <option value="sin-gluten">Sin gluten</option>
+                <option value="sin-azúcar">Sin azúcar</option>
                 <option value="orgánico">Orgánico</option>
+                <option value="sin-OGM">Sin OGM</option>
+                <option value="bajo-calorías">Bajo en calorías</option>
             </select>
         </div>
-        <div class="col-md-3">
+        
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="brandFilter">
+                <option value="">Marca</option>
+                <option value="optimum-nutrition">Optimum Nutrition</option>
+                <option value="myprotein">MyProtein</option>
+                <option value="scitec">Scitec Nutrition</option>
+                <option value="muscletech">MuscleTech</option>
+                <option value="bsn">BSN</option>
+                <option value="dymatize">Dymatize</option>
+                <option value="universal">Universal Nutrition</option>
+            </select>
+        </div>
+        
+        <div class="col-md-3 mb-2">
             <select class="form-select" id="priceFilter">
                 <option value="">Rango de precio</option>
                 <option value="0-20">Menos de 20€</option>
                 <option value="20-50">20€ - 50€</option>
                 <option value="50-100">50€ - 100€</option>
-                <option value="100+">Más de 100€</option>
+                <option value="100-200">100€ - 200€</option>
+                <option value="200+">Más de 200€</option>
+            </select>
+        </div>
+        
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="ratingFilter">
+                <option value="">Valoración mínima</option>
+                <option value="4">4+ estrellas</option>
+                <option value="3">3+ estrellas</option>
+                <option value="2">2+ estrellas</option>
+            </select>
+        </div>
+        
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="sortFilter">
+                <option value="rating-desc">Mejor valorados</option>
+                <option value="price-asc">Precio: menor a mayor</option>
+                <option value="price-desc">Precio: mayor a menor</option>
+                <option value="name-asc">Nombre: A-Z</option>
+                <option value="name-desc">Nombre: Z-A</option>
             </select>
         </div>
     </div>
 
     <!-- Resultados de Productos -->
-    <div class="row mt-4">
+    <div class="row mt-4" id="product-grid">
         {% if products %}
             {% for product in products %}
             <div class="col-md-4 mb-4">
                 <div class="card product-card h-100">
                     <div class="product-image">
-                        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="card-img-top">
+                        <img src="{{ product.image_url or 'https://via.placeholder.com/300x200?text=Suplemento' }}" 
+                             alt="{{ product.name }}" 
+                             class="card-img-top"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Imagen+No+Disponible'">
                     </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge bg-{{ product.category_color }} category-badge">
-                                {{ product.category }}
+                            <span class="badge bg-primary category-badge">
+                                {{ product.main_category }}
+                            </span>
+                            <span class="rating">
+                                <i class="fas fa-star"></i> {{ product.rating|default('4.5', true) }}
                             </span>
                         </div>
                         
                         <h5 class="card-title">{{ product.name }}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">{{ product.brand }} - {{ product.size }}</h6>
                         
-                        <!-- Información de objetivo y características -->
+                        <!-- Información nutricional -->
+                        {% if product.protein_per_serving %}
+                        <div class="product-info mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-weight"></i> <strong>Proteína:</strong> 
+                                {{ product.protein_per_serving }}g por porción
+                            </small>
+                        </div>
+                        {% endif %}
+                        
                         {% if product.objetivo %}
                         <div class="product-info mb-2">
                             <small class="text-muted">
                                 <i class="fas fa-bullseye"></i> <strong>Objetivo:</strong> 
-                                {{ product.objetivo }}
+                                {{ product.objetivo|replace('-', ' ')|title }}
                             </small>
                         </div>
                         {% endif %}
@@ -82,32 +150,36 @@
                         <div class="product-info mb-2">
                             <small class="text-muted">
                                 <i class="fas fa-star"></i> <strong>Características:</strong> 
-                                {{ product.caracteristicas }}
+                                {{ product.caracteristicas|replace('-', ' ')|title }}
                             </small>
                         </div>
                         {% endif %}
                         
-                        {% if product.sabor %}
+                        {% if product.flavor %}
                         <div class="product-info mb-3">
                             <small class="text-muted">
-                                <i class="fas fa-ice-cream"></i> <strong>Sabores:</strong> 
-                                {{ product.sabor }}
+                                <i class="fas fa-ice-cream"></i> <strong>Sabor:</strong> 
+                                {{ product.flavor|title }}
                             </small>
                         </div>
                         {% endif %}
                         
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="price-tag">€{{ product.price }}</span>
+                            {% if product.original_price and product.original_price > product.price %}
+                            <span class="original-price text-muted text-decoration-line-through">
+                                €{{ product.original_price }}
+                            </span>
+                            {% endif %}
                             <button class="btn compare-btn" 
                                     data-product-id="{{ product.id }}"
                                     data-product-name="{{ product.name }}"
                                     data-product-price="{{ product.price }}"
                                     data-product-image="{{ product.image_url }}"
                                     data-product-brand="{{ product.brand }}"
-                                    data-product-category="{{ product.category }}"
-                                    onclick="addToComparison(this)">
-                            <i class="fas fa-balance-scale"></i> Comparar
-                         </button>
+                                    data-product-category="{{ product.main_category }}">
+                                <i class="fas fa-balance-scale"></i> Comparar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -122,7 +194,26 @@
             </div>
         {% endif %}
     </div>
+    
+    <!-- Paginación -->
+    {% if products and products|length > 0 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Anterior</a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
 </div>
+
+<!-- Barra de comparación -->
 <div class="comparison-bar fixed-bottom bg-light p-3 shadow-lg" style="display: none; z-index: 1000;">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center">
@@ -142,4 +233,70 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// JavaScript para manejar los filtros dinámicos
+document.addEventListener('DOMContentLoaded', function() {
+    // Mapeo de subcategorías por categoría principal
+    const subCategories = {
+        'proteína': [
+            'Whey Protein',
+            'Proteína Vegana', 
+            'Caseína',
+            'Proteína de Huevo',
+            'Proteína de Carne',
+            'Mezclas de Proteína',
+            'Proteína de Colágeno'
+        ],
+        'creatina': [
+            'Creatina Monohidrato',
+            'Creatina HCL',
+            'Creatina Kre-Alkalyn',
+            'Creatina en Cápsulas',
+            'Creatina en Polvo'
+        ],
+        'aminoácidos': [
+            'BCAA',
+            'EAA',
+            'Glutamina',
+            'L-Carnitina',
+            'Arginina',
+            'Citrulina'
+        ],
+        'pre-entreno': [
+            'Pre-Entreno con Cafeína',
+            'Pre-Entreno Sin Cafeína',
+            'Pre-Entreno en Polvo',
+            'Pre-Entreno en Cápsulas'
+        ],
+        'barritas': [
+            'Barritas Proteicas',
+            'Barritas Energéticas',
+            'Barritas Veganas',
+            'Snacks Proteicos'
+        ]
+    };
+
+    // Actualizar subcategorías cuando cambia la categoría principal
+    document.getElementById('mainCategoryFilter').addEventListener('change', function() {
+        const mainCategory = this.value;
+        const subCategorySelect = document.getElementById('subCategoryFilter');
+        
+        // Limpiar opciones actuales
+        subCategorySelect.innerHTML = '<option value="">Subcategoría</option>';
+        
+        // Añadir nuevas opciones si existe la categoría
+        if (mainCategory && subCategories[mainCategory]) {
+            subCategories[mainCategory].forEach(subCat => {
+                const option = document.createElement('option');
+                option.value = subCat.toLowerCase().replace(/\s+/g, '-');
+                option.textContent = subCat;
+                subCategorySelect.appendChild(option);
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

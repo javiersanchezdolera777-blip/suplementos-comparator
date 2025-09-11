@@ -1,10 +1,9 @@
-# src/models/product.py
-from flask_sqlalchemy import SQLAlchemy  # ← Añade esta línea
+# from src import db
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
 
-# ✅ Crear instancia localmente para romper el ciclo
-db = SQLAlchemy()
+db = SQLAlchemy() 
 
 db.Model.metadata.clear()
 
@@ -13,7 +12,8 @@ class Product(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    category = db.Column(db.String(100))
+    category = db.Column(db.String(100))  # Categoría principal
+    subcategory = db.Column(db.String(100))  # ← NUEVO CAMPO: Subcategoría
     brand = db.Column(db.String(100))
     price = db.Column(db.Float)
     original_price = db.Column(db.Float)
@@ -34,6 +34,7 @@ class Product(db.Model):
             'id': self.id,
             'name': self.name,
             'category': self.category,
+            'subcategory': self.subcategory,  # ← NUEVO CAMPO
             'brand': self.brand,
             'price': self.price,
             'original_price': self.original_price,

@@ -25,7 +25,7 @@ class MyProteinScraper(BaseScraper):
         
         return all_products
     
-    def scrape_category(self, url, category):  # ← ¡ESTA LÍNEA DEBE ESTAR ALINEADA!
+    def scrape_category(self, url, category):
         soup = self.get_page(url)
         if not soup:
             return []
@@ -37,23 +37,41 @@ class MyProteinScraper(BaseScraper):
         
         print(f"Encontradas {len(product_cards)} tarjetas de producto")
         
+        # Diccionario de mapeo de categorías MyProtein → Nuestro sistema
+        CATEGORY_MAPPING = {
+            'proteina': {
+                'main_category': 'proteinas',
+                'subcategory': 'whey'
+            },
+            'creatina': {
+                'main_category': 'creatinas', 
+                'subcategory': 'monohidrato'
+            },
+            'pre-entreno': {
+                'main_category': 'pre-entreno',
+                'subcategory': 'con-cafeina'
+            },
+            'aminoacidos': {
+                'main_category': 'aminoacidos',
+                'subcategory': 'bcaa'
+            }
+        }
+        
         for card in product_cards:
             try:
                 # ✅ NOMBRE - del atributo aria-label
                 name = card.get('aria-label', 'Producto sin nombre')
         
-                 # ✅ CORREGIR CARACTERES ESPECIALES - AÑADE ESTO
+                # ✅ CORREGIR CARACTERES ESPECIALES
                 import unicodedata
                 name = unicodedata.normalize('NFKD', name).encode('latin-1', 'ignore').decode('utf-8', 'ignore')
                 
                 # ✅ PRECIO - Extraer del texto (arreglando caracteres)
-                price_text = card.get_text()
-                
-                # Limpiar caracteres extraños y buscar precio
                 import re
+                price_text = card.get_text()
                 cleaned_text = price_text.encode('latin-1').decode('utf-8', errors='ignore')
                 
-                # Buscar patrones de precio: "23,99 €" o "discounted price 23,99"
+                # Buscar patrones de precio
                 price_match = re.search(r'(\d+[\.,]\d+)\s*€', cleaned_text)
                 if not price_match:
                     price_match = re.search(r'discounted price\s*(\d+[\.,]\d+)', cleaned_text)
@@ -84,9 +102,18 @@ class MyProteinScraper(BaseScraper):
                 img_elem = card.find('img')
                 image_url = img_elem['src'] if img_elem and 'src' in img_elem.attrs else ''
                 
+                # ✅ MAPEAR CATEGORÍAS - Lo más importante
+                if category in CATEGORY_MAPPING:
+                    main_category = CATEGORY_MAPPING[category]['main_category']
+                    subcategory = CATEGORY_MAPPING[category]['subcategory']
+                else:
+                    main_category = category
+                    subcategory = ''
+                
                 product_data = {
                     'name': name.strip(),
-                    'category': category,
+                    'category': main_category,  # ← NUEVA CATEGORÍA PRINCIPAL
+                    'subcategory': subcategory,  # ← NUEVA SUBCATEGORÍA
                     'brand': 'MyProtein',
                     'price': price,
                     'original_price': original_price,
@@ -99,7 +126,7 @@ class MyProteinScraper(BaseScraper):
                 }
                 
                 products.append(product_data)
-                print(f"✅ {name} - {price}€ - ⭐ {rating} - Antes {original_price}€")
+                print(f"✅ {name} - {price}€ - ⭐ {rating} - Categoría: {main_category}/{subcategory}")
                 
             except Exception as e:
                 print(f"❌ Error en producto: {e}")

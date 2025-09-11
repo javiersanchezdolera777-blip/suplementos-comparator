@@ -3,8 +3,8 @@ from bs4 import BeautifulSoup
 import time
 from datetime import datetime
 import json
-from src.models.product import db, Product
-from src.utils.database import get_or_create
+from src import db
+from src.models.product import Product
 
 class BaseScraper:
     def __init__(self):
