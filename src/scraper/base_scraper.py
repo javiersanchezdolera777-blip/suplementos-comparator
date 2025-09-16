@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 import json
 from src import db
-from src.models.product import Product
 
 class BaseScraper:
     def __init__(self):
@@ -30,6 +29,8 @@ class BaseScraper:
     
     def save_product(self, product_data):
         """Guardar o actualizar producto en la base de datos"""
+        from src.models.product import Product
+
         try:
             # Buscar producto existente
             product = Product.query.filter_by(

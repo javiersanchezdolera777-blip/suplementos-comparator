@@ -1,7 +1,7 @@
 # src/app.py
 from flask import Flask
-from routes.main_routes import main_bp
-from models.product import db  # ← Importar desde el paquete centralizado
+from .routes.main_routes import main_bp
+from . import db  # ← Importar desde el paquete centralizado
 import os
 
 def create_app():

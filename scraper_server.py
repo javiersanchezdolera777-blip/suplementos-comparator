@@ -1,7 +1,6 @@
 from flask import Flask, jsonify
 from src.models.product import db, Product
 from src.scraper.myprotein_scraper import MyProteinScraper
-from src.scraper.decathlon_scraper import DecathlonScraper
 from src.utils.scheduler import schedule_scraping
 import threading
 

@@ -3,8 +3,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from app import create_app
-from scraper.myprotein_scraper import MyProteinScraper
+from src.app import create_app
+from src.scraper.myprotein_scraper import MyProteinScraper
 
 def run_scraping():
     app = create_app()

@@ -6,99 +6,174 @@
 <div class="container mt-4">
     <h1 class="text-center mb-4">Comparador de Suplementos</h1>
     
-    <!-- Sección de Filtros Mejorada -->
-    <div class="row filter-section">
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="mainCategoryFilter">
-                <option value="">Categoría Principal</option>
-                <option value="proteína">Proteína</option>
-                <option value="creatina">Creatina</option>
-                <option value="aminoácidos">Aminoácidos</option>
-                <option value="pre-entreno">Pre-Entreno</option>
-                <option value="post-entreno">Post-Entreno</option>
-                <option value="vitaminas">Vitaminas y Minerales</option>
-                <option value="control-peso">Control de Peso</option>
-                <option value="barritas">Barritas y Snacks</option>
-                <option value="energía">Energía y Carbohidratos</option>
-                <option value="recuperación">Recuperación</option>
-                <option value="accesorios">Accesorios</option>
-            </select>
+    <!-- Filtros y ordenación -->
+    <div class="row mb-4">
+        <!-- Columna para filtros -->
+        <div class="col-md-10">
+            <div class="row filter-section">
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="mainCategoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Categoría Principal
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="mainCategoryDropdown" style="width: 280px;" id="mainCategoryOptions">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="proteína" id="cat-proteina">
+                                <label class="form-check-label" for="cat-proteina">Proteína</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="creatina" id="cat-creatina">
+                                <label class="form-check-label" for="cat-creatina">Creatina</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="aminoácidos" id="cat-aminoacidos">
+                                <label class="form-check-label" for="cat-aminoacidos">Aminoácidos</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="pre-entreno" id="cat-preentreno">
+                                <label class="form-check-label" for="cat-preentreno">Pre-Entreno</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="vitaminas" id="cat-vitaminas">
+                                <label class="form-check-label" for="cat-vitaminas">Vitaminas y Minerales</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="barritas" id="cat-barritas">
+                                <label class="form-check-label" for="cat-barritas">Barritas y Snacks</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="recuperación" id="cat-recuperacion">
+                                <label class="form-check-label" for="cat-recuperacion">Recuperación</label>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection('mainCategoryDropdown')">Limpiar</button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="applyFilter('mainCategoryDropdown')">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="subCategoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Subcategoría
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="subCategoryDropdown" style="width: 280px;">
+                            <div id="subCategoryOptions">
+                                <div class="text-muted">Selecciona primero una categoría principal</div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection('subCategoryDropdown')">Limpiar</button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="applyFilter('subCategoryDropdown')">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="objetivoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Objetivo
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="objetivoDropdown" style="width: 280px;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="aumento-masa-muscular" id="obj-masa">
+                                <label class="form-check-label" for="obj-masa">Aumento masa muscular</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="perder-grasa" id="obj-grasa">
+                                <label class="form-check-label" for="obj-grasa">Perder grasa</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="definición" id="obj-definicion">
+                                <label class="form-check-label" for="obj-definicion">Definición muscular</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="energía-rendimiento" id="obj-energia">
+                                <label class="form-check-label" for="obj-energia">Energía y rendimiento</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="recuperación-muscular" id="obj-recuperacion">
+                                <label class="form-check-label" for="obj-recuperacion">Recuperación muscular</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="control-peso" id="obj-peso">
+                                <label class="form-check-label" for="obj-peso">Control de peso</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="salud-general" id="obj-salud">
+                                <label class="form-check-label" for="obj-salud">Salud general</label>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection('objetivoDropdown')">Limpiar</button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="applyFilter('objetivoDropdown')">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="caracteristicasDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Características
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="caracteristicasDropdown" style="width: 280px;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="vegano" id="char-vegano">
+                                <label class="form-check-label" for="char-vegano">Vegano</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="sin-lactosa" id="char-lactosa">
+                                <label class="form-check-label" for="char-lactosa">Sin lactosa</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="sin-gluten" id="char-gluten">
+                                <label class="form-check-label" for="char-gluten">Sin gluten</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="sin-azúcar" id="char-azucar">
+                                <label class="form-check-label" for="char-azucar">Sin azúcar</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="orgánico" id="char-organico">
+                                <label class="form-check-label" for="char-organico">Orgánico</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="sin-OGM" id="char-ogm">
+                                <label class="form-check-label" for="char-ogm">Sin OGM</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="bajo-calorías" id="char-calorias">
+                                <label class="form-check-label" for="char-calorias">Bajo en calorías</label>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection('caracteristicasDropdown')">Limpiar</button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="applyFilter('caracteristicasDropdown')">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="subCategoryFilter">
-                <option value="">Subcategoría</option>
-                <!-- Opciones se cargarán dinámicamente según la categoría principal -->
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="objetivoFilter">
-                <option value="">Objetivo</option>
-                <option value="aumento-masa-muscular">Aumento masa muscular</option>
-                <option value="perder-grasa">Perder grasa</option>
-                <option value="definición">Definición muscular</option>
-                <option value="energía-rendimiento">Energía y rendimiento</option>
-                <option value="recuperación-muscular">Recuperación muscular</option>
-                <option value="control-peso">Control de peso</option>
-                <option value="salud-general">Salud general</option>
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="caracteristicasFilter">
-                <option value="">Características</option>
-                <option value="vegano">Vegano</option>
-                <option value="sin-lactosa">Sin lactosa</option>
-                <option value="sin-gluten">Sin gluten</option>
-                <option value="sin-azúcar">Sin azúcar</option>
-                <option value="orgánico">Orgánico</option>
-                <option value="sin-OGM">Sin OGM</option>
-                <option value="bajo-calorías">Bajo en calorías</option>
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="brandFilter">
-                <option value="">Marca</option>
-                <option value="optimum-nutrition">Optimum Nutrition</option>
-                <option value="myprotein">MyProtein</option>
-                <option value="scitec">Scitec Nutrition</option>
-                <option value="muscletech">MuscleTech</option>
-                <option value="bsn">BSN</option>
-                <option value="dymatize">Dymatize</option>
-                <option value="universal">Universal Nutrition</option>
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="priceFilter">
-                <option value="">Rango de precio</option>
-                <option value="0-20">Menos de 20€</option>
-                <option value="20-50">20€ - 50€</option>
-                <option value="50-100">50€ - 100€</option>
-                <option value="100-200">100€ - 200€</option>
-                <option value="200+">Más de 200€</option>
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="ratingFilter">
-                <option value="">Valoración mínima</option>
-                <option value="4">4+ estrellas</option>
-                <option value="3">3+ estrellas</option>
-                <option value="2">2+ estrellas</option>
-            </select>
-        </div>
-        
-        <div class="col-md-3 mb-2">
-            <select class="form-select" id="sortFilter">
-                <option value="rating-desc">Mejor valorados</option>
-                <option value="price-asc">Precio: menor a mayor</option>
-                <option value="price-desc">Precio: mayor a menor</option>
-                <option value="name-asc">Nombre: A-Z</option>
-                <option value="name-desc">Nombre: Z-A</option>
-            </select>
+        <!-- Columna para ordenación -->
+        <div class="col-md-2">
+            <div class="dropdown mb-2">
+                <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    Ordenar por
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                    <li><a class="dropdown-item" href="#" data-sort="rating-desc">Mejor valorados</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="price-asc">Precio: menor a mayor</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="price-desc">Precio: mayor a menor</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="name-asc">Nombre: A-Z</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="name-desc">Nombre: Z-A</a></li>
+                </ul>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ofertasCheck">
+                <label class="form-check-label" for="ofertasCheck">Mostrar ofertas</label>
+            </div>
         </div>
     </div>
 
@@ -237,7 +312,6 @@
 
 {% block scripts %}
 <script>
-// JavaScript para manejar los filtros dinámicos
 document.addEventListener('DOMContentLoaded', function() {
     // Mapeo de subcategorías por categoría principal
     const subCategories = {
@@ -279,24 +353,122 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    // Actualizar subcategorías cuando cambia la categoría principal
-    document.getElementById('mainCategoryFilter').addEventListener('change', function() {
-        const mainCategory = this.value;
-        const subCategorySelect = document.getElementById('subCategoryFilter');
-        
-        // Limpiar opciones actuales
-        subCategorySelect.innerHTML = '<option value="">Subcategoría</option>';
-        
-        // Añadir nuevas opciones si existe la categoría
-        if (mainCategory && subCategories[mainCategory]) {
-            subCategories[mainCategory].forEach(subCat => {
-                const option = document.createElement('option');
-                option.value = subCat.toLowerCase().replace(/\s+/g, '-');
-                option.textContent = subCat;
-                subCategorySelect.appendChild(option);
-            });
+    // Contenedor de opciones de categoría principal
+    const mainCategoryOptions = document.getElementById('mainCategoryOptions');
+    
+    // Event listener para cambios en los checkboxes de categoría principal
+    mainCategoryOptions.addEventListener('change', function(e) {
+        if (e.target.classList.contains('category-checkbox')) {
+            updateSubcategoriesBasedOnSelection();
         }
     });
+
+    // Manejar el ordenamiento desde el dropdown
+    document.querySelectorAll('.dropdown-item[data-sort]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sortValue = this.getAttribute('data-sort');
+            document.getElementById('sortDropdown').textContent = this.textContent;
+            console.log('Ordenar por:', sortValue);
+        });
+    });
 });
+
+// Función para actualizar subcategorías basado en la selección
+function updateSubcategoriesBasedOnSelection() {
+    const mainCategoryOptions = document.getElementById('mainCategoryOptions');
+    const checkedBoxes = mainCategoryOptions.querySelectorAll('input.category-checkbox:checked');
+    const subCategoryOptions = document.getElementById('subCategoryOptions');
+    
+    if (checkedBoxes.length === 1) {
+        const selectedCategory = checkedBoxes[0].value;
+        loadSubcategories(selectedCategory);
+    } else {
+        subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+    }
+}
+
+// Función para cargar subcategorías
+function loadSubcategories(mainCategory) {
+    const subCategories = {
+        'proteína': ['Whey Protein', 'Proteína Vegana', 'Caseína', 'Proteína de Huevo', 'Proteína de Carne', 'Mezclas de Proteína', 'Proteína de Colágeno'],
+        'creatina': ['Creatina Monohidrato', 'Creatina HCL', 'Creatina Kre-Alkalyn', 'Creatina en Cápsulas', 'Creatina en Polvo'],
+        'aminoácidos': ['BCAA', 'EAA', 'Glutamina', 'L-Carnitina', 'Arginina', 'Citrulina'],
+        'pre-entreno': ['Pre-Entreno con Cafeína', 'Pre-Entreno Sin Cafeína', 'Pre-Entreno en Polvo', 'Pre-Entreno en Cápsulas'],
+        'barritas': ['Barritas Proteicas', 'Barritas Energéticas', 'Barritas Veganas', 'Snacks Proteicos']
+    };
+    
+    const subCategoryOptions = document.getElementById('subCategoryOptions');
+    subCategoryOptions.innerHTML = '';
+    
+    if (subCategories[mainCategory]) {
+        subCategories[mainCategory].forEach(subCat => {
+            const value = subCat.toLowerCase().replace(/\s+/g, '-');
+            const id = 'sub-' + value;
+            subCategoryOptions.innerHTML += `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="${value}" id="${id}">
+                    <label class="form-check-label" for="${id}">${subCat}</label>
+                </div>
+            `;
+        });
+    } else {
+        subCategoryOptions.innerHTML = '<div class="text-muted">No hay subcategorías disponibles</div>';
+    }
+}
+
+// Función para limpiar selección en un dropdown
+function clearSelection(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    dropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Si es el dropdown de categoría principal, resetear subcategorías
+    if (dropdownId === 'mainCategoryDropdown') {
+        const subCategoryOptions = document.getElementById('subCategoryOptions');
+        subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+    }
+    
+    dropdown.querySelector('.dropdown-toggle').textContent = dropdown.querySelector('.dropdown-toggle').textContent.split(' (')[0];
+}
+
+// Función para aplicar filtro y actualizar el texto del botón
+function applyFilter(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    const selectedOptions = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(checkbox => checkbox.nextElementSibling.textContent);
+    
+    const button = dropdown.querySelector('.dropdown-toggle');
+    if (selectedOptions.length > 0) {
+        button.textContent = button.textContent.split(' (')[0] + ' (' + selectedOptions.length + ')';
+    } else {
+        button.textContent = button.textContent.split(' (')[0];
+    }
+    
+    // Cerrar el dropdown
+    const bootstrapDropdown = bootstrap.Dropdown.getInstance(button);
+    if (bootstrapDropdown) {
+        bootstrapDropdown.hide();
+    }
+}
 </script>
+
+<style>
+.filter-section .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.filter-section .dropdown-toggle::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.filter-section .btn.dropdown-toggle {
+    text-align: left;
+    padding-right: 30px;
+    position: relative;
+}
+</style>
 {% endblock %}
