@@ -312,71 +312,93 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Mapeo de subcategorías por categoría principal
-    const subCategories = {
-        'proteína': [
-            'Whey Protein',
-            'Proteína Vegana', 
-            'Caseína',
-            'Proteína de Huevo',
-            'Proteína de Carne',
-            'Mezclas de Proteína',
-            'Proteína de Colágeno'
-        ],
-        'creatina': [
-            'Creatina Monohidrato',
-            'Creatina HCL',
-            'Creatina Kre-Alkalyn',
-            'Creatina en Cápsulas',
-            'Creatina en Polvo'
-        ],
-        'aminoácidos': [
-            'BCAA',
-            'EAA',
-            'Glutamina',
-            'L-Carnitina',
-            'Arginina',
-            'Citrulina'
-        ],
-        'pre-entreno': [
-            'Pre-Entreno con Cafeína',
-            'Pre-Entreno Sin Cafeína',
-            'Pre-Entreno en Polvo',
-            'Pre-Entreno en Cápsulas'
-        ],
-        'barritas': [
-            'Barritas Proteicas',
-            'Barritas Energéticas',
-            'Barritas Veganas',
-            'Snacks Proteicos'
-        ]
-    };
+// ==============================================
+// SISTEMA DE FILTRADO DINÁMICO
+// ==============================================
 
-    // Contenedor de opciones de categoría principal
+// Mapeo de subcategorías por categoría principal
+const subCategories = {
+    'proteína': [
+        'Whey Protein',
+        'Proteína Vegana', 
+        'Caseína',
+        'Proteína de Huevo',
+        'Proteína de Carne',
+        'Mezclas de Proteína',
+        'Proteína de Colágeno'
+    ],
+    'creatina': [
+        'Creatina Monohidrato',
+        'Creatina HCL',
+        'Creatina Kre-Alkalyn',
+        'Creatina en Cápsulas',
+        'Creatina en Polvo'
+    ],
+    'aminoácidos': [
+        'BCAA',
+        'EAA',
+        'Glutamina',
+        'L-Carnitina',
+        'Arginina',
+        'Citrulina'
+    ],
+    'pre-entreno': [
+        'Pre-Entreno con Cafeína',
+        'Pre-Entreno Sin Cafeína',
+        'Pre-Entreno en Polvo',
+        'Pre-Entreno en Cápsulas'
+    ],
+    'barritas': [
+        'Barritas Proteicas',
+        'Barritas Energéticas',
+        'Barritas Veganas',
+        'Snacks Proteicos'
+    ]
+};
+
+// Event listeners para los filtros
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar event listener para checkboxes de categoría
     const mainCategoryOptions = document.getElementById('mainCategoryOptions');
-    
-    // Event listener para cambios en los checkboxes de categoría principal
-    mainCategoryOptions.addEventListener('change', function(e) {
-        if (e.target.classList.contains('category-checkbox')) {
-            updateSubcategoriesBasedOnSelection();
-        }
+    if (mainCategoryOptions) {
+        mainCategoryOptions.addEventListener('change', function(e) {
+            if (e.target.classList.contains('category-checkbox')) {
+                updateSubcategoriesBasedOnSelection();
+            }
+        });
+    }
+
+    // Event listeners para todos los filtros
+    document.querySelectorAll('input[type="checkbox"], #ofertasCheck').forEach(element => {
+        element.addEventListener('change', aplicarFiltros);
     });
 
-    // Manejar el ordenamiento desde el dropdown
+    // Event listener para el dropdown de ordenamiento
     document.querySelectorAll('.dropdown-item[data-sort]').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             const sortValue = this.getAttribute('data-sort');
             document.getElementById('sortDropdown').textContent = this.textContent;
-            console.log('Ordenar por:', sortValue);
+            aplicarFiltros();
         });
     });
+
+    // Cargar comparación al iniciar
+    loadComparisonFromStorage();
+    
+    // Aplicar filtros inicialmente
+    aplicarFiltros();
 });
+
+// ==============================================
+// FUNCIONES DE FILTRADO
+// ==============================================
 
 // Función para actualizar subcategorías basado en la selección
 function updateSubcategoriesBasedOnSelection() {
     const mainCategoryOptions = document.getElementById('mainCategoryOptions');
+    if (!mainCategoryOptions) return;
+    
     const checkedBoxes = mainCategoryOptions.querySelectorAll('input.category-checkbox:checked');
     const subCategoryOptions = document.getElementById('subCategoryOptions');
     
@@ -384,13 +406,15 @@ function updateSubcategoriesBasedOnSelection() {
         const selectedCategory = checkedBoxes[0].value;
         loadSubcategories(selectedCategory);
     } else {
-        subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+        if (subCategoryOptions) {
+            subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+        }
     }
 }
 
 // Función para cargar subcategorías
 function loadSubcategories(mainCategory) {
-    const subCategories = {
+    const subCategoriesMap = {
         'proteína': ['Whey Protein', 'Proteína Vegana', 'Caseína', 'Proteína de Huevo', 'Proteína de Carne', 'Mezclas de Proteína', 'Proteína de Colágeno'],
         'creatina': ['Creatina Monohidrato', 'Creatina HCL', 'Creatina Kre-Alkalyn', 'Creatina en Cápsulas', 'Creatina en Polvo'],
         'aminoácidos': ['BCAA', 'EAA', 'Glutamina', 'L-Carnitina', 'Arginina', 'Citrulina'],
@@ -399,10 +423,12 @@ function loadSubcategories(mainCategory) {
     };
     
     const subCategoryOptions = document.getElementById('subCategoryOptions');
+    if (!subCategoryOptions) return;
+    
     subCategoryOptions.innerHTML = '';
     
-    if (subCategories[mainCategory]) {
-        subCategories[mainCategory].forEach(subCat => {
+    if (subCategoriesMap[mainCategory]) {
+        subCategoriesMap[mainCategory].forEach(subCat => {
             const value = subCat.toLowerCase().replace(/\s+/g, '-');
             const id = 'sub-' + value;
             subCategoryOptions.innerHTML += `
@@ -412,38 +438,188 @@ function loadSubcategories(mainCategory) {
                 </div>
             `;
         });
+        
+        // Añadir event listeners a los nuevos checkboxes
+        subCategoryOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', aplicarFiltros);
+        });
     } else {
         subCategoryOptions.innerHTML = '<div class="text-muted">No hay subcategorías disponibles</div>';
     }
 }
 
-// Función para limpiar selección en un dropdown
-function clearSelection(dropdownId) {
-    const dropdown = document.getElementById(dropdownId);
-    dropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-    });
+// Función para aplicar filtros
+async function aplicarFiltros() {
+    try {
+        // Obtener todos los filtros seleccionados
+        const categorias = Array.from(document.querySelectorAll('#mainCategoryOptions input.category-checkbox:checked')).map(cb => cb.value);
+        const subcategorias = Array.from(document.querySelectorAll('#subCategoryOptions input:checked')).map(cb => cb.value);
+        const objetivos = Array.from(document.querySelectorAll('#objetivoDropdown input:checked')).map(cb => cb.value);
+        const caracteristicas = Array.from(document.querySelectorAll('#caracteristicasDropdown input:checked')).map(cb => cb.value);
+        const ofertas = document.getElementById('ofertasCheck') ? document.getElementById('ofertasCheck').checked : false;
+        
+        // Obtener ordenamiento
+        const sortText = document.getElementById('sortDropdown').textContent;
+        let sort = 'rating-desc';
+        if (sortText.includes('Precio: menor')) sort = 'price-asc';
+        else if (sortText.includes('Precio: mayor')) sort = 'price-desc';
+        else if (sortText.includes('Nombre: A-Z')) sort = 'name-asc';
+        else if (sortText.includes('Nombre: Z-A')) sort = 'name-desc';
+        
+        const filters = {
+            categorias,
+            subcategorias,
+            objetivos,
+            caracteristicas,
+            ofertas,
+            sort
+        };
+        
+        // Hacer petición al servidor
+        const response = await fetch('/api/productos/filtrar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(filters)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            actualizarProductos(data.products);
+        } else {
+            console.error('Error al filtrar productos:', data.error);
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Función para actualizar la visualización de productos
+function actualizarProductos(products) {
+    const productGrid = document.getElementById('product-grid');
+    if (!productGrid) return;
     
-    // Si es el dropdown de categoría principal, resetear subcategorías
-    if (dropdownId === 'mainCategoryDropdown') {
-        const subCategoryOptions = document.getElementById('subCategoryOptions');
-        subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+    if (products.length === 0) {
+        productGrid.innerHTML = `
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    <h4>No se encontraron productos</h4>
+                    <p>Intenta ajustar los filtros para ver más resultados.</p>
+                </div>
+            </div>
+        `;
+        return;
     }
     
-    dropdown.querySelector('.dropdown-toggle').textContent = dropdown.querySelector('.dropdown-toggle').textContent.split(' (')[0];
+    let html = '';
+    products.forEach(product => {
+        html += `
+            <div class="col-md-4 mb-4">
+                <div class="card product-card h-100">
+                    <div class="product-image">
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Suplemento'}" 
+                             alt="${product.name}" 
+                             class="card-img-top"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Imagen+No+Disponible'">
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary category-badge">
+                                ${product.category}
+                            </span>
+                            <span class="rating">
+                                <i class="fas fa-star"></i> ${product.rating || '4.5'}
+                            </span>
+                        </div>
+                        
+                        <h5 class="card-title">${product.name}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">${product.brand} - ${product.size || ''}</h6>
+                        
+                        ${product.protein_per_serving ? `
+                        <div class="product-info mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-weight"></i> <strong>Proteína:</strong> 
+                                ${product.protein_per_serving}g por porción
+                            </small>
+                        </div>
+                        ` : ''}
+                        
+                        ${product.objetivo ? `
+                        <div class="product-info mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-bullseye"></i> <strong>Objetivo:</strong> 
+                                ${product.objetivo.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </small>
+                        </div>
+                        ` : ''}
+                        
+                        ${product.caracteristicas ? `
+                        <div class="product-info mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-star"></i> <strong>Características:</strong> 
+                                ${product.caracteristicas.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </small>
+                        </div>
+                        ` : ''}
+                        
+                        ${product.flavor ? `
+                        <div class="product-info mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-ice-cream"></i> <strong>Sabor:</strong> 
+                                ${product.flavor.replace(/\b\w/g, l => l.toUpperCase())}
+                            </small>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="price-tag">€${product.price}</span>
+                            ${product.original_price && product.original_price > product.price ? `
+                            <span class="original-price text-muted text-decoration-line-through">
+                                €${product.original_price}
+                            </span>
+                            ` : ''}
+                            <button class="btn compare-btn" 
+                                    onclick="addToComparison(this)"
+                                    data-product-id="${product.id}"
+                                    data-product-name="${product.name}"
+                                    data-product-price="${product.price}"
+                                    data-product-image="${product.image_url}"
+                                    data-product-brand="${product.brand}"
+                                    data-product-category="${product.category}">
+                                <i class="fas fa-balance-scale"></i> Comparar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    productGrid.innerHTML = html;
 }
+
+// ==============================================
+// FUNCIONES DE LOS DROPDOWNS
+// ==============================================
 
 // Función para aplicar filtro y actualizar el texto del botón
 function applyFilter(dropdownId) {
     const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    
     const selectedOptions = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
         .map(checkbox => checkbox.nextElementSibling.textContent);
     
     const button = dropdown.querySelector('.dropdown-toggle');
-    if (selectedOptions.length > 0) {
-        button.textContent = button.textContent.split(' (')[0] + ' (' + selectedOptions.length + ')';
-    } else {
-        button.textContent = button.textContent.split(' (')[0];
+    if (button) {
+        if (selectedOptions.length > 0) {
+            button.textContent = button.textContent.split(' (')[0] + ' (' + selectedOptions.length + ')';
+        } else {
+            button.textContent = button.textContent.split(' (')[0];
+        }
     }
     
     // Cerrar el dropdown
@@ -451,7 +627,153 @@ function applyFilter(dropdownId) {
     if (bootstrapDropdown) {
         bootstrapDropdown.hide();
     }
+    
+    // Aplicar filtros después de cerrar el dropdown
+    aplicarFiltros();
 }
+
+// Función para limpiar selección en un dropdown
+function clearSelection(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    
+    dropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    if (dropdownId === 'mainCategoryDropdown') {
+        const subCategoryOptions = document.getElementById('subCategoryOptions');
+        if (subCategoryOptions) {
+            subCategoryOptions.innerHTML = '<div class="text-muted">Selecciona primero una categoría principal</div>';
+        }
+    }
+    
+    const button = dropdown.querySelector('.dropdown-toggle');
+    if (button) {
+        button.textContent = button.textContent.split(' (')[0];
+    }
+    
+    // Aplicar filtros después de limpiar
+    aplicarFiltros();
+}
+
+// ==============================================
+// SISTEMA DE COMPARACIÓN
+// ==============================================
+
+let comparisonProducts = [];
+
+function addToComparison(button) {
+    const productId = button.getAttribute('data-product-id');
+    const productName = button.getAttribute('data-product-name');
+    const productPrice = button.getAttribute('data-product-price');
+    const productImage = button.getAttribute('data-product-image');
+    const productBrand = button.getAttribute('data-product-brand');
+    const productCategory = button.getAttribute('data-product-category');
+    
+    // Verificar si ya está en comparación
+    if (comparisonProducts.find(p => p.id === productId)) {
+        showNotification('Este producto ya está en comparación', 'warning');
+        return;
+    }
+    
+    // Límite de 4 productos
+    if (comparisonProducts.length >= 4) {
+        showNotification('Máximo 4 productos para comparar', 'warning');
+        return;
+    }
+    
+    // Añadir a la comparación
+    comparisonProducts.push({
+        id: productId,
+        name: productName,
+        price: productPrice,
+        image: productImage,
+        brand: productBrand,
+        category: productCategory
+    });
+    
+    // Actualizar UI y guardar en localStorage
+    updateComparisonUI();
+    saveComparisonToStorage();
+    showNotification(`"${productName}" añadido a comparación`, 'success');
+    
+    // Efecto visual en el botón
+    button.classList.add('btn-success');
+    button.innerHTML = '<i class="fas fa-check"></i> Añadido';
+    setTimeout(() => {
+        button.classList.remove('btn-success');
+        button.innerHTML = '<i class="fas fa-balance-scale"></i> Comparar';
+    }, 2000);
+}
+
+function updateComparisonUI() {
+    const countElement = document.getElementById('comparison-count');
+    const namesElement = document.getElementById('comparison-names');
+    const comparisonBar = document.querySelector('.comparison-bar');
+    
+    if (countElement && namesElement && comparisonBar) {
+        countElement.textContent = comparisonProducts.length;
+        namesElement.textContent = comparisonProducts.map(p => p.name).join(', ');
+        
+        // Mostrar/ocultar barra
+        comparisonBar.style.display = comparisonProducts.length > 0 ? 'block' : 'none';
+    }
+}
+
+function clearComparison() {
+    comparisonProducts = [];
+    updateComparisonUI();
+    localStorage.removeItem('product_comparison');
+    showNotification('Comparación limpiada', 'info');
+}
+
+function saveComparisonToStorage() {
+    localStorage.setItem('product_comparison', JSON.stringify(comparisonProducts));
+}
+
+function loadComparisonFromStorage() {
+    const saved = localStorage.getItem('product_comparison');
+    if (saved) {
+        comparisonProducts = JSON.parse(saved);
+        updateComparisonUI();
+    }
+}
+
+function openComparison() {
+    if (comparisonProducts.length < 2) {
+        showNotification('Selecciona al menos 2 productos para comparar', 'warning');
+        return;
+    }
+    
+    // Redirigir a página de comparación
+    const productIds = comparisonProducts.map(p => p.id).join('-');
+    window.location.href = `/comparar?products=${productIds}`;
+}
+
+function showNotification(message, type = 'info') {
+    // Crear notificación bonita
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show`;
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-eliminar después de 3 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
+}
+
+// ==============================================
+// ESTILOS
+// ==============================================
 </script>
 
 <style>
