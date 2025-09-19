@@ -154,16 +154,18 @@ class MyProteinScraper(BaseScraper):
                 name_lower = name.lower()
                 subcategory_map = {
                     "proteína": {
+                       
                         "vegan": "proteína-vegana",
                         "vegetal": "proteína-vegana",
                         "casein": "caseína",
                         "caseína": "caseína",
                         "clear": "whey-aislado",
                         "aislado": "whey-aislado",
-                        "gain": "ganador-de-peso",
-                        "ganar": "ganador-de-peso",
                         "whey": "whey-protein",
-                        "colágeno": "proteína-colágeno"
+                        "colágeno": "colágeno",
+                        "collagen": "colágeno"
+                        
+
                     },
                     "vitaminas y minerales": {
                         "vitamin": "multivitaminas",
