@@ -5,6 +5,14 @@ import unicodedata
 from src.models.product import Product
 from .base_scraper import BaseScraper
 
+def normalize_text(text: str) -> str:
+    """Normaliza texto a Unicode NFC, preservando tildes y caracteres especiales."""
+    if not text:
+        return ""
+    # Normalización Unicode
+    text = unicodedata.normalize("NFC", text)
+    return text.strip()
+
 class MyProteinScraper(BaseScraper):
     def __init__(self):
         super().__init__()
@@ -32,6 +40,21 @@ class MyProteinScraper(BaseScraper):
                 "url": "/c/nutrition/amino-acids/",
                 "category": "aminoácidos",
                 "subcategory": "bcaa"
+            },
+            "vitaminas-minerales": {
+                "url": "/c/nutrition/vitamins-minerals/",
+                "category": "vitaminas y minerales",
+                "subcategory": "multivitaminas"
+            },
+            "barritas-snacks": {
+                "url": "/c/nutrition/healthy-food-drinks/",
+                "category": "barritas y snacks",
+                "subcategory": "barritas-proteicas"
+            },
+            "recuperacion": {
+                "url": "/c/nutrition/recovery/",
+                "category": "recuperación",
+                "subcategory": "post-entreno"
             }
         }
         
@@ -58,34 +81,43 @@ class MyProteinScraper(BaseScraper):
         product_cards = soup.select('product-card-wrapper')
         print(f"Encontradas {len(product_cards)} tarjetas de producto")
         
-        # Mapeo de objetivos según categoría
         objetivo_mapping = {
             "proteína": "aumento-masa-muscular",
             "creatina": "energía-rendimiento",
             "pre-entreno": "energía-rendimiento", 
-            "aminoácidos": "recuperación-muscular"
+            "aminoácidos": "recuperación-muscular",
+            "vitaminas y minerales": "salud-general",
+            "barritas y snacks": "control-peso",
+            "recuperación": "recuperación-muscular"
         }
         
-        # Mapeo de características según palabras clave en el nombre
         caracteristicas_mapping = {
             "vegano": "vegano",
             "vegetal": "vegano", 
             "sin lactosa": "sin-lactosa",
+            "lactose free": "sin-lactosa",
             "sin gluten": "sin-gluten",
+            "gluten free": "sin-gluten",
             "zero": "sin-azúcar",
+            "sin azúcar": "sin-azúcar",
+            "sugar free": "sin-azúcar",
             "orgánico": "orgánico",
-            "natural": "orgánico"
+            "organic": "orgánico",
+            "natural": "orgánico",
+            "non gmo": "sin-OGM",
+            "sin ogm": "sin-OGM",
+            "low calorie": "bajo-calorías",
+            "bajas calorías": "bajo-calorías"
         }
         
         for card in product_cards:
             try:
-                # Extraer nombre
-                name = card.get('aria-label', 'Producto sin nombre')
-                name = unicodedata.normalize('NFKD', name).encode('latin-1', 'ignore').decode('utf-8', 'ignore')
-                
-                # Extraer precio
+                # Extraer nombre normalizado
+                raw_name = card.get('aria-label', 'Producto sin nombre')
+                name = normalize_text(raw_name)
+
                 price_text = card.get_text()
-                cleaned_text = price_text.encode('latin-1').decode('utf-8', errors='ignore')
+                cleaned_text = normalize_text(price_text)
                 
                 price_match = re.search(r'(\d+[\.,]\d+)\s*€', cleaned_text)
                 if not price_match:
@@ -117,48 +149,75 @@ class MyProteinScraper(BaseScraper):
                 img_elem = card.find('img')
                 image_url = img_elem['src'] if img_elem and 'src' in img_elem.attrs else ''
                 
-                # Determinar subcategoría basada en el nombre
+                # Subcategorías
                 subcategory = default_subcategory
                 name_lower = name.lower()
+                subcategory_map = {
+                    "proteína": {
+                        "vegan": "proteína-vegana",
+                        "vegetal": "proteína-vegana",
+                        "casein": "caseína",
+                        "caseína": "caseína",
+                        "clear": "whey-aislado",
+                        "aislado": "whey-aislado",
+                        "gain": "ganador-de-peso",
+                        "ganar": "ganador-de-peso",
+                        "whey": "whey-protein",
+                        "colágeno": "proteína-colágeno"
+                    },
+                    "vitaminas y minerales": {
+                        "vitamin": "multivitaminas",
+                        "mineral": "minerales",
+                        "magnesio": "minerales",
+                        "zinc": "minerales",
+                        "hierro": "minerales",
+                        "calcio": "minerales",
+                        "vitamina d": "vitamina-d",
+                        "vitamina c": "vitamina-c"
+                    },
+                    "barritas y snacks": {
+                        "barrita": "barritas-proteicas",
+                        "bar": "barritas-proteicas",
+                        "snack": "snacks-proteicos",
+                        "proteico": "barritas-proteicas"
+                    }
+                }
                 
-                if "vegan" in name_lower or "vegetal" in name_lower:
-                    subcategory = "proteína-vegana"
-                elif "casein" in name_lower or "caseína" in name_lower:
-                    subcategory = "caseína"
-                elif "clear" in name_lower or "aislado" in name_lower:
-                    subcategory = "whey-aislado"
-                elif "gain" in name_lower or "ganar" in name_lower:
-                    subcategory = "ganador-de-peso"
+                if category in subcategory_map:
+                    for keyword, subcat in subcategory_map[category].items():
+                        if keyword in name_lower:
+                            subcategory = subcat
+                            break
                 
                 # Determinar características
                 caracteristicas = []
                 for keyword, caracteristica in caracteristicas_mapping.items():
                     if keyword in name_lower:
                         caracteristicas.append(caracteristica)
+                caracteristicas = list(set(caracteristicas))
                 
-                # Determinar tamaño y sabor (aproximado)
+                # Tamaño y sabor
                 size = ""
                 flavor = ""
                 size_match = re.search(r'(\d+\.?\d*)\s*(kg|g|lb|oz)', name, re.IGNORECASE)
                 if size_match:
                     size = f"{size_match.group(1)}{size_match.group(2)}"
                 
-                # Extraer sabor de nombre (ej: "Chocolate", "Vainilla")
-                flavor_keywords = ["chocolate", "vainilla", "fresa", "plátano", "cookies", "natural", "limón"]
+                flavor_keywords = ["chocolate", "vainilla", "fresa", "plátano", "cookies", "natural", "limón", "naranja", "coco", "café"]
                 for keyword in flavor_keywords:
                     if keyword in name_lower:
                         flavor = keyword.capitalize()
                         break
                 
-                # Proteína por porción (estimación basada en categoría)
                 protein_per_serving = None
+                servings_per_container = None
                 if category == "proteína":
-                    protein_per_serving = 24.0  # Valor promedio
+                    protein_per_serving = 24.0
                 
                 product_data = {
-                    'name': name.strip(),
-                    'category': category,
-                    'subcategory': subcategory,
+                    'name': name,
+                    'category': normalize_text(category),
+                    'subcategory': normalize_text(subcategory),
                     'brand': 'MyProtein',
                     'price': price,
                     'original_price': original_price,
@@ -171,7 +230,7 @@ class MyProteinScraper(BaseScraper):
                     'objetivo': objetivo_mapping.get(category, ""),
                     'caracteristicas': ",".join(caracteristicas),
                     'protein_per_serving': protein_per_serving,
-                    'servings_per_container': None  # Se puede intentar extraer después
+                    'servings_per_container': servings_per_container
                 }
                 
                 products.append(product_data)

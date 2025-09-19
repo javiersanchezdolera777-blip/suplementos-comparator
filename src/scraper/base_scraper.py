@@ -12,16 +12,15 @@ class BaseScraper:
         }
         self.session = requests.Session()
     
-    def get_page(self, url, retries=3, delay=2):
-        for attempt in range(retries):
-            try:
-                response = self.session.get(url, headers=self.headers, timeout=10)
-                response.raise_for_status()
-                return BeautifulSoup(response.text, 'html.parser')
-            except Exception as e:
-                print(f"Intento {attempt + 1} fallido para {url}: {e}")
-                time.sleep(delay)
-        return None
+    def get_page(self, url):
+        try:
+            r = requests.get(url, timeout=10)
+            # 🔑 Forzar siempre UTF-8
+            r.encoding = "utf-8"
+            return BeautifulSoup(r.text, "html.parser", from_encoding="utf-8")
+        except Exception as e:
+            print(f"❌ Error al obtener página {url}: {e}")
+            return None
     
     def scrape_all_products(self):
         """Método que debe ser implementado por cada scraper específico"""

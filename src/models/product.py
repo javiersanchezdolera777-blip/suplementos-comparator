@@ -2,6 +2,78 @@
 from datetime import datetime
 import json
 from src import db  # ← Importar la instancia centralizada
+import unicodedata
+
+# Intentamos usar ftfy para arreglar mojibake; si no está, usamos fallback
+try:
+    import ftfy
+    def fix_mojibake(s):
+        if not s:
+            return s
+        return ftfy.fix_text(s)
+except Exception:
+    def fix_mojibake(s):
+        if not s:
+            return s
+        if isinstance(s, bytes):
+            try:
+                return s.decode('utf-8')
+            except Exception:
+                try:
+                    return s.decode('latin-1')
+                except Exception:
+                    return s.decode('utf-8', errors='ignore')
+        # Intento simple de revertir mojibake típico
+        try:
+            return s.encode('latin-1', errors='ignore').decode('utf-8', errors='ignore')
+        except Exception:
+            return s
+
+def normalize_search_text(s):
+    """
+    Resultado: ascii simple, minúsculas, sin acentos, solo letras/números y espacios.
+    Ideal para filtros/índices.
+    """
+    if not s:
+        return None
+    s = fix_mojibake(s)
+    s = s.strip()
+    s = unicodedata.normalize('NFKD', s)
+    s = ''.join(ch for ch in s if not unicodedata.combining(ch))
+    # dejar solo letras/números y espacios
+    s = re.sub(r'[^0-9A-Za-z]+', ' ', s)
+    s = s.lower().strip()
+    return s if s else None
+
+def normalize_display_text(s):
+    """
+    Arregla mojibake para mostrar (preserva acentos si es posible).
+    """
+    if not s:
+        return s
+    s = fix_mojibake(s)
+    return s.strip()
+
+class Product(db.Model):
+    __tablename__ = 'product'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(100))
+    subcategory = db.Column(db.String(100))
+    brand = db.Column(db.String(100))
+    ...
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Normalizamos los campos clave
+        if self.category:
+            self.category = normalizar_texto(self.category)
+        if self.subcategory:
+            self.subcategory = normalizar_texto(self.subcategory)
+        if self.brand:
+            self.brand = normalizar_texto(self.brand)
 
 class Product(db.Model):
     __tablename__ = 'product'
