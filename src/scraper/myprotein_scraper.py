@@ -41,12 +41,12 @@ class MyProteinScraper(BaseScraper):
                 "category": "aminoácidos",
                 "subcategory": "bcaa"
             },
-            "vitaminas-minerales": {
+            "vitaminas y minerales": {
                 "url": "/c/nutrition/vitamins-minerals/",
                 "category": "vitaminas y minerales",
                 "subcategory": "multivitaminas"
             },
-            "barritas-snacks": {
+            "barritas y snacks": {
                 "url": "/c/nutrition/healthy-food-drinks/",
                 "category": "barritas y snacks",
                 "subcategory": "barritas-proteicas"
