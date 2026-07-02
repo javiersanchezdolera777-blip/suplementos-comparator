@@ -2,57 +2,60 @@ import Image from 'next/image';
 
 interface Product {
   id: number;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string;
-  affiliate_url: string;
-  brand: {
-    name: string;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  imagen_url: string;
+  afiliado_url: string;
+  marca: {
+    nombre: string;
   };
-  category: {
-    name: string;
+  categoria: {
+    nombre: string;
   };
 }
 
 export default function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="group relative flex flex-col bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)]">
-      <div className="relative aspect-square p-6 flex items-center justify-center bg-gradient-to-br from-slate-800/50 to-slate-900/50 overflow-hidden">
+    <div className="group relative flex flex-col bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-900/20 hover:-translate-y-1">
+      <div className="relative aspect-square p-8 flex items-center justify-center bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden">
         {/* Glow effect on hover */}
-        <div className="absolute inset-0 bg-blue-500/20 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500" />
-        
+        <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-700" />
+
         <Image
-          src={product.image_url}
-          alt={product.name}
-          width={250}
-          height={250}
-          className="object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500 relative z-10"
+          src={product.imagen_url}
+          alt={product.nombre}
+          width={220}
+          height={220}
+          className="object-contain drop-shadow-2xl group-hover:scale-105 transition-transform duration-700 ease-out relative z-10"
         />
         <div className="absolute top-4 left-4 z-20">
-          <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-md">
-            {product.category.name}
+          <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-md">
+            {product.categoria.nombre}
           </span>
         </div>
       </div>
-      
-      <div className="p-6 flex flex-col flex-grow">
-        <div className="text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">{product.brand.name}</div>
-        <h3 className="text-xl font-bold text-white mb-3 leading-tight group-hover:text-blue-400 transition-colors">
-          {product.name}
+
+      <div className="p-6 sm:p-7 flex flex-col flex-grow bg-gradient-to-t from-[#030712] to-transparent">
+        <div className="text-[10px] font-bold tracking-widest text-slate-500 mb-2 uppercase">{product.marca.nombre}</div>
+        <h3 className="text-xl font-bold text-slate-100 mb-3 leading-snug group-hover:text-blue-400 transition-colors duration-300">
+          {product.nombre}
         </h3>
-        <p className="text-sm text-slate-400 line-clamp-2 mb-6 flex-grow">
-          {product.description}
+        <p className="text-sm text-slate-400/80 line-clamp-2 mb-8 flex-grow font-medium leading-relaxed">
+          {product.descripcion}
         </p>
         <div className="flex items-center justify-between mt-auto">
-          <span className="text-2xl font-black text-white">
-            {product.price.toFixed(2)}€
-          </span>
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-500 font-medium mb-0.5">Mejor precio</span>
+            <span className="text-2xl font-black text-white tracking-tight">
+              {product.precio.toFixed(2)}€
+            </span>
+          </div>
           <a
-            href={product.affiliate_url}
-            className="px-5 py-2.5 bg-white/5 hover:bg-blue-600 border border-white/10 hover:border-blue-500 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 shadow-sm hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+            href={product.afiliado_url}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold text-white transition-all duration-300 active:scale-95 shadow-lg shadow-blue-900/30 hover:shadow-blue-600/40"
           >
-            Comprar
+            Ver oferta
           </a>
         </div>
       </div>

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware # para que el puerto 3000 se fíe del 8000 de la API y lleguen las cosas al front
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,10 +8,20 @@ import models
 import schemas
 from database import engine, SessionLocal
 
-# Orden de construcción (ya la conoces)
+# Orden de construcción
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API de Suplementos")
+
+# --- CONFIGURACIÓN DE CORS (NUEVO) ---
+# Esto permite que Next.js (puerto 3000) pueda leer los datos
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # El puerto de tu frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Nuestro carrito de la compra (ya lo conoces)
 def get_db():
