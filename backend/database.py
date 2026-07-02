@@ -1,6 +1,10 @@
 import os
+from dotenv import load_dotenv # <-- NUEVO
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+# Cargamos las variables de entorno desde el archivo .env
+load_dotenv()
 
 # 1. Definimos dónde se guardará la base de datos (en un archivo local llamado suplementos.db)
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
