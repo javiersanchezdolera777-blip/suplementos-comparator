@@ -1,29 +1,35 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from typing import List
 
-# Importamos a nuestros "trabajadores"
+# Importamos nuestras piezas
 import models
+import schemas
 from database import engine, SessionLocal
 
-# 1. LA ORDEN DE CONSTRUCCIÓN: Le decimos al motor que lea los modelos y cree las tablas
+# Orden de construcción (ya la conoces)
 models.Base.metadata.create_all(bind=engine)
 
-# Inicializamos la aplicación FastAPI
-app = FastAPI(
-    title="API de Suplementos",
-    description="Backend para el comparador de suplementos",
-    version="1.0.0"
-)
+app = FastAPI(title="API de Suplementos")
 
-# 2. LAS REGLAS DEL "CARRITO" (Dependencia de la Base de Datos)
+# Nuestro carrito de la compra (ya lo conoces)
 def get_db():
-    db = SessionLocal() # Abrimos la despensa
+    db = SessionLocal()
     try:
-        yield db        # Entregamos los ingredientes mientras la petición esté viva
+        yield db
     finally:
-        db.close()      # SIEMPRE cerramos la despensa al terminar, pase lo que pase
+        db.close()
 
-# Nuestro endpoint de prueba (la ventanilla del recepcionista)
-@app.get("/")
-def leer_raiz():
-    return {"mensaje": "¡Hola! El servidor de FastAPI y la Base de Datos están conectados 🚀"}
+# --- NUEVOS ENDPOINTS OFICIALES ---
+
+@app.get("/api/productos", response_model=List[schemas.ProductoResponse])
+def obtener_productos(db: Session = Depends(get_db)):
+    # Vamos a la base de datos y le pedimos todos los productos
+    productos = db.query(models.Producto).all()
+    return productos
+
+@app.get("/api/categorias", response_model=List[schemas.CategoriaResponse])
+def obtener_categorias(db: Session = Depends(get_db)):
+    # Vamos a la base de datos y le pedimos todas las categorías
+    categorias = db.query(models.Categoria).all()
+    return categorias
