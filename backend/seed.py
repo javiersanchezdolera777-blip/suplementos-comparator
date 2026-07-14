@@ -9,7 +9,6 @@ def cargar_datos():
     print("Iniciando la inyección de datos...")
 
     # 2. Leemos el archivo JSON del frontend
-    # Asegúrate de que la ruta coincide con donde está tu archivo
     ruta_json = "../frontend/src/data/mock_products.json"
     
     try:
@@ -23,29 +22,41 @@ def cargar_datos():
     for item in productos_mock:
         
         # --- GESTIÓN DE MARCAS ---
-        # Miramos si la marca ya existe en la base de datos para no repetirla
         nombre_marca = item["brand"]["name"]
         marca = db.query(models.Marca).filter(models.Marca.nombre == nombre_marca).first()
-        
         if not marca:
             marca = models.Marca(nombre=nombre_marca)
             db.add(marca)
-            db.commit() # Guardamos para que se genere su ID
+            db.commit()
             db.refresh(marca)
 
         # --- GESTIÓN DE CATEGORÍAS ---
-        # Hacemos lo mismo con la categoría
         nombre_categoria = item["category"]["name"]
         categoria = db.query(models.Categoria).filter(models.Categoria.nombre == nombre_categoria).first()
-        
         if not categoria:
             categoria = models.Categoria(nombre=nombre_categoria)
             db.add(categoria)
             db.commit()
             db.refresh(categoria)
 
+        # ========================================================
+        # 🧠 EL CEREBRO: ASIGNACIÓN AUTOMÁTICA DE OBJETIVO 🧠
+        # ========================================================
+        nombre_min = item["name"].lower()
+        cat_min = item["category"]["name"].lower()
+        
+        # Por defecto, si no sabe qué es, le asigna salud
+        objetivo_calculado = "Salud general" 
+
+        if "whey" in nombre_min or "prote" in nombre_min or "gainer" in nombre_min or "masa" in nombre_min:
+            objetivo_calculado = "Aumentar masa muscular"
+        elif "creatina" in cat_min or "pre-entreno" in cat_min or "pump" in nombre_min or "energia" in nombre_min:
+            objetivo_calculado = "Mejorar rendimiento"
+        elif "termogenico" in nombre_min or "quemador" in nombre_min or "carnitina" in nombre_min or "cut" in nombre_min:
+            objetivo_calculado = "Perder grasa"
+        # ========================================================
+
         # --- CREACIÓN DEL PRODUCTO ---
-        # Comprobamos que el producto no esté ya guardado
         producto_existente = db.query(models.Producto).filter(models.Producto.nombre == item["name"]).first()
         
         if not producto_existente:
@@ -55,8 +66,15 @@ def cargar_datos():
                 precio=item["price"],
                 imagen_url=item["image_url"],
                 afiliado_url=item["affiliate_url"],
-                marca_id=marca.id,           # Conectamos con el ID de la marca
-                categoria_id=categoria.id    # Conectamos con el ID de la categoría
+                sabor=item.get("sabor"),
+                formato=item.get("formato"),
+                
+                # ¡AQUÍ USAMOS LO QUE HA CALCULADO EL CEREBRO!
+                objetivo=objetivo_calculado, 
+                
+                caracteristicas=item.get("caracteristicas"),
+                marca_id=marca.id,
+                categoria_id=categoria.id
             )
             db.add(nuevo_producto)
 
@@ -65,6 +83,5 @@ def cargar_datos():
     db.close()
     print("✅ ¡Base de datos llenada con éxito! La despensa está lista.")
 
-# Esta línea hace que la función se ejecute al arrancar el archivo
 if __name__ == "__main__":
     cargar_datos()
