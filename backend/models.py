@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 
+# ... El resto de tu código se queda exactamente igual ...
 class Marca(Base):
     __tablename__ = "marcas" # El nombre de la tabla en la base de datos
 
@@ -30,6 +31,10 @@ class Producto(Base):
     precio = Column(Float)
     imagen_url = Column(String)
     afiliado_url = Column(String)
+    sabor = Column(String, nullable=True)
+    formato = Column(String, nullable=True)
+    objetivo = Column(String, nullable=True)  # <-- NUEVA COLUMNA EN LA BD
+    caracteristicas = Column(JSON, nullable=True)
 
     # Foreign Keys (Claves foráneas): Le dicen al producto a qué marca y categoría pertenece
     marca_id = Column(Integer, ForeignKey("marcas.id"))

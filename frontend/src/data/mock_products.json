@@ -1,142 +1,33 @@
 [
   {
-    "id": 1,
-    "name": "Whey Protein Isolate 100%",
-    "description": "Proteína aislada de suero de leche de alta calidad, ideal para recuperación muscular rápida.",
+    "name": "100% Whey Gold Standard",
+    "description": "Proteína de suero de leche de altísima calidad para recuperación muscular.",
     "price": 34.99,
-    "image_url": "/images/protein.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "Optimum Nutrition"
-    },
-    "category": {
-      "name": "Proteína"
+    "image_url": "https://ejemplo.com/whey.jpg",
+    "affiliate_url": "https://awin.com/tu-enlace-1",
+    "brand": { "name": "Optimum Nutrition" },
+    "category": { "name": "Proteínas" },
+    "sabor": "Chocolate",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "origen": "whey",
+      "procesado": "aislado",
+      "sin_lactosa": false
     }
   },
   {
-    "id": 2,
-    "name": "Creatina Monohidrato Creapure",
-    "description": "Creatina monohidrato 100% pura para mejorar el rendimiento y fuerza explosiva.",
-    "price": 19.95,
-    "image_url": "/images/creatine.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "HSN"
-    },
-    "category": {
-      "name": "Creatina"
-    }
-  },
-  {
-    "id": 3,
-    "name": "Pre-Entreno Explosive Energy",
-    "description": "Fórmula avanzada de pre-entrenamiento con cafeína, beta-alanina y citrulina.",
-    "price": 24.50,
-    "image_url": "/images/preworkout.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "MyProtein"
-    },
-    "category": {
-      "name": "Pre-entreno"
-    }
-  },
-  {
-    "id": 4,
-    "name": "Multivitamínico Daily Plus",
-    "description": "Complejo vitamínico con minerales esenciales para el día a día del atleta.",
-    "price": 14.99,
-    "image_url": "/images/vitamins.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "Prozis"
-    },
-    "category": {
-      "name": "Vitaminas"
-    }
-  },
-  {
-    "id": 5,
-    "name": "Clear Whey Isolate",
-    "description": "Proteína de suero hidrolizada transparente, refrescante y ligera como un zumo.",
-    "price": 29.99,
-    "image_url": "/images/protein.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "MyProtein"
-    },
-    "category": {
-      "name": "Proteína"
-    }
-  },
-  {
-    "id": 6,
-    "name": "Creatina HCL",
-    "description": "Creatina clorhidrato de alta absorción, sin retención de líquidos.",
-    "price": 22.95,
-    "image_url": "/images/creatine.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "Optimum Nutrition"
-    },
-    "category": {
-      "name": "Creatina"
-    }
-  },
-  {
-    "id": 7,
-    "name": "Pre-Entreno Sin Cafeína (Pump)",
-    "description": "Pre-entreno enfocado en la congestión muscular y flujo sanguíneo sin estimulantes.",
-    "price": 26.50,
-    "image_url": "/images/preworkout.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "HSN"
-    },
-    "category": {
-      "name": "Pre-entreno"
-    }
-  },
-  {
-    "id": 8,
-    "name": "Omega 3 Ultra Puro",
-    "description": "Aceite de pescado rico en EPA y DHA para salud cardiovascular.",
-    "price": 18.99,
-    "image_url": "/images/vitamins.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "Prozis"
-    },
-    "category": {
-      "name": "Vitaminas"
-    }
-  },
-  {
-    "id": 9,
-    "name": "Caseína Micelar Noche",
-    "description": "Proteína de absorción lenta, perfecta para tomar antes de dormir.",
-    "price": 31.99,
-    "image_url": "/images/protein.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "HSN"
-    },
-    "category": {
-      "name": "Proteína"
-    }
-  },
-  {
-    "id": 10,
-    "name": "BCAA 8:1:1 + Glutamina",
-    "description": "Aminoácidos ramificados para la recuperación y reducción de la fatiga.",
-    "price": 21.90,
-    "image_url": "/images/preworkout.png",
-    "affiliate_url": "#",
-    "brand": {
-      "name": "Optimum Nutrition"
-    },
-    "category": {
-      "name": "Aminoácidos"
+    "name": "Creatina Monohidrato Ultrapura",
+    "description": "Creatina con sello oficial para mejora del rendimiento.",
+    "price": 19.99,
+    "image_url": "https://ejemplo.com/creatina.jpg",
+    "affiliate_url": "https://awin.com/tu-enlace-2",
+    "brand": { "name": "MyProtein" },
+    "category": { "name": "Creatina" },
+    "sabor": "Sin sabor",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "tipo": "monohidrato",
+      "creapure": true
     }
   }
 ]
