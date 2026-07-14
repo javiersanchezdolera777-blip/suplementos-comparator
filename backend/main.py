@@ -55,6 +55,8 @@ def obtener_productos(
     marca: Optional[str] = None,
     objetivo: Optional[str] = None,
     sabor: Optional[str] = None,
+    # --- NUEVO: Parámetro de ordenación ---
+    orden_precio: Optional[str] = None,
     # ----------------------------------------
     db: Session = Depends(get_db)
 ):
@@ -71,7 +73,14 @@ def obtener_productos(
     if sabor:
         query = query.filter(models.Producto.sabor == sabor)
         
-    # 3. Ejecutamos la búsqueda final y devolvemos los productos
+    # 3. LÓGICA DE ORDENACIÓN (¡NUEVO!)
+    # Si Javiki envía ?orden_precio=asc o ?orden_precio=desc
+    if orden_precio == "asc":
+        query = query.order_by(models.Producto.precio.asc())
+    elif orden_precio == "desc":
+        query = query.order_by(models.Producto.precio.desc())
+        
+    # 4. Ejecutamos la búsqueda final y devolvemos los productos
     productos = query.offset(skip).limit(limit).all()
     return productos
 

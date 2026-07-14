@@ -45,15 +45,22 @@ def cargar_datos():
         nombre_min = item["name"].lower()
         cat_min = item["category"]["name"].lower()
         
-        # Por defecto, si no sabe qué es, le asigna salud
-        objetivo_calculado = "Salud general" 
+        # ========================================================
+        # 🧠 EL CEREBRO: ASIGNACIÓN AUTOMÁTICA DE OBJETIVO 🧠
+        # ========================================================
+        nombre_min = item["name"].lower()
+        cat_min = item["category"]["name"].lower()
+        
+        # Ojo: Aquí ponemos exactamente las frases de tu nuevo schemas.py
+        objetivo_calculado = "Salud y Bienestar" 
 
         if "whey" in nombre_min or "prote" in nombre_min or "gainer" in nombre_min or "masa" in nombre_min:
-            objetivo_calculado = "Aumentar masa muscular"
+            objetivo_calculado = "Volumen Muscular"
         elif "creatina" in cat_min or "pre-entreno" in cat_min or "pump" in nombre_min or "energia" in nombre_min:
-            objetivo_calculado = "Mejorar rendimiento"
+            objetivo_calculado = "Rendimiento Deportivo"
         elif "termogenico" in nombre_min or "quemador" in nombre_min or "carnitina" in nombre_min or "cut" in nombre_min:
-            objetivo_calculado = "Perder grasa"
+            objetivo_calculado = "Pérdida de Peso"
+        # ========================================================
         # ========================================================
 
         # --- CREACIÓN DEL PRODUCTO ---
