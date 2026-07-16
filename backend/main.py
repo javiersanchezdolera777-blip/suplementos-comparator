@@ -1,7 +1,9 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional
+from fastapi import FastAPI, Depends, HTTPException  # <-- Añade HTTPException
 
 # Importamos nuestras piezas
 import models
@@ -50,20 +52,19 @@ def obtener_filtros():
 def obtener_productos(
     skip: int = 0, 
     limit: int = 100, 
-    # --- Parámetros de búsqueda opcionales ---
     categoria: Optional[str] = None,
     marca: Optional[str] = None,
     objetivo: Optional[str] = None,
     sabor: Optional[str] = None,
-    # --- NUEVO: Parámetro de ordenación ---
     orden_precio: Optional[str] = None,
+    # --- NUEVO: Parámetro para buscar texto ---
+    busqueda: Optional[str] = None,
     # ----------------------------------------
     db: Session = Depends(get_db)
 ):
-    # 1. Preparamos una búsqueda de TODOS los productos
     query = db.query(models.Producto)
     
-    # 2. Si Javiki nos pide algo específico, reducimos la lista
+    # 1. Filtros exactos
     if categoria:
         query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
     if marca:
@@ -73,14 +74,24 @@ def obtener_productos(
     if sabor:
         query = query.filter(models.Producto.sabor == sabor)
         
-    # 3. LÓGICA DE ORDENACIÓN (¡NUEVO!)
-    # Si Javiki envía ?orden_precio=asc o ?orden_precio=desc
+    # 2. BUSCADOR DE TEXTO LIBRE (¡NUEVO!)
+    if busqueda:
+        # Los '%' significan que el texto puede estar en cualquier parte de la frase
+        termino = f"%{busqueda}%"
+        query = query.filter(
+            or_(
+                models.Producto.nombre.ilike(termino),
+                models.Producto.descripcion.ilike(termino)
+            )
+        )
+        
+    # 3. Lógica de ordenación
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
         
-    # 4. Ejecutamos la búsqueda final y devolvemos los productos
+    # 4. Ejecutar búsqueda
     productos = query.offset(skip).limit(limit).all()
     return productos
 
@@ -90,3 +101,18 @@ def obtener_categorias(db: Session = Depends(get_db)):
     # Vamos a la base de datos y le pedimos todas las categorías
     categorias = db.query(models.Categoria).all()
     return categorias
+
+# --- RUTA DE PRODUCTO INDIVIDUAL (FICHA DE PRODUCTO) ---
+@app.get("/api/productos/{producto_id}", response_model=schemas.ProductoResponse)
+def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
+    """
+    Busca un único producto por su ID. 
+    Ideal para que el frontend dibuje la página de detalles del producto.
+    """
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    
+    # Si el producto no existe en la base de datos, devolvemos un error 404
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    return producto
