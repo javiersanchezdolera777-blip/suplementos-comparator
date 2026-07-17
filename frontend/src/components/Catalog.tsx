@@ -12,12 +12,18 @@ export default function Catalog() {
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [selectedBrand, setSelectedBrand] = useState("Todas");
 
-  // Al cargar la página, hacemos la petición real a FastAPI
+  // Al cargar la página, hacemos la peticion real a la API (en Render o Local)
   useEffect(() => {
-    fetch("http://localhost:8000/api/productos")
+    // Usamos una variable de entorno, y si no existe, por defecto apuntamos a producción
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://suplementos-comparator.onrender.com";
+    
+    fetch(`${apiUrl}/api/productos`)
       .then((res) => res.json())
       .then((data) => {
-        setProductos(data);
+        // OJO: La API actual en producción sigue devolviendo un array directo [ {...}, {...} ]
+        // Diego te ha avisado de un cambio, pero parece que aún no está en Render.
+        // Si data.productos existe, lo usamos. Si no, asumimos que data ya es el array.
+        setProductos(Array.isArray(data) ? data : data.productos || []);
         setLoading(false);
       })
       .catch((error) => {
