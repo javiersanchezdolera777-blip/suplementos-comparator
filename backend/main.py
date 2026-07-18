@@ -1,3 +1,7 @@
+from fastapi.security import OAuth2PasswordBearer
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from pydantic import BaseModel
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -9,6 +13,7 @@ from fastapi import FastAPI, Depends, HTTPException  # <-- Añade HTTPException
 import models
 import schemas
 from database import engine, SessionLocal
+import security
 
 # Orden de construcción
 models.Base.metadata.create_all(bind=engine)
@@ -48,7 +53,7 @@ def obtener_filtros():
 
 
 # --- RUTAS DE DATOS ---
-@app.get("/api/productos", response_model=List[schemas.ProductoResponse])
+@app.get("/api/productos", response_model=schemas.ProductosPaginados)
 def obtener_productos(
     skip: int = 0, 
     limit: int = 100, 
@@ -90,10 +95,19 @@ def obtener_productos(
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
+
+    # ¡Importante! Esto se hace ANTES de aplicar el offset y el limit
+    total_resultados = query.count()
         
-    # 4. Ejecutar búsqueda
+    # 3. Aplicamos la paginación para sacar solo los productos de la página actual
     productos = query.offset(skip).limit(limit).all()
-    return productos
+    
+    # 4. Devolvemos el "sobre" con el total y la lista de productos
+    return {
+        "total_resultados": total_resultados,
+        "productos": productos
+    }
+        
 
 
 @app.get("/api/categorias", response_model=List[schemas.CategoriaResponse])
@@ -116,3 +130,103 @@ def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="Producto no encontrado")
         
     return producto
+
+# ==========================================
+# --- RUTAS DE AUTENTICACIÓN Y USUARIOS ---
+# ==========================================
+
+@app.post("/api/registro", response_model=schemas.UsuarioResponse)
+def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+    # 1. Comprobamos si el email ya existe
+    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    if usuario_existente:
+        raise HTTPException(status_code=400, detail="Este email ya está registrado")
+        
+    # 2. Ciframos la contraseña (¡Nunca la guardamos en texto plano!)
+    password_cifrada = security.obtener_password_hash(usuario.password)
+    
+    # 3. Guardamos el nuevo usuario en Neon
+    nuevo_usuario = models.Usuario(email=usuario.email, hashed_password=password_cifrada)
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    
+    return nuevo_usuario
+
+
+@app.post("/api/login", response_model=schemas.Token)
+def iniciar_sesion(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+    # 1. Buscamos al usuario por su email
+    user_db = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    
+    # 2. Si no existe o la contraseña está mal, damos error genérico por seguridad
+    if not user_db or not security.verificar_password(usuario.password, user_db.hashed_password):
+        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+        
+    # 3. ¡Todo correcto! Fabricamos la pulsera VIP (JWT)
+    access_token = security.crear_token_acceso(data={"sub": user_db.email})
+    
+    # 4. Se la entregamos a Javiki en el formato oficial
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# ==========================================
+# --- EL PORTERO (Verificador de Tokens) ---
+# ==========================================
+# Esto le dice a FastAPI dónde se consiguen los tokens
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
+
+def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """El portero: Lee el JWT, verifica que no esté caducado y saca al usuario de la BD"""
+    credenciales_exception = HTTPException(
+        status_code=401, detail="No se pudo validar las credenciales", headers={"WWW-Authenticate": "Bearer"}
+    )
+    try:
+        # Decodificamos la pulsera con nuestra palabra secreta
+        payload = security.jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credenciales_exception
+    except security.jwt.JWTError:
+        raise credenciales_exception
+        
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if usuario is None:
+        raise credenciales_exception
+    return usuario
+
+# ==========================================
+# --- INICIO DE SESIÓN CON GOOGLE ---
+# ==========================================
+class GoogleToken(BaseModel):
+    token: str
+
+@app.post("/api/auth/google")
+def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            google_data.token, 
+            google_requests.Request(), 
+            "318282148406-908hoi15scu4vcc8v9lhqfkislin10cb.apps.googleusercontent.com" # <--- ¡Cámbialo aquí!
+        )
+        
+        email = idinfo['email']
+        
+        # 2. Buscamos si el usuario ya existe en nuestra base de datos
+        usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+        
+        # 3. Si es la primera vez que entra con Google, le creamos una cuenta sin contraseña
+        if not usuario:
+            usuario = models.Usuario(email=email, hashed_password="login_google")
+            db.add(usuario)
+            db.commit()
+            db.refresh(usuario)
+            
+        # 4. Le fabricamos nuestra propia pulsera VIP para que use la web
+# ... código anterior ...
+        access_token = security.crear_token_acceso(data={"sub": usuario.email})
+        return {"access_token": access_token, "token_type": "bearer"}
+        
+    except ValueError as e:
+        # ¡ESTO ES LO NUEVO! Imprimirá el error exacto en tu terminal negra
+        print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
+        raise HTTPException(status_code=401, detail="Token de Google inválido")

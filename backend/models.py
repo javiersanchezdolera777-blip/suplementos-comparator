@@ -43,3 +43,23 @@ class Producto(Base):
     # Relaciones: permiten a Python navegar entre las tablas fácilmente
     marca = relationship("Marca", back_populates="productos")
     categoria = relationship("Categoria", back_populates="productos")
+
+    # --- SISTEMA DE USUARIOS Y FAVORITOS ---
+
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)  # ¡Nunca guardamos contraseñas reales!
+
+class Favorito(Base):
+    __tablename__ = "favoritos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    producto_id = Column(Integer, ForeignKey("productos.id"))
+    
+    # Esto nos permite acceder a los datos enteros desde Python fácilmente
+    usuario = relationship("Usuario")
+    producto = relationship("Producto")
