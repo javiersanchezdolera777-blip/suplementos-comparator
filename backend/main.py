@@ -38,17 +38,28 @@ def get_db():
     finally:
         db.close()
 
-# --- NUEVA RUTA: DICCIONARIO DE FILTROS ---
+# --- NUEVA RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
-def obtener_filtros():
+def obtener_filtros(db: Session = Depends(get_db)):
     """
-    Esta ruta le dice al Frontend (Next.js) qué botones de filtro tiene que dibujar.
-    Saca los valores directamente de nuestro diccionario de schemas.py.
+    Esta ruta recopila TODOS los filtros posibles para que Javiki dibuje los menús.
+    Mezcla datos reales de la BD (Marcas/Categorías) con listas fijas (Sabores/Objetivos).
     """
+    # 1. Vamos a Neon (BD) a buscar las Marcas y Categorías reales
+    marcas_db = db.query(models.Marca).all()
+    categorias_db = db.query(models.Categoria).all()
+    
+    # 2. Extraemos solo el nombre (texto) de cada una
+    nombres_marcas = [m.nombre for m in marcas_db]
+    nombres_categorias = [c.nombre for c in categorias_db]
+
+    # 3. Lo empaquetamos TODO junto en INGLÉS para el Frontend
     return {
-        "sabores": [sabor.value for sabor in schemas.SaborEnum],
-        "formatos": [formato.value for formato in schemas.FormatoEnum],
-        "objetivos": [objetivo.value for objetivo in schemas.ObjetivoEnum]
+        "brands": nombres_marcas,                                       # Viene de la BD
+        "categories": nombres_categorias,                               # Viene de la BD
+        "flavors": [sabor.value for sabor in schemas.SaborEnum],        # Viene de schemas.py
+        "formats": [formato.value for formato in schemas.FormatoEnum],  # Viene de schemas.py
+        "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum]  # Viene de schemas.py
     }
 
 
