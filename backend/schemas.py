@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from enum import Enum
 
 # --- 1. NUESTRAS ETIQUETAS OFICIALES (GUARDIANES) ---
@@ -54,3 +54,29 @@ class ProductoResponse(BaseModel):
     categoria: CategoriaResponse
     
     model_config = ConfigDict(from_attributes=True)
+
+class ProductosPaginados(BaseModel):
+    total_resultados: int
+    productos: List[ProductoResponse]
+
+# ==========================================
+# --- MOLDES PARA USUARIOS Y SEGURIDAD ---
+# ==========================================
+
+class UsuarioCreate(BaseModel):
+    """Datos que recibimos cuando alguien se registra"""
+    email: str
+    password: str
+
+class UsuarioResponse(BaseModel):
+    """Datos que devolvemos (¡Nunca devolvemos la contraseña!)"""
+    id: int
+    email: str
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    """Formato oficial en el que se envían los JWT según el estándar de internet"""
+    access_token: str
+    token_type: str
