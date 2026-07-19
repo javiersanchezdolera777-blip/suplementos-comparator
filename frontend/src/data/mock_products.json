@@ -1,32 +1,32 @@
 [
   {
-    "name": "100% Whey Gold Standard",
-    "description": "Proteína de suero de leche de altísima calidad para recuperación muscular.",
+    "name": "Whey Protein Isolate 100%",
+    "description": "Proteína aislada de suero de leche de alta calidad, ideal para recuperación muscular rápida.",
     "price": 34.99,
-    "image_url": "",
-    "affiliate_url": "https://awin.com/tu-enlace-1",
+    "image_url": "/images/protein.png",
+    "affiliate_url": "#",
     "brand": {
       "name": "Optimum Nutrition"
     },
     "category": {
-      "name": "Proteínas"
+      "name": "Proteína"
     },
-    "sabor": "Chocolate",
+    "sabor": "Vainilla",
     "formato": "Polvo",
     "caracteristicas": {
       "origen": "whey",
       "procesado": "aislado",
-      "sin_lactosa": false
+      "sin_lactosa": true
     }
   },
   {
-    "name": "Creatina Monohidrato Ultrapura",
-    "description": "Creatina con sello oficial para mejora del rendimiento.",
-    "price": 19.99,
-    "image_url": "",
-    "affiliate_url": "https://awin.com/tu-enlace-2",
+    "name": "Creatina Monohidrato Creapure",
+    "description": "Creatina monohidrato 100% pura para mejorar el rendimiento y fuerza explosiva.",
+    "price": 19.95,
+    "image_url": "/images/creatine.png",
+    "affiliate_url": "#",
     "brand": {
-      "name": "MyProtein"
+      "name": "HSN"
     },
     "category": {
       "name": "Creatina"
@@ -36,6 +36,160 @@
     "caracteristicas": {
       "tipo": "monohidrato",
       "creapure": true
+    }
+  },
+  {
+    "name": "Pre-Entreno Explosive Energy",
+    "description": "Fórmula avanzada de pre-entrenamiento con cafeína, beta-alanina y citrulina.",
+    "price": 24.50,
+    "image_url": "/images/preworkout.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "MyProtein"
+    },
+    "category": {
+      "name": "Pre-entreno"
+    },
+    "sabor": "Frutas rojas",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "tipo": "estimulante",
+      "contiene_cafeina": true
+    }
+  },
+  {
+    "name": "Multivitamínico Daily Plus",
+    "description": "Complejo vitamínico con minerales esenciales para el día a día del atleta.",
+    "price": 14.99,
+    "image_url": "/images/vitamins.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "Prozis"
+    },
+    "category": {
+      "name": "Vitaminas"
+    },
+    "sabor": "Neutral",
+    "formato": "Cápsulas",
+    "caracteristicas": {
+      "tipo": "complejo_multivitaminico",
+      "vegetariano": true
+    }
+  },
+  {
+    "name": "Clear Whey Isolate",
+    "description": "Proteína de suero hidrolizada transparente, refrescante y ligera como un zumo.",
+    "price": 29.99,
+    "image_url": "/images/protein.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "MyProtein"
+    },
+    "category": {
+      "name": "Proteína"
+    },
+    "sabor": "Limón",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "origen": "whey",
+      "procesado": "hidrolizado",
+      "sin_lactosa": true
+    }
+  },
+  {
+    "name": "Creatina HCL",
+    "description": "Creatina clorhidrato de alta absorción, sin retención de líquidos.",
+    "price": 22.95,
+    "image_url": "/images/creatine.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "Optimum Nutrition"
+    },
+    "category": {
+      "name": "Creatina"
+    },
+    "sabor": "Sin sabor",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "tipo": "clorhidrato",
+      "creapure": false
+    }
+  },
+  {
+    "name": "Pre-Entreno Sin Cafeína (Pump)",
+    "description": "Pre-entreno enfocado en la congestión muscular y flujo sanguíneo sin estimulantes.",
+    "price": 26.50,
+    "image_url": "/images/preworkout.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "HSN"
+    },
+    "category": {
+      "name": "Pre-entreno"
+    },
+    "sabor": "Sandía",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "tipo": "no_estimulante",
+      "contiene_cafeina": false
+    }
+  },
+  {
+    "name": "Omega 3 Ultra Puro",
+    "description": "Aceite de pescado rico en EPA y DHA para salud cardiovascular.",
+    "price": 18.99,
+    "image_url": "/images/vitamins.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "Prozis"
+    },
+    "category": {
+      "name": "Vitaminas"
+    },
+    "sabor": "Neutral",
+    "formato": "Cápsulas",
+    "caracteristicas": {
+      "tipo": "aceite_pescado",
+      "vegetariano": false
+    }
+  },
+  {
+    "name": "Caseína Micelar Noche",
+    "description": "Proteína de absorción lenta, perfecta para tomar antes de dormir.",
+    "price": 31.99,
+    "image_url": "/images/protein.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "HSN"
+    },
+    "category": {
+      "name": "Proteína"
+    },
+    "sabor": "Chocolate",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "origen": "caseina",
+      "procesado": "micelar",
+      "sin_lactosa": false
+    }
+  },
+  {
+    "name": "BCAA 8:1:1 + Glutamina",
+    "description": "Aminoácidos ramificados para la recuperación y reducción de la fatiga.",
+    "price": 21.90,
+    "image_url": "/images/preworkout.png",
+    "affiliate_url": "#",
+    "brand": {
+      "name": "Optimum Nutrition"
+    },
+    "category": {
+      "name": "Aminoácidos"
+    },
+    "sabor": "Frutas tropicales",
+    "formato": "Polvo",
+    "caracteristicas": {
+      "proporcion": "8:1:1",
+      "contiene_glutamina": true
     }
   }
 ]
