@@ -30,11 +30,12 @@ export default function Catalog() {
       })
       .then((data) => {
         // Asumiendo que Diego devuelve las listas de nombres en un diccionario
-        if (data.categorias) {
-          setCategories(["Todas", ...data.categorias]);
+        if (data.categories) {
+          setCategories(["Todas", ...data.categories]);
         }
-        if (data.marcas) {
-          setBrands(["Todas", ...data.marcas]);
+        
+        if (data.brands) {
+          setBrands(["Todas", ...data.brands]);
         }
       })
       .catch((error) => {
