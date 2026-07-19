@@ -53,7 +53,8 @@ def obtener_filtros():
 
 
 # --- RUTAS DE DATOS ---
-@app.get("/api/productos", response_model=schemas.ProductosPaginados)
+# Quitamos el response_model para poder devolver los datos en inglés libremente
+@app.get("/api/productos")
 def obtener_productos(
     skip: int = 0, 
     limit: int = 100, 
@@ -62,14 +63,12 @@ def obtener_productos(
     objetivo: Optional[str] = None,
     sabor: Optional[str] = None,
     orden_precio: Optional[str] = None,
-    # --- NUEVO: Parámetro para buscar texto ---
     busqueda: Optional[str] = None,
-    # ----------------------------------------
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Producto)
     
-    # 1. Filtros exactos
+    # 1. Filtros exactos (Intactos)
     if categoria:
         query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
     if marca:
@@ -79,9 +78,8 @@ def obtener_productos(
     if sabor:
         query = query.filter(models.Producto.sabor == sabor)
         
-    # 2. BUSCADOR DE TEXTO LIBRE (¡NUEVO!)
+    # 2. BUSCADOR DE TEXTO LIBRE (Intacto)
     if busqueda:
-        # Los '%' significan que el texto puede estar en cualquier parte de la frase
         termino = f"%{busqueda}%"
         query = query.filter(
             or_(
@@ -90,7 +88,7 @@ def obtener_productos(
             )
         )
         
-    # 3. Lógica de ordenación
+    # 3. Lógica de ordenación (Intacta)
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
@@ -98,14 +96,38 @@ def obtener_productos(
 
     # ¡Importante! Esto se hace ANTES de aplicar el offset y el limit
     total_resultados = query.count()
+    
+    # -----------------------------------------------------------------
+    # FIX 1: CONTROL DE TABLA VACÍA / SIN RESULTADOS (Evita Error 500)
+    # -----------------------------------------------------------------
+    if total_resultados == 0:
+        return {"total_resultados": 0, "productos": []}
         
-    # 3. Aplicamos la paginación para sacar solo los productos de la página actual
+    # 3. Aplicamos la paginación
     productos = query.offset(skip).limit(limit).all()
     
-    # 4. Devolvemos el "sobre" con el total y la lista de productos
+    # -----------------------------------------------------------------
+    # FIX 2: MAPEO DE ESPAÑOL A INGLÉS PARA JAVIKI
+    # -----------------------------------------------------------------
+    productos_mapeados = []
+    for p in productos:
+        productos_mapeados.append({
+            "id": p.id,
+            "name": p.nombre,              # Traducción
+            "description": p.descripcion,  # Traducción
+            "price": p.precio,             # Traducción
+            "image_url": p.imagen_url,     # Traducción
+            # Dejamos estos en español o inglés dependiendo de cómo los pida él en el Frontend
+            "brand": p.marca.nombre if hasattr(p, 'marca') and p.marca else None, 
+            "category": p.categoria.nombre if hasattr(p, 'categoria') and p.categoria else None,
+            "goal": p.objetivo,
+            "flavor": p.sabor
+        })
+    
+    # 4. Devolvemos el "sobre" con el total y la lista mapeada en inglés
     return {
         "total_resultados": total_resultados,
-        "productos": productos
+        "productos": productos_mapeados
     }
         
 
