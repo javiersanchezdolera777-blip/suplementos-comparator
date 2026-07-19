@@ -33,6 +33,7 @@ export default function Catalog() {
         if (data.categories) {
           setCategories(["Todas", ...data.categories]);
         }
+        
         if (data.brands) {
           setBrands(["Todas", ...data.brands]);
         }
