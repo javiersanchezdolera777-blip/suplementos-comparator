@@ -52,14 +52,19 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)  # ¡Nunca guardamos contraseñas reales!
+    favoritos = relationship("Favorito", back_populates="usuario")
+
 
 class Favorito(Base):
     __tablename__ = "favoritos"
 
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
-    producto_id = Column(Integer, ForeignKey("productos.id"))
-    
-    # Esto nos permite acceder a los datos enteros desde Python fácilmente
-    usuario = relationship("Usuario")
+    # El ID del usuario que hace clic en el corazón
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    # El ID del producto al que le ha dado like
+    producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
+
+    # Relaciones para que Python pueda navegar entre las tablas fácilmente
+    usuario = relationship("Usuario", back_populates="favoritos")
     producto = relationship("Producto")
+

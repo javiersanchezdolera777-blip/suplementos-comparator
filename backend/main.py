@@ -263,3 +263,88 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
         # ¡ESTO ES LO NUEVO! Imprimirá el error exacto en tu terminal negra
         print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
         raise HTTPException(status_code=401, detail="Token de Google inválido")
+    
+# ==========================================
+# --- RUTAS DE FAVORITOS (PRIVADAS) ---
+# ==========================================
+
+@app.post("/api/favoritos")
+def añadir_favorito(
+    favorito: schemas.FavoritoCreate, 
+    db: Session = Depends(get_db),
+    # AQUÍ ESTÁ LA MAGIA: Obligamos a que haya un token válido y sacamos al usuario
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual) 
+):
+    # 1. Comprobar si el producto existe en la base de datos
+    producto = db.query(models.Producto).filter(models.Producto.id == favorito.producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    # 2. Comprobar si ya lo tiene en favoritos para no crear duplicados
+    favorito_existente = db.query(models.Favorito).filter(
+        models.Favorito.usuario_id == usuario_actual.id,
+        models.Favorito.producto_id == favorito.producto_id
+    ).first()
+    
+    if favorito_existente:
+        return {"mensaje": "El producto ya está en tus favoritos"}
+        
+    # 3. Guardar el nuevo favorito vinculando el ID del usuario y el del producto
+    nuevo_favorito = models.Favorito(usuario_id=usuario_actual.id, producto_id=favorito.producto_id)
+    db.add(nuevo_favorito)
+    db.commit()
+    
+    return {"mensaje": "Producto añadido a favoritos correctamente"}
+
+
+@app.get("/api/favoritos")
+def obtener_favoritos(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    # 1. Buscamos los favoritos SOLO del usuario que está haciendo la petición
+    favoritos_db = db.query(models.Favorito).filter(models.Favorito.usuario_id == usuario_actual.id).all()
+    
+    # 2. Los mapeamos al inglés al vuelo para que el Frontend de Javiki no explote
+    resultado = []
+    for fav in favoritos_db:
+        p = fav.producto
+        resultado.append({
+            "favorite_id": fav.id,
+            "product_id": fav.producto_id,
+            "product": {
+                "id": p.id,
+                "name": p.nombre,              
+                "description": p.descripcion,  
+                "price": p.precio,             
+                "image_url": p.imagen_url,     
+                "brand": p.marca.nombre if hasattr(p, 'marca') and p.marca else None, 
+                "category": p.categoria.nombre if hasattr(p, 'categoria') and p.categoria else None,
+                "goal": p.objetivo,
+                "flavor": p.sabor
+            }
+        })
+        
+    return resultado
+
+
+@app.delete("/api/favoritos/{producto_id}")
+def eliminar_favorito(
+    producto_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    # Buscamos el favorito exacto de ese usuario
+    favorito = db.query(models.Favorito).filter(
+        models.Favorito.usuario_id == usuario_actual.id,
+        models.Favorito.producto_id == producto_id
+    ).first()
+    
+    if not favorito:
+        raise HTTPException(status_code=404, detail="El producto no está en tus favoritos")
+        
+    # Lo eliminamos
+    db.delete(favorito)
+    db.commit()
+    
+    return {"mensaje": "Producto eliminado de favoritos"}

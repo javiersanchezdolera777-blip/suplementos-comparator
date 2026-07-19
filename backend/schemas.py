@@ -80,3 +80,24 @@ class Token(BaseModel):
     """Formato oficial en el que se envían los JWT según el estándar de internet"""
     access_token: str
     token_type: str
+
+# ==========================================
+# --- ESQUEMAS DE FAVORITOS ---
+# ==========================================
+
+class FavoritoCreate(BaseModel):
+    """Lo que recibimos del Frontend cuando el usuario hace clic en el corazón"""
+    producto_id: int
+
+class FavoritoResponse(BaseModel):
+    """Lo que le devolvemos al Frontend cuando nos pide su lista de favoritos"""
+    id: int
+    producto_id: int
+    # ¡Magia! Le devolvemos el producto entero anidado para que Javiki 
+    # pueda re-aprovechar su componente <ProductCard /> sin hacer peticiones extra
+    producto: ProductoResponse
+
+    class Config:
+        from_attributes = True
+        # Nota: Si usas una versión antigua de Pydantic y te da error, 
+        # cambia "from_attributes = True" por "orm_mode = True"
