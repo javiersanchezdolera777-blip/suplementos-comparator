@@ -42,29 +42,26 @@ def get_db():
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
     """
-    Esta ruta recopila TODOS los filtros posibles para que Javiki dibuje los menús.
-    Mezcla datos reales de la BD (Marcas/Categorías) con listas fijas (Sabores/Objetivos).
+    Recopila TODOS los filtros posibles para que Javiki dibuje los menús.
     """
-    # 1. Vamos a Neon (BD) a buscar las Marcas y Categorías reales
     marcas_db = db.query(models.Marca).all()
     categorias_db = db.query(models.Categoria).all()
     
-    # 2. Extraemos solo el nombre (texto) de cada una
-    nombres_marcas = [m.nombre for m in marcas_db]
-    nombres_categorias = [c.nombre for c in categorias_db]
-
-    # 3. Lo empaquetamos TODO junto en INGLÉS para el Frontend
     return {
-        "brands": nombres_marcas,                                       # Viene de la BD
-        "categories": nombres_categorias,                               # Viene de la BD
-        "flavors": [sabor.value for sabor in schemas.SaborEnum],        # Viene de schemas.py
-        "formats": [formato.value for formato in schemas.FormatoEnum],  # Viene de schemas.py
-        "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum]  # Viene de schemas.py
+        "brands": [m.nombre for m in marcas_db],
+        "categories": [c.nombre for c in categorias_db],
+        "flavors": [sabor.value for sabor in schemas.SaborEnum],
+        "formats": [formato.value for formato in schemas.FormatoEnum],
+        "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum],
+        # --- LOS NUEVOS SUB-FILTROS ---
+        "quality_seals": [sello.value for sello in schemas.SelloCalidadEnum],
+        "protein_types": [tipo.value for tipo in schemas.TipoProteinaEnum],
+        "creatine_types": [tipo.value for tipo in schemas.TipoCreatinaEnum],
+        "amino_profiles": [perfil.value for perfil in schemas.PerfilAminoacidosEnum],
+        "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum]
     }
 
 
-# --- RUTAS DE DATOS ---
-# Quitamos el response_model para poder devolver los datos en inglés libremente
 @app.get("/api/productos")
 def obtener_productos(
     skip: int = 0, 
@@ -73,13 +70,22 @@ def obtener_productos(
     marca: Optional[str] = None,
     objetivo: Optional[str] = None,
     sabor: Optional[str] = None,
+    # --- NUEVOS PARÁMETROS QUE ACEPTA EL BUSCADOR ---
+    formato: Optional[str] = None,
+    es_vegano: Optional[bool] = None,
+    sello_calidad: Optional[str] = None,
+    tipo_proteina: Optional[str] = None,
+    tipo_creatina: Optional[str] = None,
+    perfil_aminoacidos: Optional[str] = None,
+    tipo_vitamina: Optional[str] = None,
+    # ------------------------------------------------
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Producto)
     
-    # 1. Filtros exactos (Intactos)
+    # 1. Filtros básicos
     if categoria:
         query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
     if marca:
@@ -89,7 +95,25 @@ def obtener_productos(
     if sabor:
         query = query.filter(models.Producto.sabor == sabor)
         
-    # 2. BUSCADOR DE TEXTO LIBRE (Intacto)
+    # 2. Filtros Globales Nuevos
+    if formato:
+        query = query.filter(models.Producto.formato == formato)
+    if es_vegano is not None:  # Usamos 'is not None' porque un booleano puede ser False
+        query = query.filter(models.Producto.es_vegano == es_vegano)
+    if sello_calidad:
+        query = query.filter(models.Producto.sello_calidad == sello_calidad)
+        
+    # 3. Sub-filtros por categoría
+    if tipo_proteina:
+        query = query.filter(models.Producto.tipo_proteina == tipo_proteina)
+    if tipo_creatina:
+        query = query.filter(models.Producto.tipo_creatina == tipo_creatina)
+    if perfil_aminoacidos:
+        query = query.filter(models.Producto.perfil_aminoacidos == perfil_aminoacidos)
+    if tipo_vitamina:
+        query = query.filter(models.Producto.tipo_vitamina == tipo_vitamina)
+        
+    # 4. Buscador de texto libre
     if busqueda:
         termino = f"%{busqueda}%"
         query = query.filter(
@@ -99,48 +123,47 @@ def obtener_productos(
             )
         )
         
-    # 3. Lógica de ordenación (Intacta)
+    # 5. Lógica de ordenación
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
 
-    # ¡Importante! Esto se hace ANTES de aplicar el offset y el limit
     total_resultados = query.count()
     
-    # -----------------------------------------------------------------
-    # FIX 1: CONTROL DE TABLA VACÍA / SIN RESULTADOS (Evita Error 500)
-    # -----------------------------------------------------------------
     if total_resultados == 0:
         return {"total_resultados": 0, "productos": []}
         
-    # 3. Aplicamos la paginación
     productos = query.offset(skip).limit(limit).all()
     
-    # -----------------------------------------------------------------
-    # FIX 2: MAPEO DE ESPAÑOL A INGLÉS PARA JAVIKI
-    # -----------------------------------------------------------------
+    # 6. Mapeo al Inglés con los nuevos atributos para Javiki
     productos_mapeados = []
     for p in productos:
         productos_mapeados.append({
             "id": p.id,
-            "name": p.nombre,              # Traducción
-            "description": p.descripcion,  # Traducción
-            "price": p.precio,             # Traducción
-            "image_url": p.imagen_url,     # Traducción
-            # Dejamos estos en español o inglés dependiendo de cómo los pida él en el Frontend
+            "name": p.nombre,              
+            "description": p.descripcion,  
+            "price": p.precio,             
+            "image_url": p.imagen_url,     
             "brand": p.marca.nombre if hasattr(p, 'marca') and p.marca else None, 
             "category": p.categoria.nombre if hasattr(p, 'categoria') and p.categoria else None,
             "goal": p.objetivo,
-            "flavor": p.sabor
+            "flavor": p.sabor,
+            # --- TRADUCCIÓN DE LOS NUEVOS CAMPOS ---
+            "format": p.formato,
+            "is_vegan": p.es_vegano,
+            "quality_seal": p.sello_calidad,
+            "protein_type": p.tipo_proteina,
+            "protein_percentage": p.porcentaje_proteina,
+            "creatine_type": p.tipo_creatina,
+            "amino_profile": p.perfil_aminoacidos,
+            "vitamin_type": p.tipo_vitamina
         })
     
-    # 4. Devolvemos el "sobre" con el total y la lista mapeada en inglés
     return {
         "total_resultados": total_resultados,
         "productos": productos_mapeados
-    }
-        
+    }       
 
 
 @app.get("/api/categorias", response_model=List[schemas.CategoriaResponse])

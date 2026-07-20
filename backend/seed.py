@@ -1,94 +1,119 @@
-import json
 import models
 from database import SessionLocal
 
-def cargar_datos():
-    # 1. Abrimos el "carrito" de la base de datos
-    db = SessionLocal()
-    
-    print("Iniciando la inyección de datos...")
+db = SessionLocal()
 
-    # 2. Leemos el archivo JSON del frontend
-    ruta_json = "../frontend/src/data/mock_products.json"
-    
-    try:
-        with open(ruta_json, "r", encoding="utf-8") as archivo:
-            productos_mock = json.load(archivo)
-    except FileNotFoundError:
-        print(f"❌ Error: No se encuentra el archivo en {ruta_json}")
-        return
+print("🌱 Iniciando la siembra de productos enriquecidos...")
 
-    # 3. Recorremos cada producto del JSON
-    for item in productos_mock:
-        
-        # --- GESTIÓN DE MARCAS ---
-        nombre_marca = item["brand"]["name"]
-        marca = db.query(models.Marca).filter(models.Marca.nombre == nombre_marca).first()
-        if not marca:
-            marca = models.Marca(nombre=nombre_marca)
-            db.add(marca)
-            db.commit()
-            db.refresh(marca)
+# 1. Función auxiliar para crear marcas y categorías si no existen
+def get_or_create_marca(nombre):
+    marca = db.query(models.Marca).filter_by(nombre=nombre).first()
+    if not marca:
+        marca = models.Marca(nombre=nombre)
+        db.add(marca)
+        db.commit()
+        db.refresh(marca)
+    return marca
 
-        # --- GESTIÓN DE CATEGORÍAS ---
-        nombre_categoria = item["category"]["name"]
-        categoria = db.query(models.Categoria).filter(models.Categoria.nombre == nombre_categoria).first()
-        if not categoria:
-            categoria = models.Categoria(nombre=nombre_categoria)
-            db.add(categoria)
-            db.commit()
-            db.refresh(categoria)
+def get_or_create_categoria(nombre):
+    cat = db.query(models.Categoria).filter_by(nombre=nombre).first()
+    if not cat:
+        cat = models.Categoria(nombre=nombre)
+        db.add(cat)
+        db.commit()
+        db.refresh(cat)
+    return cat
 
-        # ========================================================
-        # 🧠 EL CEREBRO: ASIGNACIÓN AUTOMÁTICA DE OBJETIVO 🧠
-        # ========================================================
-        nombre_min = item["name"].lower()
-        cat_min = item["category"]["name"].lower()
-        
-        # ========================================================
-        # 🧠 EL CEREBRO: ASIGNACIÓN AUTOMÁTICA DE OBJETIVO 🧠
-        # ========================================================
-        nombre_min = item["name"].lower()
-        cat_min = item["category"]["name"].lower()
-        
-        # Ojo: Aquí ponemos exactamente las frases de tu nuevo schemas.py
-        objetivo_calculado = "Salud y Bienestar" 
+# 2. Preparamos las Marcas y Categorías
+cat_prot = get_or_create_categoria("Proteínas")
+cat_crea = get_or_create_categoria("Creatinas")
+cat_amino = get_or_create_categoria("Aminoácidos")
+cat_vit = get_or_create_categoria("Vitaminas")
 
-        if "whey" in nombre_min or "prote" in nombre_min or "gainer" in nombre_min or "masa" in nombre_min:
-            objetivo_calculado = "Volumen Muscular"
-        elif "creatina" in cat_min or "pre-entreno" in cat_min or "pump" in nombre_min or "energia" in nombre_min:
-            objetivo_calculado = "Rendimiento Deportivo"
-        elif "termogenico" in nombre_min or "quemador" in nombre_min or "carnitina" in nombre_min or "cut" in nombre_min:
-            objetivo_calculado = "Pérdida de Peso"
-        # ========================================================
-        # ========================================================
+marca_hsn = get_or_create_marca("HSN")
+marca_bulk = get_or_create_marca("Bulk")
+marca_mypro = get_or_create_marca("MyProtein")
+marca_optimum = get_or_create_marca("Optimum Nutrition")
 
-        # --- CREACIÓN DEL PRODUCTO ---
-        producto_existente = db.query(models.Producto).filter(models.Producto.nombre == item["name"]).first()
-        
-        if not producto_existente:
-            nuevo_producto = models.Producto(
-                nombre=item["name"],
-                descripcion=item["description"],
-                precio=item["price"],
-                imagen_url=item["image_url"],
-                afiliado_url=item["affiliate_url"],
-                sabor=item.get("sabor"),
-                formato=item.get("formato"),
-                
-                # ¡AQUÍ USAMOS LO QUE HA CALCULADO EL CEREBRO!
-                objetivo=objetivo_calculado, 
-                
-                caracteristicas=item.get("caracteristicas"),
-                marca_id=marca.id,
-                categoria_id=categoria.id
-            )
-            db.add(nuevo_producto)
+# 3. Limpiamos SOLO los productos antiguos para no tener duplicados
+db.query(models.Producto).delete()
+db.commit()
 
-    # 4. Confirmamos todos los cambios finales y cerramos
-    db.commit()
-    db.close()
-    print("✅ ¡Base de datos llenada con éxito! La despensa está lista.")
+# 4. Creamos los productos "Vitamínados" con los nuevos sub-filtros
+productos = [
+    models.Producto(
+        nombre="100% Whey Gold Standard",
+        descripcion="Proteína aislada de suero de leche de alta calidad, referencia mundial.",
+        precio=59.99,
+        imagen_url="https://ejemplo.com/gold_standard.jpg",
+        categoria_id=cat_prot.id,
+        marca_id=marca_optimum.id,
+        objetivo="Volumen Muscular",
+        sabor="Chocolate",
+        formato="Polvo",
+        es_vegano=False,
+        sello_calidad="Optipep",
+        tipo_proteina="Isolate (Aislado)",
+        porcentaje_proteina=90
+    ),
+    models.Producto(
+        nombre="Vegan Protein Blend",
+        descripcion="Mezcla de proteínas de guisante y arroz integral.",
+        precio=34.50,
+        imagen_url="https://ejemplo.com/vegan_mypro.jpg",
+        categoria_id=cat_prot.id,
+        marca_id=marca_mypro.id,
+        objetivo="Pérdida de Peso",
+        sabor="Vainilla",
+        formato="Polvo",
+        es_vegano=True,
+        tipo_proteina="Vegetal",
+        porcentaje_proteina=78
+    ),
+    models.Producto(
+        nombre="Creatina Monohidrato Excel",
+        descripcion="Creatina ultra pura con sello oficial.",
+        precio=24.90,
+        imagen_url="https://ejemplo.com/creatina_hsn.jpg",
+        categoria_id=cat_crea.id,
+        marca_id=marca_hsn.id,
+        objetivo="Rendimiento Deportivo",
+        sabor="Sin sabor",
+        formato="Polvo",
+        es_vegano=True,
+        sello_calidad="Creapure",
+        tipo_creatina="Monohidrato"
+    ),
+    models.Producto(
+        nombre="BCAA 2:1:1 Elite Quality",
+        descripcion="Aminoácidos ramificados para recuperación muscular.",
+        precio=19.99,
+        imagen_url="https://ejemplo.com/bcaa.jpg",
+        categoria_id=cat_amino.id,
+        marca_id=marca_bulk.id,
+        objetivo="Rendimiento Deportivo",
+        sabor="Limón",
+        formato="Polvo",
+        es_vegano=True,
+        sello_calidad="Kyowa",
+        perfil_aminoacidos="BCAA"
+    ),
+    models.Producto(
+        nombre="Daily Multivitamin",
+        descripcion="Complejo vitamínico con minerales esenciales.",
+        precio=12.50,
+        imagen_url="https://ejemplo.com/vit.jpg",
+        categoria_id=cat_vit.id,
+        marca_id=marca_hsn.id,
+        objetivo="Salud y Bienestar",
+        sabor="Sin sabor",
+        formato="Cápsulas",
+        es_vegano=False,
+        tipo_vitamina="Multivitamínico"
+    )
+]
 
-if __name__ == "__main__":
-    cargar_datos()
+db.add_all(productos)
+db.commit()
+
+print("✅ ¡Éxito! 5 productos con súper-filtros inyectados en la base de datos.")

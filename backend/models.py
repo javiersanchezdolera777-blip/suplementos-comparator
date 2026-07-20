@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -26,25 +26,45 @@ class Producto(Base):
     __tablename__ = "productos"
 
     id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String, index=True)
+    nombre = Column(String, index=True, nullable=False)
     descripcion = Column(String)
-    precio = Column(Float)
+    precio = Column(Float, nullable=False)
     imagen_url = Column(String)
-    afiliado_url = Column(String)
-    sabor = Column(String, nullable=True)
-    formato = Column(String, nullable=True)
-    objetivo = Column(String, nullable=True)  # <-- NUEVA COLUMNA EN LA BD
-    caracteristicas = Column(JSON, nullable=True)
-
-    # Foreign Keys (Claves foráneas): Le dicen al producto a qué marca y categoría pertenece
-    marca_id = Column(Integer, ForeignKey("marcas.id"))
+    
+    # --- RELACIONES BÁSICAS ---
     categoria_id = Column(Integer, ForeignKey("categorias.id"))
+    marca_id = Column(Integer, ForeignKey("marcas.id"))
+    
+    categoria = relationship("Categoria")
+    marca = relationship("Marca")
 
-    # Relaciones: permiten a Python navegar entre las tablas fácilmente
-    marca = relationship("Marca", back_populates="productos")
-    categoria = relationship("Categoria", back_populates="productos")
+    # ==========================================
+    # --- 🌍 FILTROS GLOBALES ---
+    # ==========================================
+    objetivo = Column(String)
+    sabor = Column(String)
+    formato = Column(String)                     # NUEVO: Polvo, Cápsulas, Líquido...
+    es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
+    sello_calidad = Column(String)               # NUEVO: Creapure, Lacprodan, Kyowa...
 
-    # --- SISTEMA DE USUARIOS Y FAVORITOS ---
+    # ==========================================
+    # --- 🔬 SUB-FILTROS ESPECÍFICOS ---
+    # (Si no aplican al producto, se quedan en blanco/NULL)
+    # ==========================================
+    
+    # 🥛 Para Proteínas
+    tipo_proteina = Column(String)               # Whey, Isolate, Caseína, Vegetal...
+    porcentaje_proteina = Column(Integer)        # Ej: 80 (para 80%), 90...
+    
+    # ⚡ Para Creatinas
+    tipo_creatina = Column(String)               # Monohidrato, HCL, Kre-Alkalyn...
+    
+    # 🧬 Para Aminoácidos
+    perfil_aminoacidos = Column(String)          # BCAA, EAA, Glutamina, Beta-Alanina...
+    
+    # 💊 Para Vitaminas y Minerales
+    tipo_vitamina = Column(String)               # Multivitamínico, Vitamina C, Magnesio...
+
 
 class Usuario(Base):
     __tablename__ = "usuarios"
