@@ -134,8 +134,8 @@ def obtener_productos(
     # Se acabaron los mapeos manuales y el "Spanglish". 
     # Le pasamos los objetos de la BD crudos y Pydantic los traduce al inglés al salir.
     return {
-        "total_results": total_resultados,
-        "products": productos
+        "total_resultados": total_resultados,
+        "productos": productos
     }
 
 
