@@ -154,10 +154,26 @@ export default function Catalog() {
         </div>
       </div>
 
-      {/* Pantalla de carga profesional integrada en el layout */}
+      {/* Nuevo Skeleton Loader Premium */}
       {loading ? (
-        <div className="w-full flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-full mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col bg-[#0a0f1d]/50 border border-white/5 rounded-3xl overflow-hidden h-[420px] animate-pulse">
+                <div className="h-[220px] bg-white/5"></div>
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="h-3 w-1/4 bg-white/5 rounded mb-3"></div>
+                  <div className="h-6 w-3/4 bg-white/10 rounded mb-4"></div>
+                  <div className="h-4 w-full bg-white/5 rounded mb-2"></div>
+                  <div className="h-4 w-5/6 bg-white/5 rounded mb-8"></div>
+                  <div className="mt-auto flex justify-between items-end">
+                    <div className="h-8 w-20 bg-white/5 rounded"></div>
+                    <div className="h-10 w-28 bg-white/10 rounded-xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <>
