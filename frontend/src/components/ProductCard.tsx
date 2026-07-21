@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface Product {
   id: number;
@@ -16,7 +17,6 @@ interface Product {
   category: {
     name: string;
   };
-  // Campos dinámicos JSON (Fase 1 y Fase 4)
   format?: string;
   is_vegan?: boolean;
   quality_seal?: string;
@@ -28,7 +28,44 @@ interface Product {
 
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false); // Mock de estado de favorito inicial
+  const { isLoggedIn, openLoginModal, token } = useAuth();
+  
   const hasImage = product.image_url && product.image_url.trim() !== "";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita que se abra el modal del producto al clicar el corazón
+    
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        // Petición DELETE a Diego
+        const res = await fetch(`${apiUrl}/api/favoritos/${product.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) setIsFavorite(false);
+      } else {
+        // Petición POST a Diego
+        const res = await fetch(`${apiUrl}/api/favoritos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ producto_id: product.id })
+        });
+        if (res.ok) setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Error al actualizar favorito", error);
+    }
+  };
 
   return (
     <>
@@ -60,12 +97,16 @@ export default function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
 
-          {/* Icono de Favorito */}
-          <div className="absolute top-4 right-4 z-20 group/heart cursor-pointer">
-            <div className="p-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-md transition-colors group-hover/heart:bg-white/10 group-hover/heart:border-white/30" title="Guarda tus suplementos favoritos">
+          {/* Icono de Favorito con nueva lógica de Auth */}
+          <div className="absolute top-4 right-4 z-20 group/heart cursor-pointer" onClick={toggleFavorite}>
+            <div className={`p-2 rounded-full border backdrop-blur-md transition-colors ${
+              isFavorite 
+                ? "bg-red-500/20 border-red-500/50" 
+                : "bg-black/40 border-white/10 group-hover/heart:bg-white/10 group-hover/heart:border-white/30"
+            }`} title="Guarda tus suplementos favoritos">
               <svg 
-                className="w-4 h-4 text-slate-400 group-hover/heart:text-white transition-colors" 
-                fill="none" 
+                className={`w-4 h-4 transition-colors ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-white"}`} 
+                fill={isFavorite ? "currentColor" : "none"}
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
@@ -92,18 +133,12 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="flex flex-col">
               <span className="text-xs text-slate-500 font-medium mb-0.5">Mejor precio</span>
               
-              {/* FASE 2: Mapeo de "Desde" */}
               <div className="flex items-baseline gap-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desde</span>
                 <span className="text-2xl font-black text-white tracking-tight">
                   {product.price?.toFixed(2)}€
                 </span>
               </div>
-              
-              {/* FASE 2: Preparado de Interfaz para formato o "Por Kg" */}
-              <span className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
-                {product.format ? `Formato: ${product.format}` : 'Precio orientativo'}
-              </span>
             </div>
             <a
               href={product.affiliate_url || "#"}
@@ -142,7 +177,28 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
 
             <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
-               <div className="text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">{product.brand?.name}</div>
+               <div className="flex justify-between items-start mb-2">
+                 <div className="text-xs font-bold tracking-widest text-slate-500 uppercase">{product.brand?.name}</div>
+                 
+                 {/* Icono Favorito dentro del Modal */}
+                 <div className="group/heart cursor-pointer" onClick={toggleFavorite}>
+                   <div className={`p-2 rounded-full border backdrop-blur-md transition-colors ${
+                     isFavorite 
+                       ? "bg-red-500/20 border-red-500/50" 
+                       : "bg-white/5 border-white/10 group-hover/heart:bg-white/10"
+                   }`} title="Guardar favorito">
+                     <svg 
+                       className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-white"}`} 
+                       fill={isFavorite ? "currentColor" : "none"}
+                       stroke="currentColor" 
+                       viewBox="0 0 24 24"
+                     >
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                     </svg>
+                   </div>
+                 </div>
+               </div>
+
                <h2 className="text-2xl sm:text-3xl font-black text-white mb-4 leading-snug">{product.name}</h2>
                
                <div className="text-3xl font-black text-white mb-6">
@@ -152,7 +208,6 @@ export default function ProductCard({ product }: { product: Product }) {
                
                <p className="text-slate-400 text-sm leading-relaxed mb-8">{product.description}</p>
                
-               {/* Badges dinámicos */}
                <div className="flex flex-wrap gap-2 mb-8">
                  {product.format && <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-300">{product.format}</span>}
                  {product.is_vegan && <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400 font-medium">Vegano</span>}
