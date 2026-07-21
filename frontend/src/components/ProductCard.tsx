@@ -91,8 +91,18 @@ export default function ProductCard({ product }: { product: Product }) {
           <div className="flex items-center justify-between mt-auto gap-4">
             <div className="flex flex-col">
               <span className="text-xs text-slate-500 font-medium mb-0.5">Mejor precio</span>
-              <span className="text-2xl font-black text-white tracking-tight">
-                {product.price?.toFixed(2)}€
+              
+              {/* FASE 2: Mapeo de "Desde" */}
+              <div className="flex items-baseline gap-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desde</span>
+                <span className="text-2xl font-black text-white tracking-tight">
+                  {product.price?.toFixed(2)}€
+                </span>
+              </div>
+              
+              {/* FASE 2: Preparado de Interfaz para formato o "Por Kg" */}
+              <span className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
+                {product.format ? `Formato: ${product.format}` : 'Precio orientativo'}
               </span>
             </div>
             <a
