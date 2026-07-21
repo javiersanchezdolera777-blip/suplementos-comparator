@@ -29,8 +29,9 @@ interface Product {
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false); // Mock de estado de favorito inicial
-  const { isLoggedIn, openLoginModal, token } = useAuth();
+  const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
+  
+  const isFavorite = favoriteIds.includes(product.id);
   
   const hasImage = product.image_url && product.image_url.trim() !== "";
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -50,7 +51,7 @@ export default function ProductCard({ product }: { product: Product }) {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) setIsFavorite(false);
+        if (res.ok) removeFavoriteId(product.id);
       } else {
         // Petición POST a Diego
         const res = await fetch(`${apiUrl}/api/favoritos`, {
@@ -61,7 +62,7 @@ export default function ProductCard({ product }: { product: Product }) {
           },
           body: JSON.stringify({ producto_id: product.id })
         });
-        if (res.ok) setIsFavorite(true);
+        if (res.ok) addFavoriteId(product.id);
       }
     } catch (error) {
       console.error("Error al actualizar favorito", error);
