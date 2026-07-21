@@ -81,7 +81,7 @@ class ProductResponse(BaseModel):
     name: str = Field(validation_alias="nombre")
     description: str = Field(validation_alias="descripcion")
     price: float = Field(validation_alias="precio")
-    imagen_url: str 
+    image_url: str = Field(validation_alias="imagen_url")
     affiliate_url: str = Field(validation_alias="afiliado_url", default="")
     
     # --- Filtros Globales ---
