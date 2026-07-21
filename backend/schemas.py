@@ -107,8 +107,8 @@ class ProductResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class PaginatedProducts(BaseModel):
-    total_results: int
-    products: List[ProductResponse]
+    total_resultados: int
+    productos: List[ProductResponse]
 
 # ==========================================
 # --- MOLDES PARA USUARIOS Y SEGURIDAD ---
