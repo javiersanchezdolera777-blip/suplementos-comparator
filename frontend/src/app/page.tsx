@@ -19,12 +19,12 @@ export default function Home() {
       {/* Main Hero Section */}
       <main className="flex-1 flex flex-col items-center z-10 w-full max-w-7xl mx-auto px-6 pt-12 pb-24">
         <section className="w-full flex flex-col items-center justify-center text-center mt-10 md:mt-20 mb-16 md:mb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-blue-300 mb-8 backdrop-blur-md shadow-lg shadow-blue-900/20 transition-transform hover:scale-105 cursor-default">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-300 mb-8 backdrop-blur-md shadow-lg shadow-emerald-900/20 transition-transform hover:scale-105 cursor-default">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span>Lanzamiento V2 Próximamente</span>
+            <span>Comparando precios en tiempo real</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter max-w-5xl leading-[1.05] mb-8 drop-shadow-2xl">
