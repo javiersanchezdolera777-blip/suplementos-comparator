@@ -21,12 +21,21 @@ export default function Navbar() {
         <div className="w-px h-4 bg-white/10"></div>
         
         {isLoggedIn ? (
-          <div className="relative group">
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/favoritos"
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-100 transition-all hover:scale-105 active:scale-95"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="font-bold hidden sm:inline">Favoritos</span>
+            </Link>
             <button 
               onClick={logout}
               className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-800/50 hover:bg-slate-700/50 border border-white/10 text-white transition-all hover:scale-105 active:scale-95"
             >
-              <span className="font-bold">Cerrar Sesión</span>
+              <span className="font-bold">Salir</span>
             </button>
           </div>
         ) : (
