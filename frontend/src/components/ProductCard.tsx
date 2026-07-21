@@ -28,6 +28,7 @@ interface Product {
 
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false); // Mock de estado de favorito inicial
   const { isLoggedIn, openLoginModal, token } = useAuth();
   
@@ -206,14 +207,24 @@ export default function ProductCard({ product }: { product: Product }) {
                  {product.price?.toFixed(2)}€
                </div>
                
-               <p className="text-slate-400 text-sm leading-relaxed mb-8">{product.description}</p>
+               {/* 1. Descripción colapsable */}
+               <div className={`text-slate-400 text-sm leading-relaxed mb-2 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                 {product.description}
+               </div>
+               {product.description && product.description.length > 120 && (
+                 <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-400 text-xs font-bold mb-6 hover:text-blue-300 self-start">
+                   {isExpanded ? 'Leer menos' : 'Leer más...'}
+                 </button>
+               )}
                
-               <div className="flex flex-wrap gap-2 mb-8">
-                 {product.format && <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-300">{product.format}</span>}
-                 {product.is_vegan && <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400 font-medium">Vegano</span>}
-                 {product.quality_seal && <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-xs text-blue-400 font-medium">{product.quality_seal}</span>}
-                 {product.protein_type && <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs text-purple-400 font-medium">{product.protein_type}</span>}
-                 {product.creatine_type && <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs text-purple-400 font-medium">{product.creatine_type}</span>}
+               {/* 2. Tablilla de Características Premium */}
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 bg-white/[0.02] p-5 rounded-2xl border border-white/5 text-sm w-full">
+                 <div className="flex flex-col"><span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Categoría</span><span className="text-white font-medium">{product.category?.name || '-'}</span></div>
+                 <div className="flex flex-col"><span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Formato</span><span className="text-white font-medium">{product.format || '-'}</span></div>
+                 
+                 {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-500/70 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-400 font-medium">100% Vegano</span></div>}
+                 {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Proteína</span><span className="text-white font-medium">{product.protein_type}</span></div>}
+                 {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500/70 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-400 font-medium">{product.quality_seal}</span></div>}
                </div>
                
                <div className="mt-auto pt-6 border-t border-white/10">
