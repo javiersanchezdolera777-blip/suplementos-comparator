@@ -30,6 +30,7 @@ class Producto(Base):
     descripcion = Column(String)
     precio = Column(Float, nullable=False)
     imagen_url = Column(String)
+    afiliado_url = Column(String)
     
     # --- RELACIONES BÁSICAS ---
     categoria_id = Column(Integer, ForeignKey("categorias.id"))
