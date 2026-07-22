@@ -4,19 +4,15 @@ import { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
 
 export default function Catalog() {
-  // Estados para los productos traídos de la API
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Estados de interfaz
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // Estados dinámicos de los filtros (Valores seleccionados)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [selectedBrand, setSelectedBrand] = useState("Todas");
   const [ordenPrecio, setOrdenPrecio] = useState("");
-  
+
   const [selectedFormat, setSelectedFormat] = useState("Todos");
   const [selectedFlavor, setSelectedFlavor] = useState("Todos");
   const [selectedGoal, setSelectedGoal] = useState("Todos");
@@ -27,7 +23,6 @@ export default function Catalog() {
   const [selectedAminoProfile, setSelectedAminoProfile] = useState("Todos");
   const [isVegan, setIsVegan] = useState<boolean | null>(null);
 
-  // Estados para rellenar los desplegables dinámicamente desde la API
   const [categories, setCategories] = useState<string[]>(["Todas"]);
   const [brands, setBrands] = useState<string[]>(["Todas"]);
   const [formats, setFormats] = useState<string[]>(["Todos"]);
@@ -41,7 +36,6 @@ export default function Catalog() {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // 1. CARGA DE FILTROS CONFIGURADOS
   useEffect(() => {
     fetch(`${apiUrl}/api/config/filtros`)
       .then((res) => {
@@ -63,7 +57,6 @@ export default function Catalog() {
       .catch((error) => console.error("Error cargando filtros:", error));
   }, [apiUrl]);
 
-  // Cuando cambie la categoría, reseteamos los subfiltros que no aplican
   useEffect(() => {
     if (selectedCategory !== "Proteínas") setSelectedProteinType("Todos");
     if (selectedCategory !== "Creatinas") setSelectedCreatineType("Todos");
@@ -71,7 +64,6 @@ export default function Catalog() {
     if (selectedCategory !== "Aminoácidos") setSelectedAminoProfile("Todos");
   }, [selectedCategory]);
 
-  // 2. PETICIÓN DINÁMICA DE PRODUCTOS AL BACKEND
   useEffect(() => {
     setLoading(true);
 
@@ -80,15 +72,13 @@ export default function Catalog() {
     if (selectedCategory !== "Todas") queryParams.append("categoria", selectedCategory);
     if (selectedBrand !== "Todas") queryParams.append("marca", selectedBrand);
     if (ordenPrecio) queryParams.append("orden_precio", ordenPrecio);
-    
-    // Subfiltros
+
     if (selectedFormat !== "Todos") queryParams.append("formato", selectedFormat);
     if (selectedFlavor !== "Todos") queryParams.append("sabor", selectedFlavor);
     if (selectedGoal !== "Todos") queryParams.append("objetivo", selectedGoal);
     if (selectedQualitySeal !== "Todos") queryParams.append("sello_calidad", selectedQualitySeal);
     if (isVegan === true) queryParams.append("es_vegano", "true");
 
-    // Subfiltros condicionales
     if (selectedCategory === "Proteínas" && selectedProteinType !== "Todos") queryParams.append("tipo_proteina", selectedProteinType);
     if (selectedCategory === "Creatinas" && selectedCreatineType !== "Todos") queryParams.append("tipo_creatina", selectedCreatineType);
     if (selectedCategory === "Vitaminas" && selectedVitaminType !== "Todos") queryParams.append("tipo_vitamina", selectedVitaminType);
@@ -121,172 +111,240 @@ export default function Catalog() {
     setSelectedGoal("Todos");
     setSelectedQualitySeal("Todos");
     setIsVegan(null);
+    setIsMobileFilterOpen(false);
   };
 
-  return (
-    <div className="w-full">
-      {/* Contenedor Principal de Filtros */}
-      <div className="bg-[#0f172a]/60 border border-white/10 rounded-3xl p-4 sm:p-5 mb-12 backdrop-blur-2xl flex flex-col gap-4 shadow-2xl ring-1 ring-white/5 relative z-20">
-        
-        {/* Fila Superior: Búsqueda y Filtros Principales */}
-        <div className="flex flex-col md:flex-row gap-5 items-center justify-between">
-          <div className="relative w-full md:w-1/3 group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-400">
-              <svg className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Busca proteínas, creatinas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 text-white rounded-xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 font-medium"
-            />
-          </div>
+  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
 
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4 flex-wrap justify-end">
-            <div className="flex flex-col flex-1 sm:flex-none">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Categoría</span>
-              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 appearance-none min-w-[140px] cursor-pointer">
-                {categories.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col flex-1 sm:flex-none">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Marca</span>
-              <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 appearance-none min-w-[140px] cursor-pointer">
-                {brands.map(b => <option key={b} value={b} className="bg-slate-900">{b}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col flex-1 sm:flex-none">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Precio</span>
-              <select value={ordenPrecio} onChange={(e) => setOrdenPrecio(e.target.value)} className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 appearance-none min-w-[140px] cursor-pointer">
-                <option value="" className="bg-slate-900">Relevancia</option>
-                <option value="asc" className="bg-slate-900">Menor a Mayor</option>
-                <option value="desc" className="bg-slate-900">Mayor a Menor</option>
-              </select>
-            </div>
-            
-            {/* Botón Filtros Avanzados */}
-            <div className="flex items-end">
-              <button 
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`px-4 py-3 rounded-xl border flex items-center gap-2 font-bold transition-all text-sm ${showAdvancedFilters ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                Filtros Extra
-              </button>
-            </div>
-          </div>
+  return (
+    <div className="w-full flex flex-col gap-16">
+
+      {/* 🚀 FASE 1: HERO CENTRADO SIMÉTRICO */}
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700 mb-6 shadow-sm transition-transform hover:scale-105 cursor-default">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Comparando precios en tiempo real</span>
         </div>
 
-        {/* Panel de Filtros Avanzados (Colapsable) */}
-        {showAdvancedFilters && (
-          <div className="mt-4 pt-6 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Formato</span>
-              <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)} className="w-full bg-black/40 border border-white/10 text-slate-300 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                {formats.map(f => <option key={f} value={f} className="bg-slate-900">{f}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Objetivo</span>
-              <select value={selectedGoal} onChange={(e) => setSelectedGoal(e.target.value)} className="w-full bg-black/40 border border-white/10 text-slate-300 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                {goals.map(g => <option key={g} value={g} className="bg-slate-900">{g}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Sabor</span>
-              <select value={selectedFlavor} onChange={(e) => setSelectedFlavor(e.target.value)} className="w-full bg-black/40 border border-white/10 text-slate-300 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                {flavors.map(f => <option key={f} value={f} className="bg-slate-900">{f}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">Sello Calidad</span>
-              <select value={selectedQualitySeal} onChange={(e) => setSelectedQualitySeal(e.target.value)} className="w-full bg-black/40 border border-white/10 text-slate-300 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                {qualitySeals.map(q => <option key={q} value={q} className="bg-slate-900">{q}</option>)}
-              </select>
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-5">
+          El mayor comparador de <br className="hidden sm:block" />
+          <span className="text-blue-600">suplementos de España</span>
+        </h1>
+
+        <p className="text-base text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+          Encuentra los mejores precios en proteínas, creatinas y vitaminas de tus marcas favoritas. Analizamos y comparamos en tiempo real para que tú ahorres.
+        </p>
+
+        {/* Barra de Búsqueda Protagonista */}
+        <div className="w-full max-w-2xl mx-auto relative z-20 group mb-8">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <svg className="h-6 w-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Busca por marca, producto o ingrediente..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white border border-slate-300 text-slate-900 rounded-2xl pl-14 pr-6 py-4 text-base md:text-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 shadow-lg shadow-slate-200/50 transition-all placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Trust Banner - Tiendas */}
+        <div className="w-full max-w-3xl mx-auto mt-2">
+          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">Integrado con el catálogo de</p>
+          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-700">
+            <span className="text-lg sm:text-xl font-black tracking-tighter text-slate-800">MYPROTEIN</span>
+            <span className="text-xl sm:text-2xl font-black text-slate-800 italic">HSN</span>
+            <span className="text-lg sm:text-xl font-bold text-slate-800 tracking-widest">BULK</span>
+            <span className="text-lg sm:text-xl font-extrabold text-slate-800 uppercase">Prozis</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) */}
+      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-8 border-t border-slate-200 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+
+        {/* Botón Flotante para Móviles */}
+        <div className="md:hidden w-full sticky top-24 z-20 mb-4">
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            Filtrar Catálogo
+          </button>
+        </div>
+
+        {/* SIDEBAR DE FILTROS */}
+        <aside className={`
+        w-full md:w-[260px] flex-shrink-0 transition-all duration-300
+        ${isMobileFilterOpen ? 'fixed inset-0 z-[100] bg-white p-6 overflow-y-auto block' : 'hidden md:block sticky top-28'}
+      `}>
+          {/* Cabecera Móvil */}
+          <div className="flex justify-between items-center mb-6 md:hidden">
+            <h2 className="text-2xl font-black text-slate-900">Filtros</h2>
+            <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-slate-200 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+
+          {/* Panel Estilizado de Filtros */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-6">
+
+            {/* Categoría y Marca */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Categoría</label>
+                <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all">
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Marca</label>
+                <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all">
+                  {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
             </div>
 
             {/* Subfiltros Condicionales por Categoría */}
-            {selectedCategory === "Proteínas" && (
-              <div className="flex flex-col">
-                <span className="text-[10px] text-blue-400 mb-1 font-bold uppercase tracking-wider">Tipo de Proteína</span>
-                <select value={selectedProteinType} onChange={(e) => setSelectedProteinType(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/30 text-blue-100 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                  {proteinTypes.map(p => <option key={p} value={p} className="bg-slate-900">{p}</option>)}
-                </select>
-              </div>
-            )}
-            
-            {selectedCategory === "Creatinas" && (
-              <div className="flex flex-col">
-                <span className="text-[10px] text-blue-400 mb-1 font-bold uppercase tracking-wider">Tipo de Creatina</span>
-                <select value={selectedCreatineType} onChange={(e) => setSelectedCreatineType(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/30 text-blue-100 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer">
-                  {creatineTypes.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
-                </select>
-              </div>
+            {(selectedCategory === "Proteínas" || selectedCategory === "Creatinas" || selectedCategory === "Vitaminas" || selectedCategory === "Aminoácidos") && (
+              <>
+                <div className="h-px w-full bg-slate-100"></div>
+                <div className="flex flex-col gap-2 p-3 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                  {selectedCategory === "Proteínas" && (
+                    <>
+                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Proteína</label>
+                      <select value={selectedProteinType} onChange={(e) => setSelectedProteinType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                        {proteinTypes.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </>
+                  )}
+                  {selectedCategory === "Creatinas" && (
+                    <>
+                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Creatina</label>
+                      <select value={selectedCreatineType} onChange={(e) => setSelectedCreatineType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                        {creatineTypes.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </>
+                  )}
+                </div>
+              </>
             )}
 
-            {/* Vegano Checkbox */}
-            <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={isVegan === true} 
+            <div className="h-px w-full bg-slate-100"></div>
+
+            {/* Otros Subfiltros */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Formato</label>
+                <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                  {formats.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sello Calidad</label>
+                <select value={selectedQualitySeal} onChange={(e) => setSelectedQualitySeal(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                  {qualitySeals.map(q => <option key={q} value={q}>{q}</option>)}
+                </select>
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors mt-2">
+                <input
+                  type="checkbox"
+                  checked={isVegan === true}
                   onChange={(e) => setIsVegan(e.target.checked ? true : null)}
-                  className="w-5 h-5 rounded border-white/20 bg-black/40 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900" 
+                  className="w-5 h-5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
                 />
-                <span className="text-sm font-bold text-slate-300">100% Vegano</span>
+                <span className="text-sm font-bold text-slate-700">Opción Vegana</span>
               </label>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Skeleton Loader */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex flex-col bg-[#0a0f1d]/50 border border-white/5 rounded-3xl overflow-hidden h-[420px] animate-pulse">
-              <div className="h-[220px] bg-white/5"></div>
-              <div className="p-6 flex flex-col flex-grow">
-                <div className="h-3 w-1/4 bg-white/5 rounded mb-3"></div>
-                <div className="h-6 w-3/4 bg-white/10 rounded mb-4"></div>
-                <div className="h-4 w-full bg-white/5 rounded mb-2"></div>
-                <div className="h-4 w-5/6 bg-white/5 rounded mb-8"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="mb-6 text-slate-400 text-sm flex justify-between items-center">
-            <span>Mostrando <span className="text-white font-semibold">{productos.length}</span> productos</span>
-            {(selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery || isVegan) && (
-               <button onClick={limpiarFiltros} className="text-xs text-blue-400 hover:text-blue-300 font-bold underline decoration-blue-500/30 underline-offset-4">Limpiar filtros</button>
+            {isMobileFilterOpen && (
+              <button
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg"
+              >
+                Ver {productos.length} Resultados
+              </button>
+            )}
+
+            {hasActiveFilters && (
+              <button
+                onClick={limpiarFiltros}
+                className="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-xl border border-red-200 transition-colors text-sm"
+              >
+                Borrar todos los filtros
+              </button>
             )}
           </div>
+        </aside>
 
-          {productos.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* ESCAPARATE DE PRODUCTOS */}
+        <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
+
+          {/* Cabecera del Grid */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
+            <div className="text-slate-500 text-sm">
+              Mostrando <span className="text-slate-900 font-black text-base">{productos.length}</span> suplementos
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block">Ordenar por</label>
+              <select
+                value={ordenPrecio}
+                onChange={(e) => setOrdenPrecio(e.target.value)}
+                className="w-full sm:w-auto bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none"
+              >
+                <option value="">Relevancia</option>
+                <option value="asc">Precio: Menor a Mayor</option>
+                <option value="desc">Precio: Mayor a Menor</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Contenido (Skeleton o Grid) */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden h-[420px] animate-pulse">
+                  <div className="h-[220px] bg-slate-100"></div>
+                  <div className="p-6 flex flex-col flex-grow">
+                    <div className="h-3 w-1/4 bg-slate-200 rounded mb-3"></div>
+                    <div className="h-6 w-3/4 bg-slate-200 rounded mb-4"></div>
+                    <div className="h-4 w-full bg-slate-100 rounded mb-2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : productos.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {productos.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-white/5 border border-white/10 rounded-3xl">
-              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                 <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-3xl text-center px-4 shadow-sm">
+              <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">No se encontraron productos</h3>
-              <p className="text-slate-400 mb-6">Prueba a usar otros filtros o cambiar tu búsqueda.</p>
-              <button onClick={limpiarFiltros} className="px-6 py-2.5 bg-white text-black font-bold rounded-xl transition-all shadow-lg hover:bg-slate-200">
-                Limpiar filtros
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Sin resultados</h3>
+              <p className="text-slate-500 mb-6 max-w-md">No hemos encontrado suplementos con esta combinación de filtros. Prueba a ser menos específico.</p>
+              <button onClick={limpiarFiltros} className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-colors">
+                Borrar todos los filtros
               </button>
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
