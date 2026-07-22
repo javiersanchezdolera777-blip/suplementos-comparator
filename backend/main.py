@@ -2,12 +2,11 @@ from fastapi.security import OAuth2PasswordBearer
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException  # <-- Añade HTTPException
 from datetime import datetime
 
 # Importamos nuestras piezas
@@ -22,7 +21,6 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="API de Suplementos")
 
 # --- CONFIGURACIÓN DE CORS ---
-# Ponemos "*" para que Vercel (el frontend de Javiki) no tenga bloqueos de seguridad
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -31,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Nuestro carrito de la compra (ya lo conoces)
 def get_db():
     db = SessionLocal()
     try:
@@ -42,22 +39,15 @@ def get_db():
 # --- ENDPOINT ULTRALIGERO PARA KEEP-ALIVE ---
 @app.get("/api/health")
 def health_check():
-    """
-    Endpoint ultraligero para monitorización (Keep-Alive).
-    0 consultas a base de datos, 0% de sobrecarga de CPU.
-    """
     return {
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
         "service": "suparator-api"
     }
 
-# --- NUEVA RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
+# --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
-    """
-    Recopila TODOS los filtros posibles para que Javiki dibuje los menús.
-    """
     marcas_db = db.query(models.Marca).all()
     categorias_db = db.query(models.Categoria).all()
     
@@ -67,7 +57,6 @@ def obtener_filtros(db: Session = Depends(get_db)):
         "flavors": [sabor.value for sabor in schemas.SaborEnum],
         "formats": [formato.value for formato in schemas.FormatoEnum],
         "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum],
-        # --- LOS NUEVOS SUB-FILTROS ---
         "quality_seals": [sello.value for sello in schemas.SelloCalidadEnum],
         "protein_types": [tipo.value for tipo in schemas.TipoProteinaEnum],
         "creatine_types": [tipo.value for tipo in schemas.TipoCreatinaEnum],
@@ -75,7 +64,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
         "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum]
     }
 
-
+# --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     skip: int = 0, 
@@ -96,26 +85,23 @@ def obtener_productos(
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Producto)
+    
+    # 1. Filtro de Categoría (El parche de "todos" por si Javiki lo manda en la URL)
     if categoria and categoria.lower() != "todos":
-        # Comprobamos si nos pasan un ID o un Nombre de categoría
         if categoria.isdigit():
             query = query.filter(models.Producto.categoria_id == int(categoria))
         else:
             query = query.join(models.Categoria).filter(models.Categoria.nombre.ilike(f"%{categoria}%"))
             
-    productos = query.all()
-    return {"total_resultados": len(productos), "productos": productos}
-    # 1. Filtros básicos
-    if categoria:
-        query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
+    # 2. Filtro de Marca
     if marca:
-        query = query.join(models.Marca).filter(models.Marca.nombre == marca)
+        query = query.join(models.Marca).filter(models.Marca.nombre.ilike(f"%{marca}%"))
+        
+    # 3. Filtros Básicos
     if objetivo:
         query = query.filter(models.Producto.objetivo == objetivo)
     if sabor:
         query = query.filter(models.Producto.sabor == sabor)
-        
-    # 2. Filtros Globales Nuevos
     if formato:
         query = query.filter(models.Producto.formato == formato)
     if es_vegano is not None:
@@ -123,7 +109,7 @@ def obtener_productos(
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad == sello_calidad)
         
-    # 3. Sub-filtros por categoría
+    # 4. Sub-filtros
     if tipo_proteina:
         query = query.filter(models.Producto.tipo_proteina == tipo_proteina)
     if tipo_creatina:
@@ -133,7 +119,7 @@ def obtener_productos(
     if tipo_vitamina:
         query = query.filter(models.Producto.tipo_vitamina == tipo_vitamina)
         
-    # 4. Buscador de texto libre
+    # 5. Buscador de texto libre
     if busqueda:
         termino = f"%{busqueda}%"
         query = query.filter(
@@ -143,40 +129,29 @@ def obtener_productos(
             )
         )
         
-    # 5. Lógica de ordenación
+    # 6. Ordenación
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
 
+    # 7. Ejecutamos paginación y contamos TODO al final
     total_resultados = query.count()
     productos = query.offset(skip).limit(limit).all()
     
-    # 6. ¡LA MAGIA DE PYDANTIC!
-    # Se acabaron los mapeos manuales y el "Spanglish". 
-    # Le pasamos los objetos de la BD crudos y Pydantic los traduce al inglés al salir.
     return {
         "total_resultados": total_resultados,
         "productos": productos
     }
 
-
-
-
-# --- RUTA DE PRODUCTO INDIVIDUAL (FICHA DE PRODUCTO) ---
+# --- RUTA DE PRODUCTO INDIVIDUAL ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
-    """
-    Busca un único producto por su ID. 
-    Ideal para que el frontend dibuje la página de detalles del producto.
-    """
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    
-    # Si el producto no existe en la base de datos, devolvemos un error 404
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-        
     return producto
+
 
 # ==========================================
 # --- RUTAS DE AUTENTICACIÓN Y USUARIOS ---
@@ -184,51 +159,33 @@ def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db))
 
 @app.post("/api/registro", response_model=schemas.UsuarioResponse)
 def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    # 1. Comprobamos si el email ya existe
     usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
     if usuario_existente:
         raise HTTPException(status_code=400, detail="Este email ya está registrado")
         
-    # 2. Ciframos la contraseña (¡Nunca la guardamos en texto plano!)
     password_cifrada = security.obtener_password_hash(usuario.password)
-    
-    # 3. Guardamos el nuevo usuario en Neon
     nuevo_usuario = models.Usuario(email=usuario.email, hashed_password=password_cifrada)
     db.add(nuevo_usuario)
     db.commit()
     db.refresh(nuevo_usuario)
-    
     return nuevo_usuario
-
 
 @app.post("/api/login", response_model=schemas.Token)
 def iniciar_sesion(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    # 1. Buscamos al usuario por su email
     user_db = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
-    
-    # 2. Si no existe o la contraseña está mal, damos error genérico por seguridad
     if not user_db or not security.verificar_password(usuario.password, user_db.hashed_password):
         raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
         
-    # 3. ¡Todo correcto! Fabricamos la pulsera VIP (JWT)
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
-    
-    # 4. Se la entregamos a Javiki en el formato oficial
     return {"access_token": access_token, "token_type": "bearer"}
 
-# ==========================================
-# --- EL PORTERO (Verificador de Tokens) ---
-# ==========================================
-# Esto le dice a FastAPI dónde se consiguen los tokens
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """El portero: Lee el JWT, verifica que no esté caducado y saca al usuario de la BD"""
     credenciales_exception = HTTPException(
         status_code=401, detail="No se pudo validar las credenciales", headers={"WWW-Authenticate": "Bearer"}
     )
     try:
-        # Decodificamos la pulsera con nuestra palabra secreta
         payload = security.jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
@@ -241,9 +198,6 @@ def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = De
         raise credenciales_exception
     return usuario
 
-# ==========================================
-# --- INICIO DE SESIÓN CON GOOGLE ---
-# ==========================================
 class GoogleToken(BaseModel):
     token: str
 
@@ -253,31 +207,25 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
         idinfo = id_token.verify_oauth2_token(
             google_data.token, 
             google_requests.Request(), 
-            "318282148406-908hoi15scu4vcc8v9lhqfkislin10cb.apps.googleusercontent.com" # <--- ¡Cámbialo aquí!
+            "318282148406-908hoi15scu4vcc8v9lhqfkislin10cb.apps.googleusercontent.com"
         )
         
         email = idinfo['email']
-        
-        # 2. Buscamos si el usuario ya existe en nuestra base de datos
         usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
         
-        # 3. Si es la primera vez que entra con Google, le creamos una cuenta sin contraseña
         if not usuario:
             usuario = models.Usuario(email=email, hashed_password="login_google")
             db.add(usuario)
             db.commit()
             db.refresh(usuario)
             
-        # 4. Le fabricamos nuestra propia pulsera VIP para que use la web
-# ... código anterior ...
         access_token = security.crear_token_acceso(data={"sub": usuario.email})
         return {"access_token": access_token, "token_type": "bearer"}
         
     except ValueError as e:
-        # ¡ESTO ES LO NUEVO! Imprimirá el error exacto en tu terminal negra
         print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
         raise HTTPException(status_code=401, detail="Token de Google inválido")
-    
+
 # ==========================================
 # --- RUTAS DE FAVORITOS (PRIVADAS) ---
 # ==========================================
@@ -286,15 +234,12 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
 def añadir_favorito(
     favorito: schemas.FavoritoCreate, 
     db: Session = Depends(get_db),
-    # AQUÍ ESTÁ LA MAGIA: Obligamos a que haya un token válido y sacamos al usuario
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual) 
 ):
-    # 1. Comprobar si el producto existe en la base de datos
     producto = db.query(models.Producto).filter(models.Producto.id == favorito.producto_id).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
         
-    # 2. Comprobar si ya lo tiene en favoritos para no crear duplicados
     favorito_existente = db.query(models.Favorito).filter(
         models.Favorito.usuario_id == usuario_actual.id,
         models.Favorito.producto_id == favorito.producto_id
@@ -303,26 +248,17 @@ def añadir_favorito(
     if favorito_existente:
         return {"mensaje": "El producto ya está en tus favoritos"}
         
-    # 3. Guardar el nuevo favorito vinculando el ID del usuario y el del producto
     nuevo_favorito = models.Favorito(usuario_id=usuario_actual.id, producto_id=favorito.producto_id)
     db.add(nuevo_favorito)
     db.commit()
-    
     return {"mensaje": "Producto añadido a favoritos correctamente"}
-
 
 @app.get("/api/favoritos", response_model=List[schemas.FavoriteResponse])
 def obtener_favoritos(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
 ):
-    # 1. Buscamos los favoritos SOLO del usuario que está haciendo la petición
-    favoritos_db = db.query(models.Favorito).filter(models.Favorito.usuario_id == usuario_actual.id).all()
-    
-    # 2. Devolvemos los objetos directamente. Pydantic los leerá y los convertirá 
-    # a favorite_id, product_id, y anidará el product entero en inglés.
-    return favoritos_db
-
+    return db.query(models.Favorito).filter(models.Favorito.usuario_id == usuario_actual.id).all()
 
 @app.delete("/api/favoritos/{producto_id}")
 def eliminar_favorito(
@@ -330,7 +266,6 @@ def eliminar_favorito(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
 ):
-    # Buscamos el favorito exacto de ese usuario
     favorito = db.query(models.Favorito).filter(
         models.Favorito.usuario_id == usuario_actual.id,
         models.Favorito.producto_id == producto_id
@@ -339,8 +274,6 @@ def eliminar_favorito(
     if not favorito:
         raise HTTPException(status_code=404, detail="El producto no está en tus favoritos")
         
-    # Lo eliminamos
     db.delete(favorito)
     db.commit()
-    
     return {"mensaje": "Producto eliminado de favoritos"}

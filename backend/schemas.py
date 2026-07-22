@@ -5,6 +5,17 @@ from enum import Enum
 # ==========================================
 # --- 1. ENUMS (GUARDIANES EN ESPAÑOL PARA LA BD) ---
 # ==========================================
+class CategoriaEnum(str, Enum):
+    proteinas = "Proteínas"
+    creatinas = "Creatinas"
+    aminoacidos = "Aminoácidos"
+    vitaminas = "Vitaminas y Minerales"
+    pre_entrenos = "Pre-Entrenos"
+    alimentacion = "Alimentación Saludable"
+    accesorios = "Accesorios"
+    salud = "Salud y Bienestar"
+    otros = "Otros"
+
 class SaborEnum(str, Enum):
     fresa = "Fresa"
     vainilla = "Vainilla"
@@ -64,6 +75,16 @@ class TipoVitaminaEnum(str, Enum):
     magnesio = "Magnesio"
     omega3 = "Omega-3"
 
+def normalizar_marca(nombre: str) -> str:
+    """
+    Recibe un nombre de marca caótico y lo devuelve limpio y capitalizado.
+    Ejemplo: "  my PROTEIN  " -> "My Protein"
+    """
+    if not nombre:
+        return "Desconocida"
+    # Quita espacios dobles y a los lados, y capitaliza cada palabra
+    return " ".join(nombre.split()).title()
+
 # ==========================================
 # --- 2. LOS ESQUEMAS DE RESPUESTA (100% INGLÉS PARA EL FRONTEND) ---
 # ==========================================
@@ -92,7 +113,7 @@ class ProductResponse(BaseModel):
     price_per_kg: Optional[float] = Field(validation_alias="precio_por_kg", default=None)
     
     # --- Filtros Globales ---
-    flavor: Optional[SaborEnum] = Field(validation_alias="sabor", default=None)
+    flavor: List[str] = Field(validation_alias="sabor", default_factory=list)    
     format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
     goal: Optional[ObjetivoEnum] = Field(validation_alias="objetivo", default=None)
     is_vegan: bool = Field(validation_alias="es_vegano", default=False)

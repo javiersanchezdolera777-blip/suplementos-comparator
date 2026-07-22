@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -49,8 +49,8 @@ class Producto(Base):
     # --- 🌍 FILTROS GLOBALES ---
     # ==========================================
     objetivo = Column(String)
-    sabor = Column(String)
-    formato = Column(String)                     # NUEVO: Polvo, Cápsulas, Líquido...
+    sabor = Column(ARRAY(String), default=[]) # <-- Ahora es una lista    formato = Column(String)                     # NUEVO: Polvo, Cápsulas, Líquido...
+    formato = Column(String, nullable=True)
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
     sello_calidad = Column(String)               # NUEVO: Creapure, Lacprodan, Kyowa...
 
