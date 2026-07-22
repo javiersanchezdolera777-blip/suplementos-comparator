@@ -4,7 +4,7 @@ import Catalog from "@/components/Catalog";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#030712] font-sans text-white overflow-x-hidden relative selection:bg-white/20">
+    <div className="flex flex-col min-h-screen bg-[#030712] font-sans text-white relative selection:bg-white/20">
       {/* Background Gradients (Monochromatic Premium) */}
       <div className="absolute top-0 inset-x-0 h-[400px] bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none z-0" />
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white/5 blur-[120px] pointer-events-none z-0" />
