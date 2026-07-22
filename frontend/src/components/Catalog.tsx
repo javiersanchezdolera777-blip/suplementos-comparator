@@ -117,7 +117,7 @@ export default function Catalog() {
   const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
 
   return (
-    <div className="w-full flex flex-col gap-8 md:gap-12">
+    <div className="w-full flex flex-col gap-6 md:gap-8">
 
       {/* 🚀 FASE 2: HERO COMPACTADO */}
       <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 md:pt-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
