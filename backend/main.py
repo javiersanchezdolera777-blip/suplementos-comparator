@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException  # <-- Añade HTTPException
+from datetime import datetime
 
 # Importamos nuestras piezas
 import models
@@ -37,6 +38,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# --- ENDPOINT ULTRALIGERO PARA KEEP-ALIVE ---
+@app.get("/api/health")
+def health_check():
+    """
+    Endpoint ultraligero para monitorización (Keep-Alive).
+    0 consultas a base de datos, 0% de sobrecarga de CPU.
+    """
+    return {
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "service": "suparator-api"
+    }
 
 # --- NUEVA RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
