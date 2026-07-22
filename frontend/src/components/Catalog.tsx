@@ -117,24 +117,72 @@ export default function Catalog() {
   const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
 
   return (
-    <div className="w-full flex flex-col gap-8">
-      {/* Barra de Búsqueda Global Light Mode */}
-      <div className="w-full relative z-20 group">
-        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-          <svg className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <input
-          type="text"
-          placeholder="Busca por marca, producto o ingrediente..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-14 pr-6 py-4 text-base outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 shadow-sm transition-all placeholder:text-slate-400"
-        />
-      </div>
+    <div className="w-full flex flex-col gap-16">
+      
+      {/* 🚀 FASE 3: HERO DIVIDIDO */}
+      <section className="w-full grid md:grid-cols-2 gap-10 lg:gap-16 items-center animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+        
+        {/* Columna Izquierda: Copys y Buscador */}
+        <div className="flex flex-col items-start text-left order-last md:order-first mt-4 md:mt-0">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700 mb-6 shadow-sm transition-transform hover:scale-105 cursor-default">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Comparando precios en tiempo real</span>
+          </div>
 
-      <div className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter leading-[1.1] mb-5 text-slate-900">
+            El mayor comparador de <br className="hidden lg:block" />
+            <span className="text-blue-600">suplementos de España</span>
+          </h1>
+
+          <p className="text-base text-slate-600 max-w-lg mb-10 leading-relaxed font-medium">
+            Encuentra los mejores precios en proteínas, creatinas y vitaminas de tus marcas favoritas. <span className="text-slate-900 font-bold">Analizamos y comparamos en tiempo real</span> para que tú ahorres.
+          </p>
+
+          {/* Barra de Búsqueda Integrada al Hero */}
+          <div className="w-full relative z-20 group mb-10">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Busca por marca, producto o ingrediente..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-14 pr-6 py-4 text-base outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 shadow-md transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* Partner Grid */}
+          <div className="w-full border-t border-slate-200 pt-6">
+            <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">Comparamos el catálogo de</p>
+            <div className="flex flex-wrap items-center gap-6 lg:gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
+              <span className="text-xl font-black tracking-tighter text-slate-800">MYPROTEIN</span>
+              <span className="text-2xl font-black text-slate-800 italic">HSN</span>
+              <span className="text-xl font-bold text-slate-800 tracking-widest">BULK</span>
+              <span className="text-xl font-extrabold text-slate-800 uppercase">Prozis</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Columna Derecha: Imagen Lifestyle Unsplash */}
+        <div className="w-full h-[400px] md:h-full md:min-h-[500px] relative rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-200 border border-slate-200">
+          <img 
+            src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop" 
+            alt="Atleta entrenando y consumiendo suplementos" 
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent pointer-events-none"></div>
+        </div>
+
+      </section>
+
+      {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) */}
+      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-8 border-t border-slate-200 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
       
       {/* Botón Flotante para Móviles */}
       <div className="md:hidden w-full sticky top-24 z-20 mb-4">
@@ -147,7 +195,7 @@ export default function Catalog() {
         </button>
       </div>
 
-      {/* SIDEBAR DE FILTROS (Light Mode) */}
+      {/* SIDEBAR DE FILTROS */}
       <aside className={`
         w-full md:w-[260px] flex-shrink-0 transition-all duration-300
         ${isMobileFilterOpen ? 'fixed inset-0 z-[100] bg-white p-6 overflow-y-auto block' : 'hidden md:block sticky top-28'}
