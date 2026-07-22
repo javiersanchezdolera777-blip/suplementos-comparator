@@ -4,7 +4,7 @@ import Catalog from "@/components/Catalog";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans text-slate-900 relative selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900 relative selection:bg-blue-100 selection:text-blue-900">
       
       {/* Navigation */}
       <Navbar />
