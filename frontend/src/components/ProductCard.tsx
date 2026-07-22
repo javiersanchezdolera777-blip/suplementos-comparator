@@ -71,7 +71,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <div className="group relative flex flex-col bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-white/5 hover:-translate-y-1">
+      <div className="group relative flex flex-col bg-[#111726] border border-slate-800/80 rounded-3xl overflow-hidden hover:border-slate-700/80 transition-all duration-500 shadow-md shadow-black/50 hover:shadow-xl hover:-translate-y-1">
         
         {/* Zona Superior: Imagen y Badges */}
         <div 
@@ -94,7 +94,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
           {/* Badge de Categoría */}
           <div className="absolute top-4 left-4 z-20">
-            <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-300 bg-black/40 border border-white/10 rounded-full backdrop-blur-md">
+            <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-slate-800/60 text-slate-300 border border-slate-700/50 rounded-full backdrop-blur-md">
               {product.category?.name || "Sin categoría"}
             </span>
           </div>
@@ -119,15 +119,15 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Zona Inferior: Información del producto */}
-        <div className="p-6 sm:p-7 flex flex-col flex-grow bg-gradient-to-t from-[#030712] to-transparent">
+        <div className="p-6 sm:p-7 flex flex-col flex-grow bg-transparent">
           <div className="text-[10px] font-bold tracking-widest text-slate-500 mb-2 uppercase">{product.brand?.name || "Sin marca"}</div>
           <h3 
-            className="text-lg font-bold text-slate-200 mb-3 leading-snug group-hover:text-white transition-colors duration-300 cursor-pointer"
+            className="text-lg font-medium text-white mb-3 leading-snug group-hover:text-slate-200 transition-colors duration-300 cursor-pointer"
             onClick={() => setIsModalOpen(true)}
           >
             {product.name}
           </h3>
-          <p className="text-sm text-slate-400/80 line-clamp-2 mb-8 flex-grow font-medium leading-relaxed">
+          <p className="text-sm text-slate-400 line-clamp-2 mb-8 flex-grow font-medium leading-relaxed">
             {product.description}
           </p>
           
@@ -161,7 +161,7 @@ export default function ProductCard({ product }: { product: Product }) {
           onClick={() => setIsModalOpen(false)} 
         >
           <div 
-            className="bg-[#0a0f1d] border border-white/10 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-300"
+            className="bg-[#111726] border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl shadow-black/80 flex flex-col md:flex-row animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()} 
           >
             <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-white/10 rounded-full transition-colors text-white">
