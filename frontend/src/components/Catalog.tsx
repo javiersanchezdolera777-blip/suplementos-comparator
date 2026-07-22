@@ -170,13 +170,13 @@ export default function Catalog() {
         </div>
 
         {/* Columna Derecha: Imagen Lifestyle Unsplash */}
-        <div className="w-full h-[400px] md:h-full md:min-h-[500px] relative rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-200 border border-slate-200">
+        <div className="w-full relative aspect-[4/3] lg:aspect-square xl:aspect-[4/3] rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50 border border-slate-100 group order-first md:order-last mb-8 md:mb-0">
           <img 
-            src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop" 
+            src="https://images.unsplash.com/photo-1593079831268-3381b0c1239b?q=80&w=2069&auto=format&fit=crop" 
             alt="Atleta entrenando y consumiendo suplementos" 
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/10 to-transparent pointer-events-none"></div>
         </div>
 
       </section>
