@@ -140,7 +140,7 @@ export default function Catalog() {
         </p>
 
         {/* Barra de Búsqueda Protagonista */}
-        <div className="w-full max-w-2xl mx-auto relative z-20 group">
+        <div className="w-full max-w-2xl mx-auto relative z-20 group mb-8">
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
             <svg className="h-6 w-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -153,6 +153,17 @@ export default function Catalog() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-white border border-slate-300 text-slate-900 rounded-2xl pl-14 pr-6 py-4 text-base md:text-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 shadow-lg shadow-slate-200/50 transition-all placeholder:text-slate-400"
           />
+        </div>
+
+        {/* Trust Banner - Tiendas */}
+        <div className="w-full max-w-3xl mx-auto mt-2">
+          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">Integrado con el catálogo de</p>
+          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-700">
+            <span className="text-lg sm:text-xl font-black tracking-tighter text-slate-800">MYPROTEIN</span>
+            <span className="text-xl sm:text-2xl font-black text-slate-800 italic">HSN</span>
+            <span className="text-lg sm:text-xl font-bold text-slate-800 tracking-widest">BULK</span>
+            <span className="text-lg sm:text-xl font-extrabold text-slate-800 uppercase">Prozis</span>
+          </div>
         </div>
       </section>
 
