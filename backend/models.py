@@ -30,6 +30,13 @@ class Producto(Base):
     descripcion = Column(String)
     precio = Column(Float, nullable=False)
     imagen_url = Column(String)
+    afiliado_url = Column(String)
+
+    # --- NUEVAS COLUMNAS ---
+    slug = Column(String, index=True) 
+    peso_gramos = Column(Integer, nullable=True) # Ej: 1000 para 1kg, 2000 para 2kg
+    precio_por_kg = Column(Float, nullable=True) # <-- Columna real
+
     
     # --- RELACIONES BÁSICAS ---
     categoria_id = Column(Integer, ForeignKey("categorias.id"))

@@ -1,9 +1,9 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any, List, Optional
 from enum import Enum
 
 # ==========================================
-# --- 1. NUESTRAS ETIQUETAS OFICIALES (GUARDIANES) ---
+# --- 1. ENUMS (GUARDIANES EN ESPAÑOL PARA LA BD) ---
 # ==========================================
 class SaborEnum(str, Enum):
     fresa = "Fresa"
@@ -12,13 +12,16 @@ class SaborEnum(str, Enum):
     neutro = "Sin sabor"
     limon = "Limón"
     frutas = "Frutas del bosque"
+    cookies = "Cookies & Cream"
+    platano = "Plátano"
+    cafe = "Café / Capuchino"
 
 class FormatoEnum(str, Enum):
     polvo = "Polvo"
     capsulas = "Cápsulas"
     liquido = "Líquido"
     barrita = "Barrita"
-    gominolas = "Gominolas" # <-- NUEVO FORMATO
+    gominolas = "Gominolas"
 
 class ObjetivoEnum(str, Enum):
     volumen = "Volumen Muscular"
@@ -26,7 +29,6 @@ class ObjetivoEnum(str, Enum):
     salud = "Salud y Bienestar"
     rendimiento = "Rendimiento Deportivo"
 
-# --- NUEVOS ENUMS GLOBALES ---
 class SelloCalidadEnum(str, Enum):
     creapure = "Creapure"
     lacprodan = "Lacprodan"
@@ -35,7 +37,6 @@ class SelloCalidadEnum(str, Enum):
     optipep = "Optipep"
     carnipure = "Carnipure"
 
-# --- NUEVOS ENUMS POR CATEGORÍA ---
 class TipoProteinaEnum(str, Enum):
     whey = "Whey Concentrado"
     isolate = "Isolate (Aislado)"
@@ -64,90 +65,83 @@ class TipoVitaminaEnum(str, Enum):
     omega3 = "Omega-3"
 
 # ==========================================
-# --- 2. LOS ESQUEMAS DE RESPUESTA ---
+# --- 2. LOS ESQUEMAS DE RESPUESTA (100% INGLÉS PARA EL FRONTEND) ---
 # ==========================================
-class MarcaResponse(BaseModel):
+class BrandResponse(BaseModel):
     id: int
-    nombre: str
-    model_config = ConfigDict(from_attributes=True)
+    name: str = Field(validation_alias="nombre")
+    
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-class CategoriaResponse(BaseModel):
+class CategoryResponse(BaseModel):
     id: int
-    nombre: str
-    model_config = ConfigDict(from_attributes=True)
+    name: str = Field(validation_alias="nombre")
+    
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-class ProductoResponse(BaseModel):
+class ProductResponse(BaseModel):
     id: int
-    nombre: str
-    descripcion: str
-    precio: float
-    imagen_url: str
-    afiliado_url: str
+    name: str = Field(validation_alias="nombre")
+    description: str = Field(validation_alias="descripcion")
+    price: float = Field(validation_alias="precio")
+    image_url: str = Field(validation_alias="imagen_url")
+    affiliate_url: str = Field(validation_alias="afiliado_url", default="")
+
+    slug: Optional[str] = None
+    weight_grams: Optional[int] = Field(validation_alias="peso_gramos", default=None)
+    price_per_kg: Optional[float] = Field(validation_alias="precio_por_kg", default=None)
     
     # --- Filtros Globales ---
-    sabor: Optional[SaborEnum] = None
-    formato: Optional[FormatoEnum] = None
-    objetivo: Optional[ObjetivoEnum] = None
-    es_vegano: bool = False
-    sello_calidad: Optional[SelloCalidadEnum] = None
+    flavor: Optional[SaborEnum] = Field(validation_alias="sabor", default=None)
+    format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
+    goal: Optional[ObjetivoEnum] = Field(validation_alias="objetivo", default=None)
+    is_vegan: bool = Field(validation_alias="es_vegano", default=False)
+    quality_seal: Optional[SelloCalidadEnum] = Field(validation_alias="sello_calidad", default=None)
     
     # --- Sub-filtros por Categoría ---
-    # Usamos Optional[...] = None porque una creatina no tendrá tipo_proteina
-    tipo_proteina: Optional[TipoProteinaEnum] = None
-    porcentaje_proteina: Optional[int] = None
-    tipo_creatina: Optional[TipoCreatinaEnum] = None
-    perfil_aminoacidos: Optional[PerfilAminoacidosEnum] = None
-    tipo_vitamina: Optional[TipoVitaminaEnum] = None
+    protein_type: Optional[TipoProteinaEnum] = Field(validation_alias="tipo_proteina", default=None)
+    protein_percentage: Optional[int] = Field(validation_alias="porcentaje_proteina", default=None)
+    creatine_type: Optional[TipoCreatinaEnum] = Field(validation_alias="tipo_creatina", default=None)
+    amino_profile: Optional[PerfilAminoacidosEnum] = Field(validation_alias="perfil_aminoacidos", default=None)
+    vitamin_type: Optional[TipoVitaminaEnum] = Field(validation_alias="tipo_vitamina", default=None)
     
-    # Nuestro diccionario JSON dinámico para cosas específicas extras que no queramos filtrar
-    caracteristicas: Optional[Dict[str, Any]] = None
+    characteristics: Optional[Dict[str, Any]] = Field(validation_alias="caracteristicas", default=None)
     
-    marca: MarcaResponse
-    categoria: CategoriaResponse
+    # Objetos anidados en inglés
+    brand: Optional[BrandResponse] = Field(validation_alias="marca", default=None)
+    category: Optional[CategoryResponse] = Field(validation_alias="categoria", default=None)
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-class ProductosPaginados(BaseModel):
+class PaginatedProducts(BaseModel):
     total_resultados: int
-    productos: List[ProductoResponse]
+    productos: List[ProductResponse]
 
 # ==========================================
 # --- MOLDES PARA USUARIOS Y SEGURIDAD ---
 # ==========================================
-
 class UsuarioCreate(BaseModel):
-    """Datos que recibimos cuando alguien se registra"""
     email: str
     password: str
 
 class UsuarioResponse(BaseModel):
-    """Datos que devolvemos (¡Nunca devolvemos la contraseña!)"""
     id: int
     email: str
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
-    """Formato oficial en el que se envían los JWT según el estándar de internet"""
     access_token: str
     token_type: str
 
 # ==========================================
 # --- ESQUEMAS DE FAVORITOS ---
 # ==========================================
-
 class FavoritoCreate(BaseModel):
-    """Lo que recibimos del Frontend cuando el usuario hace clic en el corazón"""
     producto_id: int
 
-class FavoritoResponse(BaseModel):
-    """Lo que le devolvemos al Frontend cuando nos pide su lista de favoritos"""
-    id: int
-    producto_id: int
-    # ¡Magia! Le devolvemos el producto entero anidado para que Javiki 
-    # pueda re-aprovechar su componente <ProductCard /> sin hacer peticiones extra
-    producto: ProductoResponse
+class FavoriteResponse(BaseModel):
+    favorite_id: int = Field(validation_alias="id")
+    product_id: int = Field(validation_alias="producto_id")
+    product: ProductResponse = Field(validation_alias="producto")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

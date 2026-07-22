@@ -76,7 +76,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
     }
 
 
-@app.get("/api/productos")
+@app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     skip: int = 0, 
     limit: int = 100, 
@@ -84,7 +84,6 @@ def obtener_productos(
     marca: Optional[str] = None,
     objetivo: Optional[str] = None,
     sabor: Optional[str] = None,
-    # --- NUEVOS PARÁMETROS QUE ACEPTA EL BUSCADOR ---
     formato: Optional[str] = None,
     es_vegano: Optional[bool] = None,
     sello_calidad: Optional[str] = None,
@@ -92,13 +91,20 @@ def obtener_productos(
     tipo_creatina: Optional[str] = None,
     perfil_aminoacidos: Optional[str] = None,
     tipo_vitamina: Optional[str] = None,
-    # ------------------------------------------------
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Producto)
-    
+    if categoria and categoria.lower() != "todos":
+        # Comprobamos si nos pasan un ID o un Nombre de categoría
+        if categoria.isdigit():
+            query = query.filter(models.Producto.categoria_id == int(categoria))
+        else:
+            query = query.join(models.Categoria).filter(models.Categoria.nombre.ilike(f"%{categoria}%"))
+            
+    productos = query.all()
+    return {"total_resultados": len(productos), "productos": productos}
     # 1. Filtros básicos
     if categoria:
         query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
@@ -112,7 +118,7 @@ def obtener_productos(
     # 2. Filtros Globales Nuevos
     if formato:
         query = query.filter(models.Producto.formato == formato)
-    if es_vegano is not None:  # Usamos 'is not None' porque un booleano puede ser False
+    if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad == sello_calidad)
@@ -144,50 +150,21 @@ def obtener_productos(
         query = query.order_by(models.Producto.precio.desc())
 
     total_resultados = query.count()
-    
-    if total_resultados == 0:
-        return {"total_resultados": 0, "productos": []}
-        
     productos = query.offset(skip).limit(limit).all()
     
-    # 6. Mapeo al Inglés con los nuevos atributos para Javiki
-    productos_mapeados = []
-    for p in productos:
-        productos_mapeados.append({
-            "id": p.id,
-            "name": p.nombre,              
-            "description": p.descripcion,  
-            "price": p.precio,             
-            "image_url": p.imagen_url,     
-            "brand": p.marca.nombre if hasattr(p, 'marca') and p.marca else None, 
-            "category": p.categoria.nombre if hasattr(p, 'categoria') and p.categoria else None,
-            "goal": p.objetivo,
-            "flavor": p.sabor,
-            # --- TRADUCCIÓN DE LOS NUEVOS CAMPOS ---
-            "format": p.formato,
-            "is_vegan": p.es_vegano,
-            "quality_seal": p.sello_calidad,
-            "protein_type": p.tipo_proteina,
-            "protein_percentage": p.porcentaje_proteina,
-            "creatine_type": p.tipo_creatina,
-            "amino_profile": p.perfil_aminoacidos,
-            "vitamin_type": p.tipo_vitamina
-        })
-    
+    # 6. ¡LA MAGIA DE PYDANTIC!
+    # Se acabaron los mapeos manuales y el "Spanglish". 
+    # Le pasamos los objetos de la BD crudos y Pydantic los traduce al inglés al salir.
     return {
         "total_resultados": total_resultados,
-        "productos": productos_mapeados
-    }       
+        "productos": productos
+    }
 
 
-@app.get("/api/categorias", response_model=List[schemas.CategoriaResponse])
-def obtener_categorias(db: Session = Depends(get_db)):
-    # Vamos a la base de datos y le pedimos todas las categorías
-    categorias = db.query(models.Categoria).all()
-    return categorias
+
 
 # --- RUTA DE PRODUCTO INDIVIDUAL (FICHA DE PRODUCTO) ---
-@app.get("/api/productos/{producto_id}", response_model=schemas.ProductoResponse)
+@app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
     """
     Busca un único producto por su ID. 
@@ -334,7 +311,7 @@ def añadir_favorito(
     return {"mensaje": "Producto añadido a favoritos correctamente"}
 
 
-@app.get("/api/favoritos")
+@app.get("/api/favoritos", response_model=List[schemas.FavoriteResponse])
 def obtener_favoritos(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
@@ -342,27 +319,9 @@ def obtener_favoritos(
     # 1. Buscamos los favoritos SOLO del usuario que está haciendo la petición
     favoritos_db = db.query(models.Favorito).filter(models.Favorito.usuario_id == usuario_actual.id).all()
     
-    # 2. Los mapeamos al inglés al vuelo para que el Frontend de Javiki no explote
-    resultado = []
-    for fav in favoritos_db:
-        p = fav.producto
-        resultado.append({
-            "favorite_id": fav.id,
-            "product_id": fav.producto_id,
-            "product": {
-                "id": p.id,
-                "name": p.nombre,              
-                "description": p.descripcion,  
-                "price": p.precio,             
-                "image_url": p.imagen_url,     
-                "brand": p.marca.nombre if hasattr(p, 'marca') and p.marca else None, 
-                "category": p.categoria.nombre if hasattr(p, 'categoria') and p.categoria else None,
-                "goal": p.objetivo,
-                "flavor": p.sabor
-            }
-        })
-        
-    return resultado
+    # 2. Devolvemos los objetos directamente. Pydantic los leerá y los convertirá 
+    # a favorite_id, product_id, y anidará el product entero en inglés.
+    return favoritos_db
 
 
 @app.delete("/api/favoritos/{producto_id}")
