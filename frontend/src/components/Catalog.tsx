@@ -161,7 +161,7 @@ export default function Catalog() {
       </section>
 
       {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) - Peek Preview Effect */}
-      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-4 md:pt-6 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
 
         {/* Botón Flotante para Móviles */}
         <div className="md:hidden w-full sticky top-24 z-20 mb-4">
