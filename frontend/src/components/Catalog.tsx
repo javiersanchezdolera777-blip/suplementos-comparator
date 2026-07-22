@@ -159,7 +159,7 @@ export default function Catalog() {
 
       {/* 🎛️ COLUMNA IZQUIERDA: SIDEBAR DE FILTROS */}
       <aside className={`
-        w-full md:w-1/4 flex-shrink-0 transition-all duration-300
+        w-full md:w-[260px] flex-shrink-0 transition-all duration-300
         ${isMobileFilterOpen ? 'fixed inset-0 z-[100] bg-[#030712]/95 backdrop-blur-2xl p-6 overflow-y-auto block' : 'hidden md:block sticky top-28'}
       `}>
         {/* Cabecera Móvil */}
@@ -267,7 +267,7 @@ export default function Catalog() {
       </aside>
 
       {/* 🛍️ COLUMNA DERECHA: ESCAPARATE DE PRODUCTOS */}
-      <div className="w-full md:w-3/4 flex flex-col min-h-[500px]">
+      <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
         
         {/* Cabecera del Grid */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm gap-4 sm:gap-0">
