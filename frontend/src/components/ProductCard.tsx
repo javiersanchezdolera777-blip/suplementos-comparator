@@ -69,21 +69,21 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <div className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
+      <div className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-1">
         
         {/* Zona Superior: Imagen y Badges */}
         <div 
-          className="relative aspect-square p-8 flex items-center justify-center bg-slate-50 overflow-hidden cursor-pointer"
+          className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
           {hasImage ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-48 h-48 sm:w-56 sm:h-56 object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
-            <div className="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center bg-slate-100 rounded-xl border border-slate-200 relative z-10">
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 rounded-xl border border-slate-200 relative z-10">
                <span className="text-slate-400 font-bold tracking-[0.2em] text-xs uppercase">Suparator</span>
             </div>
           )}
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
               
               <div className="flex items-baseline gap-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desde</span>
-                <span className="text-2xl font-black text-slate-900 tracking-tight">
+                <span className="text-2xl font-black text-blue-600 tracking-tight">
                   {product.price?.toFixed(2)}€
                 </span>
               </div>
@@ -142,7 +142,7 @@ export default function ProductCard({ product }: { product: Product }) {
               href={product.affiliate_url || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold transition-all duration-300 active:scale-95 shadow-md shadow-slate-900/10 whitespace-nowrap"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 shadow-md shadow-blue-600/20 whitespace-nowrap"
             >
               Ver oferta
             </a>
@@ -197,8 +197,7 @@ export default function ProductCard({ product }: { product: Product }) {
                </div>
 
                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 leading-snug">{product.name}</h2>
-               
-               <div className="text-3xl font-black text-slate-900 mb-6">
+                           <div className="text-3xl font-black text-blue-600 mb-6">
                  <span className="text-slate-400 text-lg font-bold mr-2">Desde</span>
                  {product.price?.toFixed(2)}€
                </div>
@@ -226,11 +225,11 @@ export default function ProductCard({ product }: { product: Product }) {
                    href={product.affiliate_url || "#"} 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   className="w-full flex justify-center py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg shadow-slate-900/20 active:scale-95"
+                   className="w-full flex justify-center py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
                  >
                    Ver oferta en la tienda oficial
                  </a>
-               </div>
+               </div>     </div>
             </div>
           </div>
         </div>
