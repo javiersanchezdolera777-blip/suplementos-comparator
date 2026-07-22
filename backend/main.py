@@ -96,7 +96,15 @@ def obtener_productos(
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Producto)
-    
+    if categoria and categoria.lower() != "todos":
+        # Comprobamos si nos pasan un ID o un Nombre de categoría
+        if categoria.isdigit():
+            query = query.filter(models.Producto.categoria_id == int(categoria))
+        else:
+            query = query.join(models.Categoria).filter(models.Categoria.nombre.ilike(f"%{categoria}%"))
+            
+    productos = query.all()
+    return {"total_resultados": len(productos), "productos": productos}
     # 1. Filtros básicos
     if categoria:
         query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)

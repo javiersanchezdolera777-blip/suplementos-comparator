@@ -12,6 +12,9 @@ class SaborEnum(str, Enum):
     neutro = "Sin sabor"
     limon = "Limón"
     frutas = "Frutas del bosque"
+    cookies = "Cookies & Cream"
+    platano = "Plátano"
+    cafe = "Café / Capuchino"
 
 class FormatoEnum(str, Enum):
     polvo = "Polvo"
@@ -83,6 +86,10 @@ class ProductResponse(BaseModel):
     price: float = Field(validation_alias="precio")
     image_url: str = Field(validation_alias="imagen_url")
     affiliate_url: str = Field(validation_alias="afiliado_url", default="")
+
+    slug: Optional[str] = None
+    weight_grams: Optional[int] = Field(validation_alias="peso_gramos", default=None)
+    price_per_kg: Optional[float] = Field(validation_alias="precio_por_kg", default=None)
     
     # --- Filtros Globales ---
     flavor: Optional[SaborEnum] = Field(validation_alias="sabor", default=None)
