@@ -229,7 +229,7 @@ export default function ProductCard({ product }: { product: Product }) {
                  >
                    Ver oferta en la tienda oficial
                  </a>
-               </div>     </div>
+               </div>
             </div>
           </div>
         </div>
