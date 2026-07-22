@@ -16,11 +16,11 @@ export default function Navbar() {
         </Link>
       </div>
       
-      <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-400">
+      <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
         <Link href="/#catalogo" className="hover:text-white transition-colors">Catálogo</Link>
-        <Link href="#" className="hover:text-white transition-colors">Proteínas</Link>
-        <Link href="#" className="hover:text-white transition-colors">Creatinas</Link>
-        <div className="w-px h-4 bg-white/10"></div>
+        <Link href="/#marcas" className="hover:text-white transition-colors">Marcas</Link>
+        <Link href="/#ofertas" className="hover:text-white transition-colors">Top Ofertas</Link>
+        <div className="w-px h-4 bg-slate-800"></div>
         
         {isLoggedIn ? (
           <div className="flex items-center gap-4">

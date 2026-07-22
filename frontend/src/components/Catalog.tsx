@@ -127,7 +127,24 @@ export default function Catalog() {
   const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10">
+    <div className="w-full flex flex-col gap-8">
+      {/* Barra de Búsqueda Global Premium */}
+      <div className="w-full relative z-20 group">
+        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+          <svg className="h-5 w-5 text-slate-500 group-focus-within:text-slate-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          type="text"
+          placeholder="Busca por marca, producto o ingrediente..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-[#111726]/80 backdrop-blur-md border border-slate-800/80 text-white rounded-2xl pl-14 pr-6 py-4 text-base outline-none focus:border-slate-600 focus:bg-[#111726] shadow-sm transition-all placeholder:text-slate-500"
+        />
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10">
       
       {/* 📱 Botón Flotante para Móviles (Abre el Drawer) */}
       <div className="md:hidden w-full sticky top-24 z-20 mb-4">
@@ -156,27 +173,6 @@ export default function Catalog() {
         {/* Panel Estilizado de Filtros */}
         <div className="bg-[#0f172a]/60 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-2xl flex flex-col gap-6">
           
-          {/* Buscador */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Búsqueda</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-400">
-                <svg className="h-4 w-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Proteína, pre-entreno..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 text-white rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500 font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="h-px w-full bg-white/5"></div>
-
           {/* Categoría y Marca */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -325,6 +321,7 @@ export default function Catalog() {
             </button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
