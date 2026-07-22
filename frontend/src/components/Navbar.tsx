@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { isLoggedIn, openLoginModal, logout } = useAuth();
+  // Extraemos favoriteIds para saber cuántos productos hay guardados
+  const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
 
   return (
-    <nav className="w-full py-5 px-6 md:px-12 flex justify-between items-center z-50 border-b border-white/5 bg-[#030712]/70 backdrop-blur-xl sticky top-0 supports-[backdrop-filter]:bg-[#030712]/40">
+    <nav className="w-full py-4 px-6 md:px-12 flex justify-between items-center z-50 border-b border-white/10 bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 transition-all duration-300">
       <div className="text-2xl font-black tracking-tighter flex items-center gap-2">
         <Link href="/" className="flex items-center gap-2 group">
           <span className="text-blue-500 drop-shadow-[0_0_10px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform">⚡</span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">Suparator</span>
         </Link>
       </div>
+      
       <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-400">
         <Link href="/#catalogo" className="hover:text-white transition-colors">Catálogo</Link>
         <Link href="#" className="hover:text-white transition-colors">Proteínas</Link>
@@ -30,6 +32,12 @@ export default function Navbar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               <span className="font-bold hidden sm:inline">Favoritos</span>
+              {/* CONTADOR DINÁMICO DE FAVORITOS */}
+              {favoriteIds && favoriteIds.length > 0 && (
+                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black min-w-[20px] text-center">
+                  {favoriteIds.length}
+                </span>
+              )}
             </Link>
             <button 
               onClick={logout}
@@ -49,11 +57,6 @@ export default function Navbar() {
               </svg>
               <span className="font-bold">Acceder</span>
             </button>
-            <div className="absolute top-full right-0 mt-4 w-60 p-4 bg-[#0a0f1d] border border-blue-500/20 rounded-2xl shadow-2xl shadow-black/80 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-50 text-xs text-slate-300 text-center leading-relaxed backdrop-blur-xl">
-              <span className="font-semibold text-white block mb-1.5 text-sm">Crea tu cuenta gratis</span>
-              Guarda tus suplementos favoritos y sigue sus precios.
-              <div className="absolute -top-2 right-10 w-4 h-4 bg-[#0a0f1d] border-t border-l border-blue-500/20 transform rotate-45"></div>
-            </div>
           </div>
         )}
       </div>
