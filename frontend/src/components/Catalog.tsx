@@ -121,13 +121,13 @@ export default function Catalog() {
 
       {/* 🚀 FASE 1: HERO CENTRADO SIMÉTRICO */}
       <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-        
+
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700 mb-6 shadow-sm transition-transform hover:scale-105 cursor-default">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span>Comparando precios en tiempo real entre +10 tiendas</span>
+          <span>Comparando precios en tiempo real</span>
         </div>
 
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-5">
