@@ -117,30 +117,23 @@ export default function Catalog() {
   const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
 
   return (
-    <div className="w-full flex flex-col gap-16">
+    <div className="w-full flex flex-col gap-2 md:gap-4">
 
-      {/* 🚀 FASE 1: HERO CENTRADO SIMÉTRICO */}
-      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+      {/* 🚀 FASE 2: HERO COMPACTADO */}
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 md:pt-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
 
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700 mb-6 shadow-sm transition-transform hover:scale-105 cursor-default">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span>Comparando precios en tiempo real</span>
-        </div>
-
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-5">
+        {/* Badge verde eliminado (Fase 1) */}
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-4">
           El mayor comparador de <br className="hidden sm:block" />
           <span className="text-blue-600">suplementos de España</span>
         </h1>
 
-        <p className="text-base text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+        <p className="text-base text-slate-600 max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed font-medium">
           Encuentra los mejores precios en proteínas, creatinas y vitaminas de tus marcas favoritas. Analizamos y comparamos en tiempo real para que tú ahorres.
         </p>
 
         {/* Barra de Búsqueda Protagonista */}
-        <div className="w-full max-w-2xl mx-auto relative z-20 group mb-8">
+        <div className="w-full max-w-2xl mx-auto relative z-20 group mb-6">
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
             <svg className="h-6 w-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -167,8 +160,8 @@ export default function Catalog() {
         </div>
       </section>
 
-      {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) */}
-      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-8 border-t border-slate-200 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+      {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) - Peek Preview Effect */}
+      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
 
         {/* Botón Flotante para Móviles */}
         <div className="md:hidden w-full sticky top-24 z-20 mb-4">
