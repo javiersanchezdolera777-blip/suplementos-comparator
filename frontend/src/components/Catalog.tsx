@@ -64,7 +64,7 @@ export default function Catalog() {
   useEffect(() => {
     if (selectedCategory !== "Proteínas") setSelectedProteinType("Todos");
     if (selectedCategory !== "Creatinas") setSelectedCreatineType("Todos");
-    if (selectedCategory !== "Vitaminas") setSelectedVitaminType("Todos");
+    if (selectedCategory !== "Vitaminas" && selectedCategory !== "Vitaminas y Minerales" && !selectedCategory.startsWith("Vitamina")) setSelectedVitaminType("Todos");
     if (selectedCategory !== "Aminoácidos") setSelectedAminoProfile("Todos");
   }, [selectedCategory]);
 
@@ -83,7 +83,7 @@ export default function Catalog() {
 
     if (selectedCategory === "Proteínas" && selectedProteinType !== "Todos") queryParams.append("tipo_proteina", selectedProteinType);
     if (selectedCategory === "Creatinas" && selectedCreatineType !== "Todos") queryParams.append("tipo_creatina", selectedCreatineType);
-    if (selectedCategory === "Vitaminas" && selectedVitaminType !== "Todos") queryParams.append("tipo_vitamina", selectedVitaminType);
+    if ((selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina")) && selectedVitaminType !== "Todos") queryParams.append("tipo_vitamina", selectedVitaminType);
     if (selectedCategory === "Aminoácidos" && selectedAminoProfile !== "Todos") queryParams.append("perfil_aminoacidos", selectedAminoProfile);
     
     return queryParams;
@@ -147,11 +147,15 @@ export default function Catalog() {
     setSelectedFlavor("Todos");
     setSelectedGoal("Todos");
     setSelectedQualitySeal("Todos");
+    setSelectedProteinType("Todos");
+    setSelectedCreatineType("Todos");
+    setSelectedVitaminType("Todos");
+    setSelectedAminoProfile("Todos");
     setIsVegan(null);
     setIsMobileFilterOpen(false);
   };
 
-  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos";
+  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos";
 
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
@@ -245,7 +249,7 @@ export default function Catalog() {
             </div>
 
             {/* Subfiltros Condicionales por Categoría */}
-            {(selectedCategory === "Proteínas" || selectedCategory === "Creatinas" || selectedCategory === "Vitaminas" || selectedCategory === "Aminoácidos") && (
+            {(selectedCategory === "Proteínas" || selectedCategory === "Creatinas" || selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina") || selectedCategory === "Aminoácidos") && (
               <>
                 <div className="h-px w-full bg-slate-100"></div>
                 <div className="flex flex-col gap-2 p-3 bg-blue-50/50 border border-blue-100 rounded-2xl">
@@ -262,6 +266,22 @@ export default function Catalog() {
                       <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Creatina</label>
                       <select value={selectedCreatineType} onChange={(e) => setSelectedCreatineType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
                         {creatineTypes.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </>
+                  )}
+                  {(selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina")) && (
+                    <>
+                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Vitamina / Mineral</label>
+                      <select value={selectedVitaminType} onChange={(e) => setSelectedVitaminType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                        {vitaminTypes.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </>
+                  )}
+                  {selectedCategory === "Aminoácidos" && (
+                    <>
+                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Perfil de Aminoácidos</label>
+                      <select value={selectedAminoProfile} onChange={(e) => setSelectedAminoProfile(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                        {aminoProfiles.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
                     </>
                   )}
