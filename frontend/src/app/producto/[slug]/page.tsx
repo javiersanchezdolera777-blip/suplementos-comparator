@@ -93,7 +93,7 @@ export default async function ProductDetailPage({ params }: Props) {
       <div className="max-w-6xl mx-auto">
         
         {/* 1. NAVEGACIÓN Y BREADCRUMB */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 text-sm">
+        <div className="flex items-center justify-between gap-4 mb-6 text-sm">
           <nav className="flex items-center gap-2 text-slate-500 font-medium overflow-x-auto py-1">
             <Link href="/" className="hover:text-blue-600 transition-colors">
               Inicio
@@ -103,13 +103,6 @@ export default async function ProductDetailPage({ params }: Props) {
             <span>/</span>
             <span className="text-slate-900 font-bold truncate max-w-[200px] sm:max-w-xs">{cleanName}</span>
           </nav>
-
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-200 px-4 py-2 rounded-xl shadow-sm transition-all"
-          >
-            ← Volver al catálogo
-          </Link>
         </div>
 
         {/* 2. TARJETA PRINCIPAL DEL PRODUCTO */}
