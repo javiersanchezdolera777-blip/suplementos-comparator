@@ -83,7 +83,6 @@ def obtener_productos(
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
     db: Session = Depends(get_db),
-    marcas: Optional[str] = Query(None, description="Filtra por múltiples marcas separadas por coma"),
     porcentaje_min: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
     ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
     page: int = Query(1, ge=1),
@@ -164,6 +163,7 @@ def obtener_productos(
             # IMPORTANTE: En SQLAlchemy se usa in_() con barra baja
             query = query.filter(models.Marca.nombre.in_(lista_marcas))
             
+
     # --- 1. FILTRO DE PORCENTAJE DE PROTEÍNA ---
     if porcentaje_min is not None:
         query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_min)
@@ -205,10 +205,18 @@ def obtener_productos(
         "productos": productos
     }
 
-# --- RUTA DE PRODUCTO INDIVIDUAL ---
+# --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+# --- RUTA DE PRODUCTO INDIVIDUAL POR SLUG ---
+@app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse)
+def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
+    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
