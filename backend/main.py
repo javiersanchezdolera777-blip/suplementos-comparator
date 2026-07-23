@@ -102,28 +102,17 @@ def obtener_productos(
             query = query.filter(models.Producto.categoria_id == int(categoria))
         else:
             query = query.join(models.Categoria).filter(models.Categoria.nombre.ilike(f"%{categoria}%"))
-            
-    productos = query.all()
-    return {"total_resultados": len(productos), "productos": productos}
-    # 1. Filtros básicos
-    if categoria:
-        query = query.join(models.Categoria).filter(models.Categoria.nombre == categoria)
+
     if marca:
         query = query.join(models.Marca).filter(models.Marca.nombre == marca)
     if objetivo:
         query = query.filter(models.Producto.objetivo == objetivo)
-    if sabor:
-        query = query.filter(models.Producto.sabor == sabor)
-        
-    # 2. Filtros Globales Nuevos
     if formato:
         query = query.filter(models.Producto.formato == formato)
     if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad == sello_calidad)
-        
-    # 3. Sub-filtros por categoría
     if tipo_proteina:
         query = query.filter(models.Producto.tipo_proteina == tipo_proteina)
     if tipo_creatina:
@@ -132,8 +121,6 @@ def obtener_productos(
         query = query.filter(models.Producto.perfil_aminoacidos == perfil_aminoacidos)
     if tipo_vitamina:
         query = query.filter(models.Producto.tipo_vitamina == tipo_vitamina)
-        
-    # 4. Buscador de texto libre
     if busqueda:
         termino = f"%{busqueda}%"
         query = query.filter(
@@ -142,19 +129,30 @@ def obtener_productos(
                 models.Producto.descripcion.ilike(termino)
             )
         )
-        
-    # 5. Lógica de ordenación
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
 
-    total_resultados = query.count()
-    productos = query.offset(skip).limit(limit).all()
-    
-    # 6. ¡LA MAGIA DE PYDANTIC!
-    # Se acabaron los mapeos manuales y el "Spanglish". 
-    # Le pasamos los objetos de la BD crudos y Pydantic los traduce al inglés al salir.
+    productos_raw = query.all()
+
+    if sabor:
+        sabor_lower = sabor.lower()
+        def tiene_sabor(producto):
+            valor = getattr(producto, "sabor", None)
+            if isinstance(valor, list):
+                return any(str(item).lower() == sabor_lower for item in valor)
+            if isinstance(valor, str):
+                return sabor_lower in valor.lower()
+            return False
+
+        productos_filtrados = [p for p in productos_raw if tiene_sabor(p)]
+    else:
+        productos_filtrados = productos_raw
+
+    total_resultados = len(productos_filtrados)
+    productos = productos_filtrados[skip:skip + limit]
+
     return {
         "total_resultados": total_resultados,
         "productos": productos

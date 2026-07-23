@@ -49,7 +49,7 @@ class Producto(Base):
     # --- 🌍 FILTROS GLOBALES ---
     # ==========================================
     objetivo = Column(String)
-    sabor = Column(String)
+    sabor = Column(JSON, default=list)
     formato = Column(String)                     # NUEVO: Polvo, Cápsulas, Líquido...
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
     sello_calidad = Column(String)               # NUEVO: Creapure, Lacprodan, Kyowa...

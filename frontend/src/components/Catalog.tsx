@@ -114,7 +114,7 @@ export default function Catalog() {
     setIsMobileFilterOpen(false);
   };
 
-  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos";
+  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos";
 
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
@@ -240,6 +240,13 @@ export default function Catalog() {
                 <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Formato</label>
                 <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
                   {formats.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sabor</label>
+                <select value={selectedFlavor} onChange={(e) => setSelectedFlavor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500">
+                  {flavors.map(fl => <option key={fl} value={fl}>{fl}</option>)}
                 </select>
               </div>
 
