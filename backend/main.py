@@ -157,10 +157,18 @@ def obtener_productos(
         "productos": productos
     }
 
-# --- RUTA DE PRODUCTO INDIVIDUAL ---
+# --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+# --- RUTA DE PRODUCTO INDIVIDUAL POR SLUG ---
+@app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse)
+def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
+    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto

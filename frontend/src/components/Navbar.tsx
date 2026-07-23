@@ -7,7 +7,7 @@ export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
 
   return (
-    <nav className="w-full py-4 px-6 md:px-12 flex justify-between items-center z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 transition-all duration-300">
+    <nav className="w-full py-4 px-6 md:px-12 flex justify-between items-center z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 transition-all duration-300">
       <div className="text-2xl font-black tracking-tighter flex items-center gap-2">
         <Link href="/" className="flex items-center gap-2 group">
           <span className="text-blue-600 drop-shadow-sm group-hover:scale-110 transition-transform">⚡</span>
