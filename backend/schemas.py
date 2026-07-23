@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Dict, Any, List, Optional
 from enum import Enum
 
@@ -88,15 +88,29 @@ class ProductResponse(BaseModel):
     affiliate_url: str = Field(validation_alias="afiliado_url", default="")
 
     slug: Optional[str] = None
+
+    @field_validator("affiliate_url", mode="before")
+    def normalize_affiliate_url(cls, v):
+        return v or ""
     weight_grams: Optional[int] = Field(validation_alias="peso_gramos", default=None)
     price_per_kg: Optional[float] = Field(validation_alias="precio_por_kg", default=None)
     
     # --- Filtros Globales ---
-    flavor: Optional[SaborEnum] = Field(validation_alias="sabor", default=None)
+    flavor: List[str] = Field(validation_alias="sabor", default_factory=list)
     format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
     goal: Optional[ObjetivoEnum] = Field(validation_alias="objetivo", default=None)
     is_vegan: bool = Field(validation_alias="es_vegano", default=False)
     quality_seal: Optional[SelloCalidadEnum] = Field(validation_alias="sello_calidad", default=None)
+
+    @field_validator("flavor", mode="before")
+    def normalize_flavor(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, list):
+            return [str(item) for item in v]
+        return []
     
     # --- Sub-filtros por Categoría ---
     protein_type: Optional[TipoProteinaEnum] = Field(validation_alias="tipo_proteina", default=None)
