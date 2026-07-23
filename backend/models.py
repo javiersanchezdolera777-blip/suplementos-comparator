@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -50,7 +50,7 @@ class Producto(Base):
     # ==========================================
     objetivo = Column(String)
     sabor = Column(JSON, default=list)
-    formato = Column(String)                     # NUEVO: Polvo, Cápsulas, Líquido...
+    formato = Column(String, nullable=True)                     # NUEVO: Polvo, Cápsulas, Líquido...
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
     sello_calidad = Column(String)               # NUEVO: Creapure, Lacprodan, Kyowa...
 

@@ -5,6 +5,17 @@ from enum import Enum
 # ==========================================
 # --- 1. ENUMS (GUARDIANES EN ESPAÑOL PARA LA BD) ---
 # ==========================================
+class CategoriaEnum(str, Enum):
+    proteinas = "Proteínas"
+    creatinas = "Creatinas"
+    aminoacidos = "Aminoácidos"
+    vitaminas = "Vitaminas y Minerales"
+    pre_entrenos = "Pre-Entrenos"
+    alimentacion = "Alimentación Saludable"
+    accesorios = "Accesorios"
+    salud = "Salud y Bienestar"
+    otros = "Otros"
+
 class SaborEnum(str, Enum):
     fresa = "Fresa"
     vainilla = "Vainilla"
@@ -63,6 +74,16 @@ class TipoVitaminaEnum(str, Enum):
     vitamina_d = "Vitamina D"
     magnesio = "Magnesio"
     omega3 = "Omega-3"
+
+def normalizar_marca(nombre: str) -> str:
+    """
+    Recibe un nombre de marca caótico y lo devuelve limpio y capitalizado.
+    Ejemplo: "  my PROTEIN  " -> "My Protein"
+    """
+    if not nombre:
+        return "Desconocida"
+    # Quita espacios dobles y a los lados, y capitaliza cada palabra
+    return " ".join(nombre.split()).title()
 
 # ==========================================
 # --- 2. LOS ESQUEMAS DE RESPUESTA (100% INGLÉS PARA EL FRONTEND) ---
