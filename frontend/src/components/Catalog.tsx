@@ -8,6 +8,10 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  const [totalResultados, setTotalResultados] = useState<number>(0);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const BATCH_SIZE = 36;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [selectedBrand, setSelectedBrand] = useState("Todas");
@@ -64,9 +68,7 @@ export default function Catalog() {
     if (selectedCategory !== "Aminoácidos") setSelectedAminoProfile("Todos");
   }, [selectedCategory]);
 
-  useEffect(() => {
-    setLoading(true);
-
+  const buildQueryParams = () => {
     const queryParams = new URLSearchParams();
     if (searchQuery) queryParams.append("busqueda", searchQuery);
     if (selectedCategory !== "Todas") queryParams.append("categoria", selectedCategory);
@@ -83,11 +85,22 @@ export default function Catalog() {
     if (selectedCategory === "Creatinas" && selectedCreatineType !== "Todos") queryParams.append("tipo_creatina", selectedCreatineType);
     if (selectedCategory === "Vitaminas" && selectedVitaminType !== "Todos") queryParams.append("tipo_vitamina", selectedVitaminType);
     if (selectedCategory === "Aminoácidos" && selectedAminoProfile !== "Todos") queryParams.append("perfil_aminoacidos", selectedAminoProfile);
+    
+    return queryParams;
+  };
+
+  useEffect(() => {
+    setLoading(true);
+
+    const queryParams = buildQueryParams();
+    queryParams.append("limit", BATCH_SIZE.toString());
+    queryParams.append("skip", "0");
 
     fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
       .then((res) => res.json())
       .then((data) => {
         setProductos(Array.isArray(data) ? data : data.productos || []);
+        setTotalResultados(Array.isArray(data) ? data.length : data.total_resultados || 0);
         setLoading(false);
       })
       .catch((error) => {
@@ -100,6 +113,30 @@ export default function Catalog() {
     selectedProteinType, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
     isVegan, apiUrl
   ]);
+
+  const cargarMasProductos = () => {
+    if (loadingMore || productos.length >= totalResultados) return;
+    setLoadingMore(true);
+
+    const queryParams = buildQueryParams();
+    queryParams.append("limit", BATCH_SIZE.toString());
+    queryParams.append("skip", productos.length.toString());
+
+    fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const nuevosProductos = Array.isArray(data) ? data : data.productos || [];
+        setProductos((prev) => [...prev, ...nuevosProductos]);
+        if (!Array.isArray(data) && data.total_resultados !== undefined) {
+          setTotalResultados(data.total_resultados);
+        }
+        setLoadingMore(false);
+      })
+      .catch((error) => {
+        console.error("Error cargando más productos:", error);
+        setLoadingMore(false);
+      });
+  };
 
   const limpiarFiltros = () => {
     setSearchQuery("");
@@ -294,7 +331,7 @@ export default function Catalog() {
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
             <div className="text-slate-500 text-sm">
-              Mostrando <span className="text-slate-900 font-black text-base">{productos.length}</span> suplementos
+              Mostrando <span className="text-slate-900 font-black text-base">{productos.length}</span> de <span className="text-slate-900 font-black text-base">{totalResultados}</span> suplementos
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -326,11 +363,44 @@ export default function Catalog() {
               ))}
             </div>
           ) : productos.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {productos.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {productos.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {/* Botón Cargar Más Suplementos */}
+              {productos.length < totalResultados && (
+                <div className="flex flex-col items-center justify-center mt-10 mb-6 gap-3">
+                  <button
+                    onClick={cargarMasProductos}
+                    disabled={loadingMore}
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-base rounded-2xl shadow-lg shadow-blue-600/25 transition-all duration-200 active:scale-95 flex items-center gap-3 cursor-pointer"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Cargando más suplementos...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Cargar más suplementos</span>
+                        <span className="text-xs bg-blue-500/50 px-2.5 py-0.5 rounded-lg font-mono">
+                          +{Math.min(BATCH_SIZE, totalResultados - productos.length)}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  <span className="text-xs text-slate-400 font-medium">
+                    Has visto {productos.length} de {totalResultados} suplementos
+                  </span>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-3xl text-center px-4 shadow-sm">
               <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mb-6">
