@@ -28,6 +28,19 @@ interface Product {
   flavor?: string[] | string | null;
 }
 
+const decodeHTML = (str: string) => {
+  if (!str) return "";
+  return str
+    .replace(/&#8211;/g, "–")
+    .replace(/&#8212;/g, "—")
+    .replace(/&amp;/g, "&")
+    .replace(/&#8217;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+};
+
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -37,6 +50,11 @@ export default function ProductCard({ product }: { product: Product }) {
   
   const hasImage = product.image_url && product.image_url.trim() !== "";
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setIsExpanded(false);
+  };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation(); 
@@ -81,7 +99,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {hasImage ? (
             <img
               src={product.image_url}
-              alt={product.name}
+              alt={decodeHTML(product.name)}
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
@@ -123,7 +141,7 @@ export default function ProductCard({ product }: { product: Product }) {
             className="text-base font-bold text-slate-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors duration-300 cursor-pointer"
             onClick={() => setIsModalOpen(true)}
           >
-            {product.name}
+            {decodeHTML(product.name)}
           </h3>
           <p className="text-sm text-slate-500 line-clamp-2 mb-6 flex-grow font-medium leading-relaxed">
             {product.description}
@@ -155,30 +173,34 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Modal Quick View Overlay Light Mode */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-          onClick={() => setIsModalOpen(false)} 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-black/70 backdrop-blur-md transition-opacity overflow-y-auto"
+          onClick={closeModal} 
         >
           <div 
-            className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-300"
+            className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-300 my-auto"
             onClick={(e) => e.stopPropagation()} 
           >
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-500">
+            <button 
+              onClick={closeModal} 
+              className="absolute top-4 right-4 z-50 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-500 cursor-pointer shadow-sm"
+              title="Cerrar modal"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            <div className="w-full md:w-1/2 bg-slate-50 p-8 flex items-center justify-center min-h-[300px] border-r border-slate-100">
+            <div className="w-full md:w-1/2 bg-slate-50 p-8 flex items-center justify-center min-h-[300px] border-b md:border-b-0 md:border-r border-slate-100">
                 {hasImage ? (
-                  <img src={product.image_url} alt={product.name} className="w-full h-auto max-h-[400px] object-contain drop-shadow-md" />
+                  <img src={product.image_url} alt={decodeHTML(product.name)} className="w-full h-auto max-h-[400px] object-contain drop-shadow-md" />
                 ) : (
                   <span className="text-slate-300 font-black tracking-[0.3em] text-xl uppercase">Suparator</span>
                 )}
             </div>
 
             <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
-               <div className="flex justify-between items-start mb-2">
-                 <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">{product.brand?.name}</div>
+               <div className="flex justify-between items-center mb-3 pr-12">
+                 <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">{product.brand?.name || "Sin marca"}</div>
                  
                  <div className="group/heart cursor-pointer" onClick={toggleFavorite}>
                    <div className={`p-2 rounded-full border transition-colors shadow-sm ${
@@ -198,8 +220,8 @@ export default function ProductCard({ product }: { product: Product }) {
                  </div>
                </div>
 
-               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 leading-snug">{product.name}</h2>
-                           <div className="text-3xl font-black text-blue-600 mb-6">
+               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 leading-snug">{decodeHTML(product.name)}</h2>
+               <div className="text-3xl font-black text-blue-600 mb-6">
                  <span className="text-slate-400 text-lg font-bold mr-2">Desde</span>
                  {product.price?.toFixed(2)}€
                </div>
@@ -208,7 +230,7 @@ export default function ProductCard({ product }: { product: Product }) {
                  {product.description}
                </div>
                {product.description && product.description.length > 120 && (
-                 <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-600 text-xs font-bold mb-6 hover:text-blue-700 self-start">
+                 <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-600 text-xs font-bold mb-6 hover:text-blue-700 self-start cursor-pointer">
                    {isExpanded ? 'Leer menos' : 'Leer más...'}
                  </button>
                )}
@@ -230,7 +252,7 @@ export default function ProductCard({ product }: { product: Product }) {
                    href={product.affiliate_url || "#"} 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   className="w-full flex justify-center py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
+                   className="w-full flex justify-center py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20 active:scale-95 cursor-pointer"
                  >
                    Ver oferta en la tienda oficial
                  </a>
