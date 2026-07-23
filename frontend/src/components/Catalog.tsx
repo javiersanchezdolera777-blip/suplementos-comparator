@@ -14,7 +14,7 @@ export default function Catalog() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
-  const [selectedBrand, setSelectedBrand] = useState("Todas");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [ordenPrecio, setOrdenPrecio] = useState("relevancia");
 
   const [selectedFormat, setSelectedFormat] = useState("Todos");
@@ -42,7 +42,6 @@ export default function Catalog() {
   const POPULAR_BRANDS = ["Optimum Nutrition", "Dymatize", "Sport Live", "MuscleTech", "Scitec", "MyProtein"];
 
   const [brandSearch, setBrandSearch] = useState("");
-  const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
 
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
     category: true,
@@ -92,7 +91,7 @@ export default function Catalog() {
     const queryParams = new URLSearchParams();
     if (searchQuery) queryParams.append("busqueda", searchQuery);
     if (selectedCategory !== "Todas") queryParams.append("categoria", selectedCategory);
-    if (selectedBrand !== "Todas") queryParams.append("marca", selectedBrand);
+    if (selectedBrands.length > 0) queryParams.append("marcas", selectedBrands.join(","));
     
     if (ordenPrecio && ordenPrecio !== "relevancia") {
       queryParams.append("orden_precio", ordenPrecio);
@@ -136,7 +135,7 @@ export default function Catalog() {
         setLoading(false);
       });
   }, [
-    searchQuery, selectedCategory, selectedBrand, ordenPrecio,
+    searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
     selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
     isVegan, apiUrl
@@ -169,7 +168,7 @@ export default function Catalog() {
   const limpiarFiltros = () => {
     setSearchQuery("");
     setSelectedCategory("Todas");
-    setSelectedBrand("Todas");
+    setSelectedBrands([]);
     setOrdenPrecio("relevancia");
     setSelectedFormat("Todos");
     setSelectedFlavor("Todos");
@@ -184,7 +183,7 @@ export default function Catalog() {
     setIsMobileFilterOpen(false);
   };
 
-  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrand !== "Todas" || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
+  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
 
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
@@ -287,7 +286,7 @@ export default function Catalog() {
 
             <div className="h-px w-full bg-slate-100"></div>
 
-            {/* 2. Acordeón Marca (Pills Gym-First + Combobox Buscador) */}
+            {/* 2. Acordeón Marca (Multiselección + Tags + Combobox) */}
             <div className="flex flex-col gap-3">
               <button
                 type="button"
@@ -296,9 +295,9 @@ export default function Catalog() {
               >
                 <div className="flex items-center gap-2">
                   <span>Marca</span>
-                  {selectedBrand !== "Todas" && (
+                  {selectedBrands.length > 0 && (
                     <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold lowercase">
-                      {selectedBrand}
+                      {selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} selec.`}
                     </span>
                   )}
                 </div>
@@ -309,17 +308,58 @@ export default function Catalog() {
 
               {openSections.brand && (
                 <div className="flex flex-col gap-3 pt-1">
+                  
+                  {/* Etiquetas (Chips) de Marcas Seleccionadas */}
+                  {selectedBrands.length > 0 && (
+                    <div className="flex flex-col gap-1.5 p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                          Seleccionadas ({selectedBrands.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBrands([])}
+                          className="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer underline"
+                        >
+                          Limpiar marcas
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {selectedBrands.map((brand) => (
+                          <span
+                            key={brand}
+                            className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 text-xs font-bold px-2 py-0.5 rounded-lg shadow-sm"
+                          >
+                            <span>{brand}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedBrands((prev) => prev.filter((b) => b !== brand))}
+                              className="text-blue-400 hover:text-red-500 font-black ml-0.5 transition-colors cursor-pointer"
+                              title={`Eliminar ${brand}`}
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pills Gym-First (Acceso Rápido) */}
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Marcas</span>
                     <div className="flex flex-wrap gap-1.5">
                       {POPULAR_BRANDS.map((brand) => {
-                        const isSelected = selectedBrand.toLowerCase() === brand.toLowerCase();
+                        const isSelected = selectedBrands.includes(brand);
                         return (
                           <button
                             key={brand}
                             type="button"
-                            onClick={() => setSelectedBrand(isSelected ? "Todas" : brand)}
+                            onClick={() => {
+                              setSelectedBrands((prev) =>
+                                isSelected ? prev.filter((b) => b !== brand) : [...prev, brand]
+                              );
+                            }}
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                               isSelected
                                 ? "bg-blue-600 text-white border-blue-600 shadow-sm"
@@ -333,85 +373,72 @@ export default function Catalog() {
                     </div>
                   </div>
 
-                  {/* Combobox Buscador de Marcas */}
-                  <div className="relative w-full mt-1">
+                  {/* Buscador de Marcas + Lista Inline con Checkboxes */}
+                  <div className="flex flex-col gap-2 mt-1">
                     <div className="relative flex items-center">
                       <input
                         type="text"
-                        placeholder={selectedBrand !== "Todas" ? selectedBrand : "🔍 Buscar marca..."}
+                        placeholder="🔍 Buscar marca..."
                         value={brandSearch}
-                        onChange={(e) => {
-                          setBrandSearch(e.target.value);
-                          setIsBrandDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsBrandDropdownOpen(true)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-2.5 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                        onChange={(e) => setBrandSearch(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
                       />
-                      {selectedBrand !== "Todas" && (
+                      {brandSearch && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedBrand("Todas");
-                            setBrandSearch("");
-                          }}
+                          onClick={() => setBrandSearch("")}
                           className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 rounded-full text-xs font-bold cursor-pointer"
-                          title="Borrar marca"
+                          title="Borrar búsqueda"
                         >
                           ✕
                         </button>
                       )}
                     </div>
 
-                    {/* Dropdown Lista Filtrada */}
-                    {isBrandDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setIsBrandDropdownOpen(false)} />
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-52 overflow-y-auto p-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedBrand("Todas");
-                              setBrandSearch("");
-                              setIsBrandDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                              selectedBrand === "Todas" ? "bg-blue-50 text-blue-600" : "hover:bg-slate-50 text-slate-700"
-                            }`}
-                          >
-                            Todas las marcas
-                          </button>
-                          {brands
-                            .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
-                            .slice(0, 12)
-                            .map((brand) => (
-                              <button
-                                key={brand}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBrand(brand);
-                                  setBrandSearch("");
-                                  setIsBrandDropdownOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
-                                  selectedBrand === brand ? "bg-blue-50 text-blue-600 font-bold" : "hover:bg-slate-50 text-slate-700"
-                                }`}
-                              >
-                                <span>{brand}</span>
-                                {selectedBrand === brand && (
-                                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </button>
-                            ))}
-                          {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
-                            <div className="px-3 py-3 text-xs text-slate-400 text-center font-medium">
-                              No se encontraron marcas
-                            </div>
-                          )}
+                    {/* Lista Inline de Marcas (Sin absolute, integrada en el flujo) */}
+                    <div className="max-h-52 overflow-y-auto pr-1 flex flex-col gap-1 custom-scrollbar pt-1">
+                      {brands
+                        .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
+                        .map((brand) => {
+                          const isChecked = selectedBrands.includes(brand);
+                          const isPopular = POPULAR_BRANDS.includes(brand);
+                          return (
+                            <label
+                              key={brand}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors select-none ${
+                                isChecked
+                                  ? "bg-blue-50/80 text-blue-700 font-bold"
+                                  : "hover:bg-slate-50 text-slate-700"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    setSelectedBrands((prev) =>
+                                      isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
+                                    );
+                                  }}
+                                  className="w-4 h-4 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
+                                />
+                                <span className="truncate">{brand}</span>
+                              </div>
+                              {isPopular && (
+                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                  ★ Top
+                                </span>
+                              )}
+                            </label>
+                          );
+                        })}
+
+                      {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-3 text-xs text-slate-400 text-center font-medium">
+                          No se encontraron marcas
                         </div>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
