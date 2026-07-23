@@ -45,6 +45,7 @@ def health_check():
         "service": "suparator-api"
     }
 
+
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
