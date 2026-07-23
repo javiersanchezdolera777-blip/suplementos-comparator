@@ -156,12 +156,16 @@ export default async function ProductDetailPage({ params }: Props) {
                 {cleanName}
               </h1>
 
-              {/* Bloque de Precio */}
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-slate-400 text-sm font-bold">Desde</span>
-                <span className="text-3xl sm:text-4xl font-black text-blue-600">
-                  {product.price?.toFixed(2)}€
+              {/* Bloque de Precio Minimalista */}
+              <div className="flex items-center flex-wrap gap-3 mb-6">
+                <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                  {product.price?.toFixed(2)} €
                 </span>
+                {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
+                  <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs sm:text-sm font-medium px-3 py-1 rounded-md my-auto">
+                    {product.price_per_kg.toFixed(2)} € / kg
+                  </span>
+                )}
               </div>
 
               {/* Descripción */}

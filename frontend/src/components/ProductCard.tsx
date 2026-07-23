@@ -29,6 +29,7 @@ interface Product {
   creatine_type?: string;
   amino_profile?: string;
   vitamin_type?: string;
+  price_per_kg?: number | null;
   // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
 }
@@ -173,16 +174,16 @@ export default function ProductCard({ product }: { product: Product }) {
             {product.description}
           </p>
           
-          <div className="flex items-center justify-between mt-auto gap-4">
-            <div className="flex flex-col">
-              <span className="text-xs text-slate-400 font-medium mb-0.5">Mejor precio</span>
-              
-              <div className="flex items-baseline gap-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desde</span>
-                <span className="text-2xl font-black text-blue-600 tracking-tight">
-                  {product.price?.toFixed(2)}€
+          <div className="flex items-center justify-between mt-auto gap-3">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                {product.price?.toFixed(2)} €
+              </span>
+              {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
+                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-[11px] font-medium px-2 py-0.5 rounded-md my-auto">
+                  {product.price_per_kg.toFixed(2)} € / kg
                 </span>
-              </div>
+              )}
             </div>
             <a
               href={product.affiliate_url || "#"}
@@ -258,9 +259,15 @@ export default function ProductCard({ product }: { product: Product }) {
                </div>
 
                <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{decodeHTML(product.name)}</h2>
-               <div className="text-2xl sm:text-3xl font-black text-blue-600 mb-4">
-                 <span className="text-slate-400 text-base font-bold mr-2">Desde</span>
-                 {product.price?.toFixed(2)}€
+               <div className="flex items-center flex-wrap gap-3 mb-4">
+                 <span className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                   {product.price?.toFixed(2)} €
+                 </span>
+                 {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
+                   <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-md my-auto">
+                     {product.price_per_kg.toFixed(2)} € / kg
+                   </span>
+                 )}
                </div>
                
                {/* Zona Central con Scroll Interno Exclusivo */}
