@@ -1,64 +1,114 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import zipfile
+import gzip
 import io
 import json
-import os
 import re
 import unicodedata
 import models
 from database import SessionLocal
 
-# Importamos nuestras reglas maestras desde schemas.py
 from schemas import (
     SaborEnum, FormatoEnum, ObjetivoEnum, SelloCalidadEnum, 
     TipoProteinaEnum, TipoCreatinaEnum, PerfilAminoacidosEnum, TipoVitaminaEnum,
     CategoriaEnum, normalizar_marca
 )
 
-URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = "feed_temporal.json"
-DOMINIO_TIENDA = "https://sportlivenutrition.com"
+URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"
+ARCHIVO_CACHE = "farma2go_temporal.json"
 
 db = SessionLocal()
 
 def descargar_datos():
     if os.path.exists(ARCHIVO_CACHE):
+        print("📦 Leyendo datos desde la caché local...")
         with open(ARCHIVO_CACHE, 'r', encoding='utf-8') as f:
             return json.load(f)
     
+    print("🌐 Descargando catálogo desde Tradedoubler...")
     response = requests.get(URL_FEED, headers={'User-Agent': 'Mozilla/5.0'})
+    
+    if response.status_code != 200:
+        print(f"🛑 Error HTTP: {response.status_code}")
+        sys.exit(1)
+
     try:
-        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-            datos_json = json.load(z.open(z.namelist()[0]))
-    except:
-        datos_json = response.json()
-        
+        datos_descomprimidos = gzip.decompress(response.content)
+        datos_json = json.loads(datos_descomprimidos)
+    except OSError:
+        try:
+            datos_json = response.json()
+        except Exception:
+            print("🛑 Error: El archivo no es GZIP ni JSON válido.")
+            sys.exit(1)
+            
     with open(ARCHIVO_CACHE, 'w', encoding='utf-8') as f:
         json.dump(datos_json, f, ensure_ascii=False, indent=4)
+        
     return datos_json
 
-# --- MATEMÁTICAS Y LIMPIEZA ---
 def limpiar_texto(texto: str) -> str:
-    texto = texto.lower()
-    if "una combinación ganadora" in texto:
-        return texto[:texto.find("una combinación ganadora")]
-    return texto
+    if not texto: return ""
+    return texto.lower()
 
 def generar_slug(nombre: str) -> str:
     texto = unicodedata.normalize('NFKD', nombre).encode('ASCII', 'ignore').decode('utf-8')
     return re.sub(r'[^a-z0-9]+', '-', texto.lower()).strip('-')
 
-def extraer_peso_gramos(nombre: str, desc: str):
-    m_g = re.search(r'(\d+(?:[.,]\d+)?)\s*g\b', nombre.lower())
-    if m_g: return int(float(m_g.group(1).replace(',', '.')))
-    m_kg = re.search(r'(\d+(?:[.,]\d+)?)\s*kg\b', nombre.lower())
-    if m_kg: return int(float(m_kg.group(1).replace(',', '.')) * 1000)
+def calcular_metricas_precio(item: dict, precio: float):
+    # Ahora recibimos el diccionario completo del producto
+    nombre = item.get('name', '').lower()
+    peso_json = str(item.get('weight', '')).lower() # <-- Cazamos la columna oculta
     
-    m_kg_desc = re.search(r'(\d+(?:[.,]\d+)?)\s*kg\b', desc)
-    if m_kg_desc: return int(float(m_kg_desc.group(1).replace(',', '.')) * 1000)
-    m_g_desc = re.search(r'\b(\d{3,4})\s*g\b', desc) 
-    if m_g_desc: return int(m_g_desc.group(1))
-    return None
+    metricas = {
+        "peso_gramos": None,
+        "precio_por_kg": None,
+        "unidades": None,
+        "precio_por_unidad": None
+    }
+    
+    # ---------------------------------------------------------
+    # 1. BÚSQUEDA DE PESO (Sistema en Cascada)
+    # ---------------------------------------------------------
+    # Primero buscamos en la columna oficial del JSON. Si falla, miramos en el título.
+    textos_donde_buscar = [peso_json, nombre]
+    
+    for texto in textos_donde_buscar:
+        if not texto: 
+            continue
+            
+        match_peso = re.search(r'(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|gramos|lbs|lb|libra)s?\.?\b', texto)
+        if match_peso:
+            cantidad_cruda = match_peso.group(1).replace(',', '.')
+            try:
+                cantidad = float(cantidad_cruda)
+                unidad = match_peso.group(2)
+                
+                if unidad in ['kg', 'kilo', 'kilos']:
+                    peso_kg = cantidad
+                    metricas["peso_gramos"] = int(cantidad * 1000)
+                elif unidad in ['lbs', 'lb', 'libra']:
+                    peso_kg = cantidad * 0.453592
+                    metricas["peso_gramos"] = int(peso_kg * 1000)
+                else: 
+                    peso_kg = cantidad / 1000
+                    metricas["peso_gramos"] = int(cantidad)
+                    
+                if precio and precio > 0 and peso_kg > 0:
+                    metricas["precio_por_kg"] = round(precio / peso_kg, 2)
+                
+                # Si hemos encontrado el peso, rompemos el bucle (no hace falta mirar el título)
+                break 
+                
+            except ValueError:
+                pass
+
+            
+    return metricas
 
 def extraer_porcentaje_proteina(texto: str):
     m = re.search(r'(\d{2,3})\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza)', texto)
@@ -67,22 +117,31 @@ def extraer_porcentaje_proteina(texto: str):
     if m2: return int(m2.group(1))
     return None
 
-# --- EL CEREBRO DE CLASIFICACIÓN (JERÁRQUICO Y MULTISABOR) ---
 def clasificar_producto(nombre: str, desc_limpia: str):
     n = nombre.lower()
     texto_completo = n + " " + desc_limpia.lower()
     c = {}
     
-    # 1. FILTRO DE BASURA (Solo mira el nombre)
-    if any(p in n for p in ["shaker", "mezclador", "botella", "toalla", "camiseta"]):
+    # 1. FILTRO DE BASURA EXTREMO (A prueba de Farmacias)
+    basura = [
+        "shaker", "mezclador", "toalla", "facial", "corporal", "champú", "champu",
+        "dientes", "dental", "serum", "cosmética", "cosmetica", "higiene", "pañal", 
+        "solar", "maquillaje", "mascarilla", "pelo", "cabello", "limpiador", "kit", "gel de", "gel", "crema de", "crema", "loción", "locion", "bálsamo", "balsamo",
+        "ducha", "baño", "hidratante", "antiarrugas", "antiedad", "colutorio", "vial","viales", "ampolla", "ampollas", "spray", "nasal", "ocular", "gotas", "colirio", "crema hidratante",
+        "spray", "nasal", "ocular", "gotas", "colirio", "crema hidratante",
+        "loción", "pomada", "bálsamo", "gel de", "íntimo", "bebé", "infantil",
+        "chupete", "biberón", "ortopedia", "muñequera", "rodillera", "termómetro",
+        "tiritas", "apósito", "venda", "alcohol", "agua micelar", "desmaquillante"
+    ]
+    if any(p in n for p in basura):
         return None
 
-    # 2. CATEGORÍA ESTRICTA (JERARQUÍA DEL TÍTULO)
-    if any(p in n for p in ["crema", "harina", "copos", "mermelada", "avena", "eritritol", "peanut"]): 
+    # 2. CATEGORÍA ESTRICTA
+    if any(p in n for p in ["harina", "copos", "mermelada", "avena", "eritritol", "peanut", "crema de cacahuete", "crema de arroz"]): 
         c["categoria"] = CategoriaEnum.alimentacion.value
-    elif any(p in n for p in ["gel", "electrolitos", "hidratación", "boom", "pre-entreno", "pre entreno", "hydrop"]): 
+    elif any(p in n for p in ["gel energético", "electrolitos", "hidratación", "pre-entreno", "pre entreno", "isotónico"]): 
         c["categoria"] = CategoriaEnum.pre_entrenos.value
-    elif any(p in n for p in ["whey", "protein", "gainer", "proteína", "proteina", "iso"]): 
+    elif any(p in n for p in ["whey", "protein", "proteína", "proteina", "isolate", "aislado"]): 
         c["categoria"] = CategoriaEnum.proteinas.value
     elif "creatin" in n: 
         c["categoria"] = CategoriaEnum.creatinas.value
@@ -91,16 +150,31 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     elif any(p in n for p in ["vitamin", "mineral", "magnesio", "calcio", "zinc", "omega", "colágeno"]): 
         c["categoria"] = CategoriaEnum.vitaminas.value
     else:
-        # Último recurso: si el título no dice nada claro, miramos la descripción
-        if "proteína" in desc_limpia.lower() or "protein" in desc_limpia.lower():
-            c["categoria"] = CategoriaEnum.proteinas.value
-        else:
-            c["categoria"] = CategoriaEnum.otros.value 
+        return None 
 
-    # 3. FILTROS GLOBALES (Mirando texto completo)
+    # 3. FILTROS GLOBALES
     c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein"]) else False
 
-    # --- NUEVO SISTEMA: MÚLTIPLES SABORES ---
+    # FORMATO PRIMERO (Lo necesitamos para saber qué hacer con los sabores)
+    c["formato"] = None
+    if any(p in texto_completo for p in ["cápsula", "capsula", "comprimido", "perla", "pastilla", "tableta"]): 
+        c["formato"] = FormatoEnum.capsulas.value
+    elif any(p in texto_completo for p in ["polvo", "harina", "copos", "soluble", "disolución", "batido"]): 
+        c["formato"] = FormatoEnum.polvo.value
+    elif any(p in texto_completo for p in ["vial", "líquido", "liquid", "bebida", "ampolla"]): 
+        c["formato"] = FormatoEnum.liquido.value
+    elif any(p in texto_completo for p in ["barrita", "barra", "snack"]): 
+        c["formato"] = FormatoEnum.barrita.value
+    elif any(p in texto_completo for p in ["gominola", "gummy"]): 
+        c["formato"] = FormatoEnum.gominolas.value
+
+    if not c["formato"]:
+        if c["categoria"] in [CategoriaEnum.proteinas.value, CategoriaEnum.creatinas.value]:
+            c["formato"] = FormatoEnum.polvo.value
+        elif any(p in texto_completo for p in ["cazo", "cacito", "scoop", "dosificador", "mezclar", "ml de agua"]):
+            c["formato"] = FormatoEnum.polvo.value
+
+    # SABORES (Ahora dependientes del formato)
     sabores_encontrados = []
     if "vainilla" in texto_completo: sabores_encontrados.append(SaborEnum.vainilla.value)
     if any(p in texto_completo for p in ["chocolate", "cacao", "brownie"]): sabores_encontrados.append(SaborEnum.chocolate.value)
@@ -111,16 +185,12 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     if "café" in texto_completo or "capuchino" in texto_completo: sabores_encontrados.append(SaborEnum.cafe.value)
     if "frutas del bosque" in texto_completo or "berry" in texto_completo: sabores_encontrados.append(SaborEnum.frutas.value)
     
-    if not sabores_encontrados and ("neutro" in texto_completo or "sin sabor" in texto_completo):
-        sabores_encontrados.append(SaborEnum.neutro.value)
+    # Solo añadimos "Neutro" (Sin sabor) si no es una pastilla/cápsula y no hemos encontrado otro sabor
+    if not sabores_encontrados:
+        if c["formato"] not in [FormatoEnum.capsulas.value]:
+            sabores_encontrados.append(SaborEnum.neutro.value)
         
-    c["sabor"] = sabores_encontrados # Ahora es una lista: ["Fresa", "Vainilla"]
-
-    c["formato"] = None
-    if any(p in texto_completo for p in ["cápsula", "capsula", "comprimido", "perla"]): c["formato"] = FormatoEnum.capsulas
-    elif any(p in texto_completo for p in ["vial", "gel", "líquido"]): c["formato"] = FormatoEnum.liquido
-    elif any(p in texto_completo for p in ["polvo", "harina"]): c["formato"] = FormatoEnum.polvo
-    elif "barrita" in texto_completo: c["formato"] = FormatoEnum.barrita
+    c["sabor"] = sabores_encontrados 
 
     c["objetivo"] = None
     if "gainer" in texto_completo or "volumen" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen
@@ -134,7 +204,6 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     elif "lacprodan" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.lacprodan
     elif "isolac" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.isolac
 
-    # 4. SUBFILTROS ESPECÍFICOS
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c["perfil_aminoacidos"] = c["tipo_vitamina"] = None
     
     if c["categoria"] == CategoriaEnum.proteinas.value:
@@ -167,42 +236,57 @@ def clasificar_producto(nombre: str, desc_limpia: str):
 
     return c
 
-# --- RUTINA DE INYECCIÓN ---
 def inyectar_en_bd():
-    print("🔄 Vaciando datos antiguos (por si acaso)...")
-    db.query(models.Producto).delete()
-    db.query(models.Categoria).delete()
-    db.commit()
-
-    # CREAMOS LAS CATEGORÍAS DESDE EL ENUM DE SCHEMAS
+    print("🔄 Descargando y procesando datos de Farma2Go...")
+    
     mapa_categorias = {}
     for cat in CategoriaEnum:
-        nueva_cat = models.Categoria(nombre=cat.value)
-        db.add(nueva_cat)
-        db.commit()
-        db.refresh(nueva_cat)
-        mapa_categorias[cat.value] = nueva_cat.id
+        cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+        if not cat_db:
+            cat_db = models.Categoria(nombre=cat.value)
+            db.add(cat_db)
+            db.commit()
+            db.refresh(cat_db)
+        mapa_categorias[cat.value] = cat_db.id
 
-    # CREAMOS LA MARCA NORMALIZADA
-    nombre_marca = normalizar_marca("Sport Live")
-    marca_oficial = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
-    if not marca_oficial:
-        marca_oficial = models.Marca(nombre=nombre_marca)
-        db.add(marca_oficial)
-        db.commit()
-
-    # INGESTAMOS PRODUCTOS
     datos = descargar_datos()
     productos_nuevos = []
+    cache_marcas = {}
     
     for item in datos.get('products', []):
         nombre = item.get('name', 'Sin nombre')
         desc_limpia = limpiar_texto(item.get('description', ''))
         
+        # FILTRO EXTREMO DE CATEGORÍAS JSON
+        categorias_json = [c.get("name", "").lower() for c in item.get("categories", [])]
+        categorias_prohibidas = [
+            "cosmética", "higiene", "bebé", "ortopedia", "facial", "corporal",
+            "capilar", "solar", "maternidad", "infantil", "bucal", "dental",
+            "botiquín", "óptica", "sexual", "perfumería"
+        ]
+        if any(prohibida in cat for cat in categorias_json for prohibida in categorias_prohibidas):
+            continue
+
         etiquetas = clasificar_producto(nombre, desc_limpia)
         if not etiquetas:
-            print(f"⏭️  Ignorando producto no deseado: {nombre}")
             continue
+
+        # LIMPIEZA DE MARCA
+        marca_cruda = item.get("brand", "Desconocida")
+        # Si la marca es muy larga o tiene caracteres raros, la descartamos
+        if len(marca_cruda) > 30 or any(char in marca_cruda for char in ["/", "\\", ":", ";"]):
+            marca_cruda = "Desconocida"
+            
+        nombre_marca = normalizar_marca(marca_cruda)
+        
+        if nombre_marca not in cache_marcas:
+            marca_db = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
+            if not marca_db:
+                marca_db = models.Marca(nombre=nombre_marca)
+                db.add(marca_db)
+                db.commit()
+                db.refresh(marca_db)
+            cache_marcas[nombre_marca] = marca_db.id
 
         precio = 0.0
         afiliado_url = ""
@@ -213,22 +297,20 @@ def inyectar_en_bd():
             if historial and "price" in historial[0]:
                 precio = float(historial[0]["price"].get("value", 0))
 
-        img = item.get("productImage", {}).get("url", "")
-        imagen_url = f"{DOMINIO_TIENDA}{img}" if img else ""
+        imagen_url = item.get("productImage", {}).get("url", "")
 
-        peso_gramos = extraer_peso_gramos(nombre, desc_limpia)
-        precio_por_kg = round((precio / peso_gramos) * 1000, 2) if (precio and peso_gramos and peso_gramos > 0) else None
-
+        metricas = calcular_metricas_precio(item, precio)
+        
         nuevo_producto = models.Producto(
             nombre=nombre,
             descripcion=desc_limpia[:900], 
             precio=precio,
             imagen_url=imagen_url,
             afiliado_url=afiliado_url,
-            marca_id=marca_oficial.id,
+            marca_id=cache_marcas[nombre_marca],
             categoria_id=mapa_categorias[etiquetas["categoria"]],
             
-            sabor=etiquetas["sabor"], # <-- Ahora guarda una lista
+            sabor=etiquetas["sabor"],
             formato=etiquetas["formato"],
             objetivo=etiquetas["objetivo"],
             es_vegano=etiquetas["es_vegano"],
@@ -240,15 +322,15 @@ def inyectar_en_bd():
             perfil_aminoacidos=etiquetas["perfil_aminoacidos"],
             tipo_vitamina=etiquetas["tipo_vitamina"],
             
-            slug=generar_slug(nombre),
-            peso_gramos=peso_gramos,
-            precio_por_kg=precio_por_kg
+            peso_gramos=metricas["peso_gramos"],
+            precio_por_kg=metricas["precio_por_kg"],
+            slug=generar_slug(nombre)
         )
         productos_nuevos.append(nuevo_producto)
 
     db.add_all(productos_nuevos)
     db.commit()
-    print(f"\n🎉 ¡Limpieza completada! {len(productos_nuevos)} productos guardados perfectamente estructurados.")
+    print(f"\n🎉 ¡Inyección de Farma2Go completada! {len(productos_nuevos)} suplementos reales guardados.")
 
 if __name__ == "__main__":
     inyectar_en_bd()

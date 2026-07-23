@@ -4,7 +4,7 @@ from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime
@@ -45,6 +45,7 @@ def health_check():
         "service": "suparator-api"
     }
 
+
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
@@ -68,7 +69,6 @@ def obtener_filtros(db: Session = Depends(get_db)):
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     skip: int = 0, 
-    limit: int = 100, 
     categoria: Optional[str] = None,
     marca: Optional[str] = None,
     objetivo: Optional[str] = None,
@@ -82,7 +82,11 @@ def obtener_productos(
     tipo_vitamina: Optional[str] = None,
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    porcentaje_min: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
+    ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, le=200)
 ):
     query = db.query(models.Producto)
     
@@ -151,6 +155,43 @@ def obtener_productos(
 
     total_resultados = len(productos_filtrados)
     productos = productos_filtrados[skip:skip + limit]
+
+
+    # --- 1. FILTRO DE PORCENTAJE DE PROTEÍNA ---
+    if porcentaje_min is not None:
+        query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_min)
+
+    # --- 2. ORDENACIÓN (ALGORITMO "GYM FIRST") ---
+    if ordenar_por == "relevancia":
+        marcas_top = ['Optimum Nutrition', 'Dymatize', 'Sport Live', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
+        categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
+
+        # Asignamos 10 puntos si es una marca TOP, 0 si no
+        marca_score = case(
+            (models.Marca.nombre.in_(marcas_top), 10),
+            else_=0
+        )
+        
+        # Asignamos 5 puntos si es una categoría TOP, 0 si no
+        categoria_score = case(
+            (models.Categoria.nombre.in_(categorias_top), 5),
+            else_=0
+        )
+
+        # Ordenamos primero por la suma de puntos (descendente) y luego por ID para que sea estable
+        query = query.order_by(
+            desc(marca_score + categoria_score),
+            desc(models.Producto.id)
+        )
+        
+    elif ordenar_por == "precio_kg_asc":
+        # Ordenamos por precio/kg de más barato a más caro, mandando los nulos (pastillas/cremas) al final
+        query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
+
+    # --- 3. PAGINACIÓN ---
+    total_resultados = query.count()
+    offset = (page - 1) * limit
+    productos = query.offset(offset).limit(limit).all()
     
     return {
         "total_resultados": total_resultados,
