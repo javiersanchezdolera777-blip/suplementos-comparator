@@ -346,7 +346,7 @@ export default function Catalog() {
                   )}
 
                   {/* Pills Gym-First (Acceso Rápido) */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 mt-1.5">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Marcas</span>
                     <div className="flex flex-wrap gap-1.5">
                       {POPULAR_BRANDS.map((brand) => {
@@ -373,15 +373,15 @@ export default function Catalog() {
                     </div>
                   </div>
 
-                  {/* Buscador de Marcas + Lista Inline con Checkboxes */}
-                  <div className="flex flex-col gap-2 mt-1">
+                  {/* Buscador de Marcas + Lista Inline Densa (max-h-[140px]) */}
+                  <div className="flex flex-col gap-2 mt-2.5">
                     <div className="relative flex items-center">
                       <input
                         type="text"
                         placeholder="🔍 Buscar marca..."
                         value={brandSearch}
                         onChange={(e) => setBrandSearch(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-1.5 text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
                       />
                       {brandSearch && (
                         <button
@@ -395,8 +395,8 @@ export default function Catalog() {
                       )}
                     </div>
 
-                    {/* Lista Inline de Marcas (Sin absolute, integrada en el flujo) */}
-                    <div className="max-h-52 overflow-y-auto pr-1 flex flex-col gap-1 custom-scrollbar pt-1">
+                    {/* Lista Inline de Marcas Acotada a 140px */}
+                    <div className="max-h-[140px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar pt-0.5">
                       {brands
                         .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
                         .map((brand) => {
@@ -405,9 +405,9 @@ export default function Catalog() {
                           return (
                             <label
                               key={brand}
-                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors select-none ${
+                              className={`flex items-center justify-between px-2 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors select-none ${
                                 isChecked
-                                  ? "bg-blue-50/80 text-blue-700 font-bold"
+                                  ? "bg-blue-50/90 text-blue-700 font-bold"
                                   : "hover:bg-slate-50 text-slate-700"
                               }`}
                             >
@@ -420,12 +420,12 @@ export default function Catalog() {
                                       isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
                                     );
                                   }}
-                                  className="w-4 h-4 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
+                                  className="w-3.5 h-3.5 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
                                 />
                                 <span className="truncate">{brand}</span>
                               </div>
                               {isPopular && (
-                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-1 py-0.2 rounded uppercase tracking-wider">
                                   ★ Top
                                 </span>
                               )}
@@ -434,7 +434,7 @@ export default function Catalog() {
                         })}
 
                       {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
-                        <div className="px-3 py-3 text-xs text-slate-400 text-center font-medium">
+                        <div className="px-2 py-2 text-xs text-slate-400 text-center font-medium">
                           No se encontraron marcas
                         </div>
                       )}
