@@ -60,9 +60,8 @@ def generar_slug(nombre: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', texto.lower()).strip('-')
 
 def calcular_metricas_precio(item: dict, precio: float):
-    # Ahora recibimos el diccionario completo del producto
     nombre = item.get('name', '').lower()
-    peso_json = str(item.get('weight', '')).lower() # <-- Cazamos la columna oculta
+    peso_json = str(item.get('weight', '')).lower()
     
     metricas = {
         "peso_gramos": None,
@@ -72,41 +71,63 @@ def calcular_metricas_precio(item: dict, precio: float):
     }
     
     # ---------------------------------------------------------
-    # 1. BÚSQUEDA DE PESO (Sistema en Cascada)
+    # 1. BÚSQUEDA DE UNIDADES (Pastillas, cápsulas, etc.) - ¡AHORA VA PRIMERO!
     # ---------------------------------------------------------
-    # Primero buscamos en la columna oficial del JSON. Si falla, miramos en el título.
-    textos_donde_buscar = [peso_json, nombre]
+    match_unidades = re.search(r'(\d+)\s*(cap|caps|cápsulas|capsulas|comprimidos|pastillas|perlas|viales|uds|unidades|tablets|tabletas)\b', nombre)
+    es_pastilla = False
     
-    for texto in textos_donde_buscar:
-        if not texto: 
-            continue
-            
-        match_peso = re.search(r'(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|gramos|lbs|lb|libra)s?\.?\b', texto)
-        if match_peso:
-            cantidad_cruda = match_peso.group(1).replace(',', '.')
-            try:
-                cantidad = float(cantidad_cruda)
-                unidad = match_peso.group(2)
-                
-                if unidad in ['kg', 'kilo', 'kilos']:
-                    peso_kg = cantidad
-                    metricas["peso_gramos"] = int(cantidad * 1000)
-                elif unidad in ['lbs', 'lb', 'libra']:
-                    peso_kg = cantidad * 0.453592
-                    metricas["peso_gramos"] = int(peso_kg * 1000)
-                else: 
-                    peso_kg = cantidad / 1000
-                    metricas["peso_gramos"] = int(cantidad)
-                    
-                if precio and precio > 0 and peso_kg > 0:
-                    metricas["precio_por_kg"] = round(precio / peso_kg, 2)
-                
-                # Si hemos encontrado el peso, rompemos el bucle (no hace falta mirar el título)
-                break 
-                
-            except ValueError:
-                pass
+    if match_unidades:
+        try:
+            unidades = int(match_unidades.group(1))
+            metricas["unidades"] = unidades
+            es_pastilla = True
+            if precio and precio > 0 and unidades > 0:
+                metricas["precio_por_unidad"] = round(precio / unidades, 3)
+        except ValueError:
+            pass
 
+    # ---------------------------------------------------------
+    # 2. BÚSQUEDA DE PESO (Solo si NO es una pastilla)
+    # ---------------------------------------------------------
+    if not es_pastilla:
+        textos_donde_buscar = [peso_json, nombre]
+        
+        for texto in textos_donde_buscar:
+            if not texto: continue
+            
+            patron = r'(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|gramos|lbs|lb|libra|ml|l|litros)\b'
+            coincidencias = list(re.finditer(patron, texto))
+            
+            peso_encontrado = False
+            
+            for match in reversed(coincidencias):
+                cantidad_cruda = match.group(1).replace(',', '.')
+                try:
+                    cantidad = float(cantidad_cruda)
+                    unidad = match.group(2)
+                    peso_kg = 0.0
+                    
+                    if unidad in ['kg', 'kilo', 'kilos', 'l', 'litros']:
+                        peso_kg = cantidad
+                    elif unidad in ['lbs', 'lb', 'libra']:
+                        peso_kg = cantidad * 0.453592
+                    else: 
+                        if cantidad < 20 and texto == nombre:
+                            continue 
+                        peso_kg = cantidad / 1000
+                        
+                    metricas["peso_gramos"] = int(peso_kg * 1000)
+                    
+                    if precio and precio > 0 and peso_kg > 0:
+                        metricas["precio_por_kg"] = round(precio / peso_kg, 2)
+                        
+                    peso_encontrado = True
+                    break
+                except ValueError:
+                    continue
+                    
+            if peso_encontrado:
+                break
             
     return metricas
 

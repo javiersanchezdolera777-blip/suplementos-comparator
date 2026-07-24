@@ -4,10 +4,11 @@ from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Session
 from sqlalchemy import case, desc, or_
 from typing import List, Optional
 from datetime import datetime
+from fastapi import Query  # ✅ Correcto
 
 # Importamos nuestras piezas
 import models
@@ -83,13 +84,13 @@ def obtener_productos(
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
     db: Session = Depends(get_db),
-    porcentaje_min: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
+    marcas: Optional[str] = Query(None, description="Filtra por múltiples marcas separadas por coma"),
+    porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
     ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200)
 ):
-    query = db.query(models.Producto)
-    
+    query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)    
     # 1. Filtro de Categoría (El parche de "todos" por si Javiki lo manda en la URL)
     if categoria and categoria.lower() != "todos":
         if categoria.isdigit():
@@ -99,7 +100,16 @@ def obtener_productos(
     # 2. Filtro de Marca
     if marca:
         query = query.join(models.Marca).filter(models.Marca.nombre.ilike(f"%{marca}%"))
-        
+
+    if marcas:
+        lista_marcas = [m.strip() for m in marcas.split(",") if m.strip()]
+        if lista_marcas:
+            query = query.filter(models.Marca.nombre.in_(lista_marcas))
+            
+    # 4. Filtro Porcentaje Proteína (Integrado)
+    if porcentaje_proteina is not None:
+        query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_proteina)
+
     # 3. Filtros Básicos
     if objetivo:
         query = query.filter(models.Producto.objetivo == objetivo)
@@ -130,13 +140,27 @@ def obtener_productos(
             )
         )
         
-    # 6. Ordenación
+# 7. ORDENACIÓN
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
+    elif ordenar_por == "precio_kg_asc":
+        query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
+    elif ordenar_por == "relevancia":
+        marcas_top = ['Optimum Nutrition', 'Dymatize', 'Sport Live', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
+        categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
 
-    # 7. Filtrado seguro por Sabor (Soporta Array o String) y Paginación
+        # Al haber hecho los Joins arriba, esto ahora funciona 100% seguro siempre
+        marca_score = case((models.Marca.nombre.in_(marcas_top), 10), else_=0)
+        categoria_score = case((models.Categoria.nombre.in_(categorias_top), 5), else_=0)
+
+        query = query.order_by(
+            desc(marca_score + categoria_score),
+            desc(models.Producto.id)
+        )
+
+    # 8. Extraer y filtrar Sabores (Array)
     productos_raw = query.all()
 
     if sabor:
@@ -153,53 +177,11 @@ def obtener_productos(
     else:
         productos_filtrados = productos_raw
 
+    # 9. Paginación Final
     total_resultados = len(productos_filtrados)
-    productos = productos_filtrados[skip:skip + limit]
+    offset_real = skip if skip > 0 else (page - 1) * limit
+    productos = productos_filtrados[offset_real : offset_real + limit]
 
-    if marcas:
-        # Separamos por comas y limpiamos espacios vacíos
-        lista_marcas = [m.strip() for m in marcas.split(",") if m.strip()]
-        if lista_marcas:
-            # IMPORTANTE: En SQLAlchemy se usa in_() con barra baja
-            query = query.filter(models.Marca.nombre.in_(lista_marcas))
-            
-
-    # --- 1. FILTRO DE PORCENTAJE DE PROTEÍNA ---
-    if porcentaje_min is not None:
-        query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_min)
-
-    # --- 2. ORDENACIÓN (ALGORITMO "GYM FIRST") ---
-    if ordenar_por == "relevancia":
-        marcas_top = ['Optimum Nutrition', 'Dymatize', 'Sport Live', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
-        categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
-
-        # Asignamos 10 puntos si es una marca TOP, 0 si no
-        marca_score = case(
-            (models.Marca.nombre.in_(marcas_top), 10),
-            else_=0
-        )
-        
-        # Asignamos 5 puntos si es una categoría TOP, 0 si no
-        categoria_score = case(
-            (models.Categoria.nombre.in_(categorias_top), 5),
-            else_=0
-        )
-
-        # Ordenamos primero por la suma de puntos (descendente) y luego por ID para que sea estable
-        query = query.order_by(
-            desc(marca_score + categoria_score),
-            desc(models.Producto.id)
-        )
-        
-    elif ordenar_por == "precio_kg_asc":
-        # Ordenamos por precio/kg de más barato a más caro, mandando los nulos (pastillas/cremas) al final
-        query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
-
-    # --- 3. PAGINACIÓN ---
-    total_resultados = query.count()
-    offset = (page - 1) * limit
-    productos = query.offset(offset).limit(limit).all()
-    
     return {
         "total_resultados": total_resultados,
         "productos": productos
