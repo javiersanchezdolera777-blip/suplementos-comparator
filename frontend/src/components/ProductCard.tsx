@@ -11,6 +11,8 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  precio_anterior?: number | null;
+  precio_actual?: number | null;
   image_url: string;
   affiliate_url: string;
   slug?: string;
@@ -30,7 +32,6 @@ interface Product {
   amino_profile?: string;
   vitamin_type?: string;
   price_per_kg?: number | null;
-  // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
 }
 
@@ -62,6 +63,13 @@ export default function ProductCard({ product }: { product: Product }) {
   const isFavorite = favoriteIds.includes(product.id);
   const hasImage = product.image_url && product.image_url.trim() !== "";
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const previousPrice = product.precio_anterior ?? null;
+  const currentPrice = product.precio_actual ?? product.price;
+  const hasOffer = previousPrice !== null && previousPrice > currentPrice;
+  const discountPercentage = hasOffer
+    ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100)
+    : 0;
 
   const handleOpenProduct = () => {
     setIsModalOpen(true);
@@ -138,15 +146,22 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
           )}
 
+          {/* Badge de Oferta (Roja con -XX%) */}
+          {hasOffer && (
+            <span className="absolute top-3 left-3 z-20 bg-red-600 text-white font-extrabold text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+              -{discountPercentage}%
+            </span>
+          )}
+
           {/* Badge de Categoría */}
-          <div className="absolute top-4 left-4 z-20">
-            <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-white/90 text-slate-700 border border-slate-200 shadow-sm rounded-full backdrop-blur-md">
+          <div className="absolute bottom-3 left-3 z-20">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/90 text-slate-700 border border-slate-200/80 shadow-sm rounded-md backdrop-blur-md">
               {product.category?.name || "Sin categoría"}
             </span>
           </div>
 
           {/* Icono de Favorito */}
-          <div className="absolute top-4 right-4 z-20 group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
+          <div className="absolute top-3 right-3 z-20 group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
             <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
               isFavorite 
                 ? "bg-red-50 border-red-200 scale-105" 
@@ -165,32 +180,38 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Zona Inferior: Información del producto */}
-        <div className="p-5 sm:p-6 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5 uppercase">{product.brand?.name || "Sin marca"}</div>
-          <h3 className="text-base font-bold text-slate-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors duration-300">
+        <div className="p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
+          <div className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            {product.brand?.name || "Sin marca"}
+          </div>
+
+          <h3 className="text-base font-bold text-slate-900 line-clamp-2 leading-snug mt-1 group-hover:text-blue-600 transition-colors duration-300 flex-grow">
             {decodeHTML(product.name)}
           </h3>
-          <p className="text-sm text-slate-500 line-clamp-2 mb-6 flex-grow font-medium leading-relaxed">
-            {product.description}
-          </p>
-          
-          <div className="flex items-center justify-between mt-auto gap-3">
-            <div className="flex items-center flex-wrap gap-2">
+
+          <div className="flex items-center justify-between mt-auto pt-4 gap-2">
+            <div className="flex items-center flex-wrap gap-1.5">
               <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                {product.price?.toFixed(2)} €
+                {currentPrice?.toFixed(2)} €
               </span>
+              {hasOffer && (
+                <span className="text-sm font-semibold text-slate-400 line-through ml-1">
+                  {previousPrice?.toFixed(2)} €
+                </span>
+              )}
               {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-[11px] font-medium px-2 py-0.5 rounded-md my-auto">
+                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-md ml-2 my-auto">
                   {product.price_per_kg.toFixed(2)} € / kg
                 </span>
               )}
             </div>
+
             <a
               href={product.affiliate_url || "#"}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 shadow-md shadow-blue-600/20 whitespace-nowrap cursor-pointer"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
             >
               Ver oferta
             </a>
@@ -238,7 +259,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
                {/* Zona Superior Fija */}
                <div className="flex justify-between items-center mb-2 pr-10">
-                 <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">{product.brand?.name || "Sin marca"}</div>
+                 <div className="text-xs font-bold tracking-wider text-slate-400 uppercase">{product.brand?.name || "Sin marca"}</div>
                  
                  <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
                    <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
@@ -261,8 +282,13 @@ export default function ProductCard({ product }: { product: Product }) {
                <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{decodeHTML(product.name)}</h2>
                <div className="flex items-center flex-wrap gap-3 mb-4">
                  <span className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                   {product.price?.toFixed(2)} €
+                   {currentPrice?.toFixed(2)} €
                  </span>
+                 {hasOffer && (
+                   <span className="text-base font-semibold text-slate-400 line-through">
+                     {previousPrice?.toFixed(2)} €
+                   </span>
+                 )}
                  {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
                    <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-md my-auto">
                      {product.price_per_kg.toFixed(2)} € / kg
@@ -285,7 +311,6 @@ export default function ProductCard({ product }: { product: Product }) {
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
 
-                   {/* Sabores: soporta nuevo array o string legacy */}
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
 
                    {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
@@ -306,7 +331,7 @@ export default function ProductCard({ product }: { product: Product }) {
                    href={product.affiliate_url || "#"} 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   className="w-full flex justify-center py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20 active:scale-95 cursor-pointer"
+                   className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
                  >
                    Ver oferta en la tienda oficial
                  </a>

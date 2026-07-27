@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "./ProductCard";
+import FilterSidebar from "./FilterSidebar";
 
 export default function Catalog() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const soloOfertas = searchParams ? searchParams.get("solo_ofertas") === "true" : false;
+
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -89,6 +95,7 @@ export default function Catalog() {
 
   const buildQueryParams = () => {
     const queryParams = new URLSearchParams();
+    if (soloOfertas) queryParams.append("solo_ofertas", "true");
     if (searchQuery) queryParams.append("busqueda", searchQuery);
     if (selectedCategory !== "Todas") queryParams.append("categoria", selectedCategory);
     if (selectedBrands.length > 0) queryParams.append("marcas", selectedBrands.join(","));
@@ -138,7 +145,7 @@ export default function Catalog() {
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
     selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
-    isVegan, apiUrl
+    isVegan, soloOfertas, apiUrl
   ]);
 
   const cargarMasProductos = () => {
@@ -181,17 +188,24 @@ export default function Catalog() {
     setSelectedAminoProfile("Todos");
     setIsVegan(null);
     setIsMobileFilterOpen(false);
+
+    if (soloOfertas) {
+      router.push("/#catalogo");
+    }
   };
 
-  const hasActiveFilters = selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
+  const hasActiveFilters = soloOfertas || selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
+
+  // Filtrado de respaldo en cliente cuando soloOfertas está activo
+  const productosFiltrados = soloOfertas
+    ? productos.filter(p => (p.precio_anterior && p.precio_anterior > (p.precio_actual ?? p.price)))
+    : productos;
 
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
 
-      {/* 🚀 FASE 2: HERO COMPACTADO */}
+      {/* HERO COMPACTADO */}
       <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 md:pt-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-
-        {/* Badge verde eliminado (Fase 1) */}
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-4">
           El mayor comparador de <br className="hidden sm:block" />
           <span className="text-blue-600">suplementos de España</span>
@@ -229,7 +243,7 @@ export default function Catalog() {
         </div>
       </section>
 
-      {/* 🎛️ ZONA DE CATÁLOGO (Filtros y Resultados) - Peek Preview Effect */}
+      {/* ZONA DE CATÁLOGO (Filtros y Resultados) */}
       <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
 
         {/* Botón Flotante para Móviles */}
@@ -243,338 +257,77 @@ export default function Catalog() {
           </button>
         </div>
 
-        {/* SIDEBAR DE FILTROS CON SCROLL INDEPENDIENTE */}
-        <aside className={`
-          w-full md:w-[280px] flex-shrink-0 transition-all duration-300
-          ${isMobileFilterOpen ? 'fixed inset-0 z-[100] bg-white p-6 overflow-y-auto block' : 'hidden md:block sticky top-24 max-h-[calc(100vh-110px)] overflow-y-auto pr-1 text-left'}
-        `}>
-          {/* Cabecera Móvil */}
-          <div className="flex justify-between items-center mb-6 md:hidden">
-            <h2 className="text-2xl font-black text-slate-900">Filtros</h2>
-            <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-slate-200 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-          </div>
-
-          {/* Panel Estilizado de Filtros */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-5">
-
-            {/* 1. Acordeón Categoría */}
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => toggleSection("category")}
-                className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
-              >
-                <span>Categoría</span>
-                <svg className={`w-4 h-4 transition-transform duration-200 ${openSections.category ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openSections.category && (
-                <div className="pt-1">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all font-medium"
-                  >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="h-px w-full bg-slate-100"></div>
-
-            {/* 2. Acordeón Marca (Multiselección + Tags + Combobox) */}
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => toggleSection("brand")}
-                className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Marca</span>
-                  {selectedBrands.length > 0 && (
-                    <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold lowercase">
-                      {selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} selec.`}
-                    </span>
-                  )}
-                </div>
-                <svg className={`w-4 h-4 transition-transform duration-200 ${openSections.brand ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {openSections.brand && (
-                <div className="flex flex-col gap-3 pt-1">
-                  
-                  {/* Etiquetas (Chips) de Marcas Seleccionadas */}
-                  {selectedBrands.length > 0 && (
-                    <div className="flex flex-col gap-1.5 p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                          Seleccionadas ({selectedBrands.length})
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedBrands([])}
-                          className="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer underline"
-                        >
-                          Limpiar marcas
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {selectedBrands.map((brand) => (
-                          <span
-                            key={brand}
-                            className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 text-xs font-bold px-2 py-0.5 rounded-lg shadow-sm"
-                          >
-                            <span>{brand}</span>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedBrands((prev) => prev.filter((b) => b !== brand))}
-                              className="text-blue-400 hover:text-red-500 font-black ml-0.5 transition-colors cursor-pointer"
-                              title={`Eliminar ${brand}`}
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pills Gym-First (Acceso Rápido) */}
-                  <div className="flex flex-col gap-1.5 mt-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Marcas</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {POPULAR_BRANDS.map((brand) => {
-                        const isSelected = selectedBrands.includes(brand);
-                        return (
-                          <button
-                            key={brand}
-                            type="button"
-                            onClick={() => {
-                              setSelectedBrands((prev) =>
-                                isSelected ? prev.filter((b) => b !== brand) : [...prev, brand]
-                              );
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                              isSelected
-                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                                : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                            }`}
-                          >
-                            {brand}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Buscador de Marcas + Lista Inline Densa (max-h-[140px]) */}
-                  <div className="flex flex-col gap-2 mt-2.5">
-                    <div className="relative flex items-center">
-                      <input
-                        type="text"
-                        placeholder="🔍 Buscar marca..."
-                        value={brandSearch}
-                        onChange={(e) => setBrandSearch(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-1.5 text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
-                      />
-                      {brandSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setBrandSearch("")}
-                          className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 rounded-full text-xs font-bold cursor-pointer"
-                          title="Borrar búsqueda"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Lista Inline de Marcas Acotada a 140px */}
-                    <div className="max-h-[140px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar pt-0.5">
-                      {brands
-                        .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
-                        .map((brand) => {
-                          const isChecked = selectedBrands.includes(brand);
-                          const isPopular = POPULAR_BRANDS.includes(brand);
-                          return (
-                            <label
-                              key={brand}
-                              className={`flex items-center justify-between px-2 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors select-none ${
-                                isChecked
-                                  ? "bg-blue-50/90 text-blue-700 font-bold"
-                                  : "hover:bg-slate-50 text-slate-700"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    setSelectedBrands((prev) =>
-                                      isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
-                                    );
-                                  }}
-                                  className="w-3.5 h-3.5 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
-                                />
-                                <span className="truncate">{brand}</span>
-                              </div>
-                              {isPopular && (
-                                <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-1 py-0.2 rounded uppercase tracking-wider">
-                                  ★ Top
-                                </span>
-                              )}
-                            </label>
-                          );
-                        })}
-
-                      {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
-                        <div className="px-2 py-2 text-xs text-slate-400 text-center font-medium">
-                          No se encontraron marcas
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Subfiltros Condicionales por Categoría */}
-            {(selectedCategory === "Proteínas" || selectedCategory === "Creatinas" || selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina") || selectedCategory === "Aminoácidos") && (
-              <>
-                <div className="h-px w-full bg-slate-100"></div>
-                <div className="flex flex-col gap-2 p-3 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                  {selectedCategory === "Proteínas" && (
-                    <>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Proteína</label>
-                        <select value={selectedProteinType} onChange={(e) => setSelectedProteinType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                          {proteinTypes.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1 mt-1">
-                        <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">% Proteína Mínimo</label>
-                        <select value={selectedProteinPercentage} onChange={(e) => setSelectedProteinPercentage(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                          <option value="Todos">Todos los porcentajes</option>
-                          <option value="90">&gt; 90% (Aislados / Pura Proteína)</option>
-                          <option value="80">&gt; 80% (Whey Concentrado Premium)</option>
-                          <option value="70">&gt; 70% (Estándar)</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-                  {selectedCategory === "Creatinas" && (
-                    <>
-                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Creatina</label>
-                      <select value={selectedCreatineType} onChange={(e) => setSelectedCreatineType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                        {creatineTypes.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </>
-                  )}
-                  {(selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina")) && (
-                    <>
-                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Tipo de Vitamina / Mineral</label>
-                      <select value={selectedVitaminType} onChange={(e) => setSelectedVitaminType(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                        {vitaminTypes.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                    </>
-                  )}
-                  {selectedCategory === "Aminoácidos" && (
-                    <>
-                      <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Perfil de Aminoácidos</label>
-                      <select value={selectedAminoProfile} onChange={(e) => setSelectedAminoProfile(e.target.value)} className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                        {aminoProfiles.map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
-            <div className="h-px w-full bg-slate-100"></div>
-
-            {/* 3. Acordeón Filtros Específicos */}
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => toggleSection("specs")}
-                className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
-              >
-                <span>Filtros Específicos</span>
-                <svg className={`w-4 h-4 transition-transform duration-200 ${openSections.specs ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {openSections.specs && (
-                <div className="flex flex-col gap-4 pt-1">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Formato</label>
-                    <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                      {formats.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sabor</label>
-                    <select value={selectedFlavor} onChange={(e) => setSelectedFlavor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                      {flavors.map(fl => <option key={fl} value={fl}>{fl}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sello Calidad</label>
-                    <select value={selectedQualitySeal} onChange={(e) => setSelectedQualitySeal(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium">
-                      {qualitySeals.map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
-                  </div>
-
-                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors mt-1">
-                    <input
-                      type="checkbox"
-                      checked={isVegan === true}
-                      onChange={(e) => setIsVegan(e.target.checked ? true : null)}
-                      className="w-5 h-5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500 cursor-pointer"
-                    />
-                    <span className="text-sm font-bold text-slate-700">Opción Vegana</span>
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {isMobileFilterOpen && (
-              <button
-                onClick={() => setIsMobileFilterOpen(false)}
-                className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg cursor-pointer"
-              >
-                Ver {productos.length} Resultados
-              </button>
-            )}
-
-            {hasActiveFilters && (
-              <button
-                onClick={limpiarFiltros}
-                className="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-xl border border-red-200 transition-colors text-sm cursor-pointer"
-              >
-                Borrar todos los filtros
-              </button>
-            )}
-          </div>
-        </aside>
+        {/* SIDEBAR DE FILTROS MODULAR */}
+        <FilterSidebar
+          isMobileFilterOpen={isMobileFilterOpen}
+          setIsMobileFilterOpen={setIsMobileFilterOpen}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          categories={categories}
+          selectedBrands={selectedBrands}
+          setSelectedBrands={setSelectedBrands}
+          brands={brands}
+          popularBrands={POPULAR_BRANDS}
+          brandSearch={brandSearch}
+          setBrandSearch={setBrandSearch}
+          openSections={openSections}
+          toggleSection={toggleSection}
+          selectedFormat={selectedFormat}
+          setSelectedFormat={setSelectedFormat}
+          formats={formats}
+          selectedFlavor={selectedFlavor}
+          setSelectedFlavor={setSelectedFlavor}
+          flavors={flavors}
+          selectedQualitySeal={selectedQualitySeal}
+          setSelectedQualitySeal={setSelectedQualitySeal}
+          qualitySeals={qualitySeals}
+          selectedProteinType={selectedProteinType}
+          setSelectedProteinType={setSelectedProteinType}
+          proteinTypes={proteinTypes}
+          selectedProteinPercentage={selectedProteinPercentage}
+          setSelectedProteinPercentage={setSelectedProteinPercentage}
+          selectedCreatineType={selectedCreatineType}
+          setSelectedCreatineType={setSelectedCreatineType}
+          creatineTypes={creatineTypes}
+          selectedVitaminType={selectedVitaminType}
+          setSelectedVitaminType={setSelectedVitaminType}
+          vitaminTypes={vitaminTypes}
+          selectedAminoProfile={selectedAminoProfile}
+          setSelectedAminoProfile={setSelectedAminoProfile}
+          aminoProfiles={aminoProfiles}
+          isVegan={isVegan}
+          setIsVegan={setIsVegan}
+          limpiarFiltros={limpiarFiltros}
+          hasActiveFilters={hasActiveFilters}
+          productosCount={productosFiltrados.length}
+        />
 
         {/* ESCAPARATE DE PRODUCTOS */}
         <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
 
+          {/* Banner de Estado "Top Ofertas" */}
+          {soloOfertas && (
+            <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-500 text-white p-4 sm:p-5 rounded-2xl mb-6 shadow-lg shadow-red-500/10 flex items-center justify-between flex-wrap gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3.5">
+                <span className="text-2xl bg-white/20 p-2.5 rounded-xl backdrop-blur-md">🔥</span>
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg leading-tight">Viendo solo ofertas y chollos destacados</h3>
+                  <p className="text-xs text-red-100 font-medium">Mostrando únicamente suplementos con precio rebajado sobre su tarifa original.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/#catalogo")}
+                className="bg-white hover:bg-slate-100 text-red-600 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                Ver todo el catálogo
+              </button>
+            </div>
+          )}
+
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
             <div className="text-slate-500 text-sm">
-              Mostrando <span className="text-slate-900 font-black text-base">{productos.length}</span> de <span className="text-slate-900 font-black text-base">{totalResultados}</span> suplementos
+              Mostrando <span className="text-slate-900 font-black text-base">{productosFiltrados.length}</span> de <span className="text-slate-900 font-black text-base">{soloOfertas ? productosFiltrados.length : totalResultados}</span> suplementos
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -605,16 +358,16 @@ export default function Catalog() {
                 </div>
               ))}
             </div>
-          ) : productos.length > 0 ? (
+          ) : productosFiltrados.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {productos.map((product) => (
+                {productosFiltrados.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
 
               {/* Botón Cargar Más Suplementos */}
-              {productos.length < totalResultados && (
+              {!soloOfertas && productos.length < totalResultados && (
                 <div className="flex flex-col items-center justify-center mt-10 mb-6 gap-3">
                   <button
                     onClick={cargarMasProductos}

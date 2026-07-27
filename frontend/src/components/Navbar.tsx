@@ -1,10 +1,13 @@
 "use client";
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
+  const searchParams = useSearchParams();
+  const isSoloOfertas = searchParams ? searchParams.get('solo_ofertas') === 'true' : false;
 
   return (
     <nav className="w-full py-4 px-6 md:px-12 flex justify-between items-center z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 transition-all duration-300">
@@ -18,7 +21,25 @@ export default function Navbar() {
       <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
         <Link href="/#catalogo" className="hover:text-slate-900 transition-colors">Catálogo</Link>
         <Link href="/#marcas" className="hover:text-slate-900 transition-colors">Marcas</Link>
-        <Link href="/#ofertas" className="hover:text-slate-900 transition-colors">Top Ofertas</Link>
+        
+        {/* Botón Top Ofertas con estado activo cuando solo_ofertas=true */}
+        <Link 
+          href="/?solo_ofertas=true#catalogo" 
+          className={`flex items-center gap-1.5 transition-all ${
+            isSoloOfertas 
+              ? "bg-red-50 text-red-600 border border-red-200/80 px-3.5 py-1.5 rounded-full font-extrabold shadow-sm" 
+              : "hover:text-slate-900 font-semibold"
+          }`}
+        >
+          <span className="animate-pulse">🔥</span>
+          <span>Top Ofertas</span>
+          {isSoloOfertas && (
+            <span className="bg-red-600 text-white text-[9px] font-black uppercase px-1.5 py-0.2 rounded-full ml-0.5">
+              ACTIVO
+            </span>
+          )}
+        </Link>
+
         <div className="w-px h-4 bg-slate-200"></div>
         
         {isLoggedIn ? (
