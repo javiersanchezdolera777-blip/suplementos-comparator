@@ -1,19 +1,25 @@
+import sys
+import os
+# Esto le dice a Python: "Oye, busca también en la carpeta que está justo por encima de mí"
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import zipfile
 import io
 import json
-import os
 import re
 import unicodedata
+
+# Ahora ya podemos importar los archivos de la carpeta backend sin que dé error
 import models
 from database import SessionLocal
-
-# Importamos nuestras reglas maestras desde schemas.py
 from schemas import (
     SaborEnum, FormatoEnum, ObjetivoEnum, SelloCalidadEnum, 
     TipoProteinaEnum, TipoCreatinaEnum, PerfilAminoacidosEnum, TipoVitaminaEnum,
     CategoriaEnum, normalizar_marca
 )
+
+# ... (El resto de tu código se queda exactamente igual) ...
 
 URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059"
 ARCHIVO_CACHE = "feed_temporal.json"
@@ -48,17 +54,78 @@ def generar_slug(nombre: str) -> str:
     texto = unicodedata.normalize('NFKD', nombre).encode('ASCII', 'ignore').decode('utf-8')
     return re.sub(r'[^a-z0-9]+', '-', texto.lower()).strip('-')
 
-def extraer_peso_gramos(nombre: str, desc: str):
-    m_g = re.search(r'(\d+(?:[.,]\d+)?)\s*g\b', nombre.lower())
-    if m_g: return int(float(m_g.group(1).replace(',', '.')))
-    m_kg = re.search(r'(\d+(?:[.,]\d+)?)\s*kg\b', nombre.lower())
-    if m_kg: return int(float(m_kg.group(1).replace(',', '.')) * 1000)
+def calcular_metricas_precio(item: dict, precio: float):
+    nombre = item.get('name', '').lower()
+    peso_json = str(item.get('weight', '')).lower()
     
-    m_kg_desc = re.search(r'(\d+(?:[.,]\d+)?)\s*kg\b', desc)
-    if m_kg_desc: return int(float(m_kg_desc.group(1).replace(',', '.')) * 1000)
-    m_g_desc = re.search(r'\b(\d{3,4})\s*g\b', desc) 
-    if m_g_desc: return int(m_g_desc.group(1))
-    return None
+    metricas = {
+        "peso_gramos": None,
+        "precio_por_kg": None,
+        "unidades": None,
+        "precio_por_unidad": None
+    }
+    
+    # ---------------------------------------------------------
+    # 1. BÚSQUEDA DE UNIDADES (Pastillas, cápsulas, etc.) - ¡AHORA VA PRIMERO!
+    # ---------------------------------------------------------
+    match_unidades = re.search(r'(\d+)\s*(cap|caps|cápsulas|capsulas|comprimidos|pastillas|perlas|viales|uds|unidades|tablets|tabletas)\b', nombre)
+    es_pastilla = False
+    
+    if match_unidades:
+        try:
+            unidades = int(match_unidades.group(1))
+            metricas["unidades"] = unidades
+            es_pastilla = True
+            if precio and precio > 0 and unidades > 0:
+                metricas["precio_por_unidad"] = round(precio / unidades, 3)
+        except ValueError:
+            pass
+
+    # ---------------------------------------------------------
+    # 2. BÚSQUEDA DE PESO (Solo si NO es una pastilla)
+    # ---------------------------------------------------------
+    if not es_pastilla:
+        textos_donde_buscar = [peso_json, nombre]
+        
+        for texto in textos_donde_buscar:
+            if not texto: continue
+            
+            patron = r'(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|gramos|lbs|lb|libra|ml|l|litros)\b'
+            coincidencias = list(re.finditer(patron, texto))
+            
+            peso_encontrado = False
+            
+            for match in reversed(coincidencias):
+                cantidad_cruda = match.group(1).replace(',', '.')
+                try:
+                    cantidad = float(cantidad_cruda)
+                    unidad = match.group(2)
+                    peso_kg = 0.0
+                    
+                    if unidad in ['kg', 'kilo', 'kilos', 'l', 'litros']:
+                        peso_kg = cantidad
+                    elif unidad in ['lbs', 'lb', 'libra']:
+                        peso_kg = cantidad * 0.453592
+                    else: 
+                        if cantidad < 20 and texto == nombre:
+                            continue 
+                        peso_kg = cantidad / 1000
+                        
+                    metricas["peso_gramos"] = int(peso_kg * 1000)
+                    
+                    if precio and precio > 0 and peso_kg > 0:
+                        metricas["precio_por_kg"] = round(precio / peso_kg, 2)
+                        
+                    peso_encontrado = True
+                    break
+                except ValueError:
+                    continue
+                    
+            if peso_encontrado:
+                break
+            
+    return metricas
+
 
 def extraer_porcentaje_proteina(texto: str):
     m = re.search(r'(\d{2,3})\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza)', texto)
@@ -77,12 +144,13 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     if any(p in n for p in ["shaker", "mezclador", "botella", "toalla", "camiseta"]):
         return None
 
-    # 2. CATEGORÍA ESTRICTA (JERARQUÍA DEL TÍTULO)
+# 2. CATEGORÍA ESTRICTA (JERARQUÍA DEL TÍTULO ABSOLUTA)
     if any(p in n for p in ["crema", "harina", "copos", "mermelada", "avena", "eritritol", "peanut"]): 
         c["categoria"] = CategoriaEnum.alimentacion.value
     elif any(p in n for p in ["gel", "electrolitos", "hidratación", "boom", "pre-entreno", "pre entreno", "hydrop"]): 
         c["categoria"] = CategoriaEnum.pre_entrenos.value
-    elif any(p in n for p in ["whey", "protein", "gainer", "proteína", "proteina", "iso"]): 
+    # Hemos quitado "gainer" e "iso" (muy genérico) de aquí:
+    elif any(p in n for p in ["whey", "protein", "proteína", "proteina", "isolate", "aislado"]): 
         c["categoria"] = CategoriaEnum.proteinas.value
     elif "creatin" in n: 
         c["categoria"] = CategoriaEnum.creatinas.value
@@ -91,11 +159,9 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     elif any(p in n for p in ["vitamin", "mineral", "magnesio", "calcio", "zinc", "omega", "colágeno"]): 
         c["categoria"] = CategoriaEnum.vitaminas.value
     else:
-        # Último recurso: si el título no dice nada claro, miramos la descripción
-        if "proteína" in desc_limpia.lower() or "protein" in desc_limpia.lower():
-            c["categoria"] = CategoriaEnum.proteinas.value
-        else:
-            c["categoria"] = CategoriaEnum.otros.value 
+        # CERO BÚSQUEDAS EN LA DESCRIPCIÓN. 
+        # Si el título no nos dice la categoría claramente, va a "Otros".
+        c["categoria"] = CategoriaEnum.otros.value
 
     # 3. FILTROS GLOBALES (Mirando texto completo)
     c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein"]) else False
@@ -111,9 +177,8 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     if "café" in texto_completo or "capuchino" in texto_completo: sabores_encontrados.append(SaborEnum.cafe.value)
     if "frutas del bosque" in texto_completo or "berry" in texto_completo: sabores_encontrados.append(SaborEnum.frutas.value)
     
-    if not sabores_encontrados and ("neutro" in texto_completo or "sin sabor" in texto_completo):
+    if not sabores_encontrados:
         sabores_encontrados.append(SaborEnum.neutro.value)
-        
     c["sabor"] = sabores_encontrados # Ahora es una lista: ["Fresa", "Vainilla"]
 
     c["formato"] = None
@@ -121,6 +186,15 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     elif any(p in texto_completo for p in ["vial", "gel", "líquido"]): c["formato"] = FormatoEnum.liquido
     elif any(p in texto_completo for p in ["polvo", "harina"]): c["formato"] = FormatoEnum.polvo
     elif "barrita" in texto_completo: c["formato"] = FormatoEnum.barrita
+    if not c["formato"]:
+        # Si es Proteína o Creatina, el estándar de la industria es que sea en Polvo
+        if c["categoria"] in [CategoriaEnum.proteinas.value, CategoriaEnum.creatinas.value]:
+            c["formato"] = FormatoEnum.polvo.value
+            
+        # Si en las instrucciones dice "cazo", "dosificador", "scoop" o "mezclar en agua", es Polvo
+        elif any(p in texto_completo for p in ["cazo", "cacito", "scoop", "dosificador", "mezclar", "ml de agua"]):
+            c["formato"] = FormatoEnum.polvo.value
+
 
     c["objetivo"] = None
     if "gainer" in texto_completo or "volumen" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen
@@ -184,7 +258,7 @@ def inyectar_en_bd():
         mapa_categorias[cat.value] = nueva_cat.id
 
     # CREAMOS LA MARCA NORMALIZADA
-    nombre_marca = normalizar_marca("Sport Live")
+    nombre_marca = normalizar_marca("Drasanvi")
     marca_oficial = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
     if not marca_oficial:
         marca_oficial = models.Marca(nombre=nombre_marca)
@@ -216,9 +290,7 @@ def inyectar_en_bd():
         img = item.get("productImage", {}).get("url", "")
         imagen_url = f"{DOMINIO_TIENDA}{img}" if img else ""
 
-        peso_gramos = extraer_peso_gramos(nombre, desc_limpia)
-        precio_por_kg = round((precio / peso_gramos) * 1000, 2) if (precio and peso_gramos and peso_gramos > 0) else None
-
+        metricas = calcular_metricas_precio(item, precio)
         nuevo_producto = models.Producto(
             nombre=nombre,
             descripcion=desc_limpia[:900], 
@@ -240,9 +312,10 @@ def inyectar_en_bd():
             perfil_aminoacidos=etiquetas["perfil_aminoacidos"],
             tipo_vitamina=etiquetas["tipo_vitamina"],
             
+            peso_gramos=metricas["peso_gramos"],
+            precio_por_kg=metricas["precio_por_kg"],
+
             slug=generar_slug(nombre),
-            peso_gramos=peso_gramos,
-            precio_por_kg=precio_por_kg
         )
         productos_nuevos.append(nuevo_producto)
 

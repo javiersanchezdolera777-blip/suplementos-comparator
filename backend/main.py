@@ -5,9 +5,10 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import case, desc, or_
 from typing import List, Optional
 from datetime import datetime
+from fastapi import Query  # ✅ Correcto
 
 # Importamos nuestras piezas
 import models
@@ -45,6 +46,7 @@ def health_check():
         "service": "suparator-api"
     }
 
+
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
@@ -68,12 +70,18 @@ def obtener_filtros(db: Session = Depends(get_db)):
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     skip: int = 0, 
-    limit: int = 100, 
+    # Soportamos tanto el parámetro antiguo (singular) como el de multiselección (plural)
     categoria: Optional[str] = None,
+    categorias: Optional[str] = Query(None),
     marca: Optional[str] = None,
+    marcas: Optional[str] = Query(None),
     objetivo: Optional[str] = None,
+    objetivos: Optional[str] = Query(None),
     sabor: Optional[str] = None,
+    sabores: Optional[str] = Query(None),
     formato: Optional[str] = None,
+    formatos: Optional[str] = Query(None),
+    
     es_vegano: Optional[bool] = None,
     sello_calidad: Optional[str] = None,
     tipo_proteina: Optional[str] = None,
@@ -82,41 +90,59 @@ def obtener_productos(
     tipo_vitamina: Optional[str] = None,
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
+    ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, le=200)
 ):
-    query = db.query(models.Producto)
+    # Join inicial maestro para evitar conflictos
+    query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)
     
-    # 1. Filtro de Categoría (El parche de "todos" por si Javiki lo manda en la URL)
-    if categoria and categoria.lower() != "todos":
-        if categoria.isdigit():
-            query = query.filter(models.Producto.categoria_id == int(categoria))
-        else:
-            query = query.join(models.Categoria).filter(models.Categoria.nombre.ilike(f"%{categoria}%"))
-    # 2. Filtro de Marca
-    if marca:
-        query = query.join(models.Marca).filter(models.Marca.nombre.ilike(f"%{marca}%"))
-        
-    # 3. Filtros Básicos
-    if objetivo:
-        query = query.filter(models.Producto.objetivo == objetivo)
-    if formato:
-        query = query.filter(models.Producto.formato == formato)
+    # 1. Filtros de Categoría (Soporta multiselección separada por comas)
+    cat_str = categorias or categoria
+    if cat_str and cat_str.lower() != "todos":
+        lista_cats = [c.strip() for c in cat_str.split(",") if c.strip()]
+        if lista_cats:
+            query = query.filter(models.Categoria.nombre.in_(lista_cats))
+
+    # 2. Filtros de Marca
+    marca_str = marcas or marca
+    if marca_str:
+        lista_marcas = [m.strip() for m in marca_str.split(",") if m.strip()]
+        if lista_marcas:
+            query = query.filter(models.Marca.nombre.in_(lista_marcas))
+
+    # 3. Filtro Porcentaje Proteína
+    if porcentaje_proteina is not None:
+        query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_proteina)
+
+    # 4. Filtros Básicos (Con soporte multiselección para la nueva UI)
+    formato_str = formatos or formato
+    if formato_str:
+        lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
+        if lista_formatos:
+            query = query.filter(models.Producto.formato.in_(lista_formatos))
+
+    objetivo_str = objetivos or objetivo
+    if objetivo_str:
+        lista_objetivos = [o.strip() for o in objetivo_str.split(",") if o.strip()]
+        if lista_objetivos:
+            query = query.filter(models.Producto.objetivo.in_(lista_objetivos))
+
     if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
+
     if sello_calidad:
-        query = query.filter(models.Producto.sello_calidad == sello_calidad)
+        query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
         
-    # 4. Sub-filtros
-    if tipo_proteina:
-        query = query.filter(models.Producto.tipo_proteina == tipo_proteina)
-    if tipo_creatina:
-        query = query.filter(models.Producto.tipo_creatina == tipo_creatina)
-    if perfil_aminoacidos:
-        query = query.filter(models.Producto.perfil_aminoacidos == perfil_aminoacidos)
-    if tipo_vitamina:
-        query = query.filter(models.Producto.tipo_vitamina == tipo_vitamina)
+    # 5. Sub-filtros (A prueba de mayúsculas/minúsculas)
+    if tipo_proteina: query = query.filter(models.Producto.tipo_proteina.ilike(f"%{tipo_proteina}%"))
+    if tipo_creatina: query = query.filter(models.Producto.tipo_creatina.ilike(f"%{tipo_creatina}%"))
+    if perfil_aminoacidos: query = query.filter(models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%"))
+    if tipo_vitamina: query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
         
-    # 5. Buscador de texto libre
+    # 6. Buscador de texto libre
     if busqueda:
         termino = f"%{busqueda}%"
         query = query.filter(
@@ -126,37 +152,53 @@ def obtener_productos(
             )
         )
         
-    # 6. Ordenación
+    # 7. ORDENACIÓN
     if orden_precio == "asc":
         query = query.order_by(models.Producto.precio.asc())
     elif orden_precio == "desc":
         query = query.order_by(models.Producto.precio.desc())
+    elif ordenar_por == "precio_kg_asc":
+        query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
+    elif ordenar_por == "relevancia":
+        marcas_top = ['Optimum Nutrition', 'Dymatize', 'Sport Live', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex', 'HSN']
+        categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
 
-    # 7. Filtrado seguro por Sabor (Soporta Array o String) y Paginación
+        marca_score = case((models.Marca.nombre.in_(marcas_top), 10), else_=0)
+        categoria_score = case((models.Categoria.nombre.in_(categorias_top), 5), else_=0)
+
+        query = query.order_by(
+            desc(marca_score + categoria_score),
+            desc(models.Producto.id)
+        )
+
+    # 8. Extraer y filtrar Sabores (Soporta Multiselección de Javiki)
     productos_raw = query.all()
 
-    if sabor:
-        sabor_lower = sabor.lower()
+    sabor_str = sabores or sabor
+    if sabor_str:
+        sabores_lista = [s.strip().lower() for s in sabor_str.split(",") if s.strip()]
+        
         def tiene_sabor(producto):
             valor = getattr(producto, "sabor", None)
             if isinstance(valor, list):
-                return any(str(item).lower() == sabor_lower for item in valor)
+                return any(str(item).lower() in sabores_lista for item in valor)
             if isinstance(valor, str):
-                return sabor_lower in valor.lower()
+                return any(s in valor.lower() for s in sabores_lista)
             return False
 
         productos_filtrados = [p for p in productos_raw if tiene_sabor(p)]
     else:
         productos_filtrados = productos_raw
 
+    # 9. Paginación Final
     total_resultados = len(productos_filtrados)
-    productos = productos_filtrados[skip:skip + limit]
-    
+    offset_real = skip if skip > 0 else (page - 1) * limit
+    productos = productos_filtrados[offset_real : offset_real + limit]
+
     return {
         "total_resultados": total_resultados,
         "productos": productos
     }
-
 # --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):

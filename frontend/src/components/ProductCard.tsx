@@ -32,6 +32,7 @@ interface Product {
   amino_profile?: string;
   vitamin_type?: string;
   price_per_kg?: number | null;
+  // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
 }
 
