@@ -95,6 +95,7 @@ def obtener_productos(
     tipo_vitamina: Optional[str] = None,
     orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
+    q: Optional[str] = Query(None, description="Alias de búsqueda"),
     db: Session = Depends(get_db),
     porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
     ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
@@ -148,8 +149,9 @@ def obtener_productos(
     if tipo_vitamina: query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
         
     # 6. Buscador de texto libre
-    if busqueda:
-        termino = f"%{busqueda}%"
+    busqueda_final = busqueda or q
+    if busqueda_final:
+        termino = f"%{busqueda_final}%"
         query = query.filter(
             or_(
                 models.Producto.nombre.ilike(termino),
