@@ -24,7 +24,12 @@ app = FastAPI(title="API de Suplementos")
 # --- CONFIGURACIÓN DE CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://tussuplementos.es",
+        "https://www.tussuplementos.es",
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
