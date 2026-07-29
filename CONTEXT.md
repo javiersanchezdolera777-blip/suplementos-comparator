@@ -1,25 +1,19 @@
 # 🏛️ Documentación de Arquitectura y Estado de Proyecto: Tus Suplementos (Suparator)
 
 > **Documento Fuente de Verdad para Inteligencia Artificial y Equipo Lead**  
-<<<<<<< HEAD
 > **Última Actualización:** 29 de Julio, 2026  
 > **Dominio Oficial:** `https://tussuplementos.es` (`https://www.tussuplementos.es`) (comprado en DonDominio)
-=======
-> **Última Actualización:** 28 de Julio, 2026  
-> **Dominio Oficial:** `https://tussuplementos.es` (`https://www.tussuplementos.es`)  
->>>>>>> origin/main
 > **Infraestructura:** Next.js (Vercel) + FastAPI (Render) + PostgreSQL (Neon DB)
 
 ---
 
-<<<<<<< HEAD
 ## 📊 Tabla Resumen del Estado de Desarrollo
 
 | Módulo / Funcionalidad | Área | Estado | Detalle Técnico de Implementación |
 | :--- | :--- | :---: | :--- |
 | **Skeleton Loaders (Carga suave)** | Frontend | **COMPLETADO** | Componente `ProductCardSkeleton.tsx` integrado en `Catalog.tsx` (8 esqueletos animados). |
 | **Empty State (Estado Vacío)** | Frontend | **COMPLETADO** | Componente `EmptyState.tsx` con ilustración, subtexto y botón "Restablecer filtros". |
-| **Limpieza Hero & Escala Logo Navbar** | Frontend | **COMPLETADO** | Logo del Navbar escalado a 44x44 (w-11 h-11); Hero sin badges ni iconos flotantes con H1 y subtexto centrado limpio. |
+| **Micro-Compresión Vertical Hero (Above the Fold Perfect)** | Frontend | **COMPLETADO** | Ultra-compactado: `pt-2 sm:pt-4 pb-2 sm:pb-3`, H1 a `text-[2.65rem]`, subtexto en `text-sm sm:text-base`, buscador `p-1.5` y marcas a `text-base sm:text-lg`. Tarjetas de productos visibles al cargar. |
 | **Multiselección de Marcas/Categorías** | Backend | **COMPLETADO** | Parámetros plurales `marcas`, `categorias`, `sabores`, `formatos` con operador `IN` en SQLAlchemy. |
 | **Filtro % Proteína & Orden Relevancia** | Backend | **COMPLETADO** | Filtro `>= porcentaje_proteina` y ordenación compuesta por marcas top y categorías principales. |
 | **Ingesta Masiva de HSN (119 ítems)** | Backend | **COMPLETADO** | Pipeline `ingestores/hsn.py` procesando catálogo oficial e insertando en Neon DB (1.784 productos). |
