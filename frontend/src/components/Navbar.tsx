@@ -42,31 +42,20 @@ export default function Navbar() {
           <Link href="/#catalogo" className="hover:text-slate-900 transition-colors">
             Catálogo
           </Link>
-          <Link href="/#marcas" className="hover:text-slate-900 transition-colors">
-            Marcas
-          </Link>
 
-          {/* Botón Top Ofertas (Icono Llama SVG Vectorial + Micro-Píldora Tipográfica) */}
+          {/* Botón Top Ofertas */}
           <Link
             href="/?solo_ofertas=true#catalogo"
-            className={`flex items-center gap-1.5 transition-all ${isSoloOfertas
-                ? "bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1 rounded-lg font-bold shadow-2xs"
-                : "hover:text-slate-900 font-semibold"
-              }`}
+            className={
+              isSoloOfertas
+                ? "bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg font-semibold text-sm flex items-center gap-1.5 transition-all shadow-2xs"
+                : "flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
+            }
           >
             <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 23c-4.97 0-9-3.58-9-8 0-4.19 3.01-7.12 6.09-10.09.43-.41 1.15-.12 1.15.47 0 1.95 1.13 3.12 2.26 4.29 1.13 1.17 2.26 2.34 2.26 4.75 0 .28.22.5.5.5s.5-.22.5-.5c0-1.42-.56-2.56-1.12-3.69-.56-1.13-1.13-2.27-1.13-4.31 0-.58.71-.87 1.14-.46C18.06 10.15 21 13.06 21 17c0 4.42-4.03 8-9 8z" />
             </svg>
-            <span className="text-xs">Top Ofertas</span>
-            {isSoloOfertas ? (
-              <span className="bg-amber-600 text-white text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md ml-0.5">
-                ACTIVO
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded-md ml-0.5">
-                OFERTAS
-              </span>
-            )}
+            <span>Top Ofertas</span>
           </Link>
 
           <div className="w-px h-4 bg-slate-200"></div>
@@ -100,7 +89,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="relative group">
-            {/* Botón Acceder (Idéntico a Salir en simetría, fondo, borde y color) */}
+            {/* Botón Acceder */}
             <button
               onClick={openLoginModal}
               className="flex items-center gap-1.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-medium text-xs px-3.5 py-1.5 rounded-lg border border-slate-200/60 transition-colors cursor-pointer"

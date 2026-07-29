@@ -289,7 +289,7 @@ export default function Catalog() {
       </section>
 
       {/* ZONA DE CATÁLOGO (Filtros y Resultados) */}
-      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+      <div id="catalogo" className="scroll-mt-24 flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
 
         {/* Botón Flotante para Móviles */}
         <div className="md:hidden w-full sticky top-24 z-20 mb-4">
@@ -349,25 +349,6 @@ export default function Catalog() {
 
         {/* ESCAPARATE DE PRODUCTOS */}
         <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
-
-          {/* Banner de Estado "Top Ofertas" */}
-          {soloOfertas && (
-            <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-500 text-white p-4 sm:p-5 rounded-2xl mb-6 shadow-lg shadow-red-500/10 flex items-center justify-between flex-wrap gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-3.5">
-                <span className="text-2xl bg-white/20 p-2.5 rounded-xl backdrop-blur-md">🔥</span>
-                <div>
-                  <h3 className="font-extrabold text-base sm:text-lg leading-tight">Viendo solo ofertas y chollos destacados</h3>
-                  <p className="text-xs text-red-100 font-medium">Mostrando únicamente suplementos con precio rebajado sobre su tarifa original.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push("/#catalogo")}
-                className="bg-white hover:bg-slate-100 text-red-600 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
-              >
-                Ver todo el catálogo
-              </button>
-            </div>
-          )}
 
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
