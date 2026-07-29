@@ -207,42 +207,103 @@ export default function Catalog() {
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
 
-      {/* HERO BANNER LIMPIO & CENTRADO */}
-      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-4 md:pt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-        {/* Titular Principal H1 Limpio */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight text-center leading-tight mb-4">
-          Compara precios y ahorra en tu suplementación
+      {/* HERO BANNER PREMUM ULTRA-COMPACTO SOBRIO */}
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 sm:pt-4 pb-2 sm:pb-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+        {/* 1. Titular Principal H1 con Acento Tipográfico Elegante */}
+        <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-2">
+          Compara precios y <span className="text-blue-600">ahorra</span> en tu suplementación
         </h1>
 
-        {/* Subtexto de Propuesta de Valor Centrado */}
-        <p className="text-center mx-auto text-base sm:text-lg text-slate-600 max-w-2xl mt-1 mb-8 font-normal leading-relaxed">
-          Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al mejor precio.
+        {/* 2. Subtexto Claro */}
+        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-1 mb-4 font-normal leading-normal">
+          Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo por kilo.
         </p>
 
-        {/* Barra de Búsqueda Protagonista */}
-        <div className="w-full max-w-2xl mx-auto relative z-10 group mb-6">
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-            <svg className="h-6 w-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* 3. Rediseño Premium de la Barra de Búsqueda Estilizada */}
+        <div className="w-full max-w-3xl mx-auto relative flex items-center bg-white border border-slate-200/80 rounded-xl shadow-lg shadow-slate-200/50 p-1.5 mb-3 transition-all focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+          <div className="pl-3 pr-2 flex items-center pointer-events-none text-slate-400">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           <input
             type="text"
-            placeholder="Busca por marca, producto o ingrediente..."
+            placeholder="Busca por marca, producto o ingrediente (ej. HSN, Creatina)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-slate-300 text-slate-900 rounded-2xl pl-14 pr-6 py-4 text-base md:text-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 shadow-lg shadow-slate-200/50 transition-all placeholder:text-slate-400"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="w-full bg-transparent text-slate-900 text-sm sm:text-base outline-none px-2 py-2 placeholder:text-slate-400 font-medium"
           />
+          <button
+            onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
+            className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-md flex-shrink-0 cursor-pointer"
+          >
+            Buscar
+          </button>
         </div>
 
-        {/* Trust Banner - Tiendas */}
-        <div className="w-full max-w-3xl mx-auto mt-2">
-          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">Integrado con el catálogo de</p>
-          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-700">
-            <span className="text-lg sm:text-xl font-black tracking-tighter text-slate-800">MYPROTEIN</span>
-            <span className="text-xl sm:text-2xl font-black text-slate-800 italic">HSN</span>
-            <span className="text-lg sm:text-xl font-bold text-slate-800 tracking-widest">BULK</span>
-            <span className="text-lg sm:text-xl font-extrabold text-slate-800 uppercase">Prozis</span>
+        {/* 4. Trío de Pilares de Valor (Texto Fino Sobrio) */}
+        <div className="flex items-center justify-center gap-5 text-xs text-slate-500 font-medium flex-wrap mt-2 mb-4">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span><strong className="text-slate-700 font-semibold">Comparativa</strong> en tiempo real</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
+          <div className="flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span><strong className="text-slate-700 font-semibold">Transparencia</strong> €/kg</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
+          <div className="flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+            <span><strong className="text-slate-700 font-semibold">100% Gratuito</strong> sin costes extra</span>
+          </div>
+        </div>
+
+        {/* 5. Bar de Tiendas Interactivas (Clicables con Scroll) */}
+        <div className="w-full max-w-3xl mx-auto">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 text-center">
+            INTEGRADO CON EL CATÁLOGO DE
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
+            {[
+              { name: "MyProtein", displayName: "MYPROTEIN", style: "text-base sm:text-lg font-black tracking-tighter" },
+              { name: "HSN", displayName: "HSN", style: "text-lg sm:text-xl font-black italic" },
+              { name: "Bulk", displayName: "BULK", style: "text-base sm:text-lg font-bold tracking-widest" },
+              { name: "Prozis", displayName: "Prozis", style: "text-base sm:text-lg font-extrabold uppercase" },
+            ].map((brand) => {
+              const isSelected = selectedBrands.includes(brand.name);
+              return (
+                <button
+                  key={brand.name}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedBrands(selectedBrands.filter((b) => b !== brand.name));
+                    } else {
+                      setSelectedBrands([brand.name]);
+                    }
+                    document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className={`cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
+                      : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
+                  } ${brand.style}`}
+                >
+                  {brand.displayName}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
