@@ -96,6 +96,13 @@ export default function Catalog() {
     if (selectedCategory !== "Aminoácidos") setSelectedAminoProfile("Todos");
   }, [selectedCategory]);
 
+  useEffect(() => {
+    const qFromUrl = searchParams ? (searchParams.get("busqueda") || searchParams.get("q")) : null;
+    if (qFromUrl !== null && qFromUrl !== searchQuery) {
+      setSearchQuery(qFromUrl);
+    }
+  }, [searchParams]);
+
   const buildQueryParams = () => {
     const queryParams = new URLSearchParams();
     if (soloOfertas) queryParams.append("solo_ofertas", "true");
@@ -208,46 +215,19 @@ export default function Catalog() {
     <div className="w-full flex flex-col gap-2 md:gap-4">
 
       {/* HERO BANNER PREMUM ULTRA-COMPACTO SOBRIO */}
-      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 sm:pt-4 pb-2 sm:pb-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-1 sm:pt-2 pb-1 sm:pb-2 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
         {/* 1. Titular Principal H1 con Acento Tipográfico Elegante */}
-        <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-2">
+        <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-1.5">
           Compara precios y <span className="text-blue-600">ahorra</span> en tu suplementación
         </h1>
 
         {/* 2. Subtexto Claro */}
-        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-1 mb-4 font-normal leading-normal">
+        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo por kilo.
         </p>
 
-        {/* 3. Rediseño Premium de la Barra de Búsqueda Estilizada */}
-        <div className="w-full max-w-3xl mx-auto relative flex items-center bg-white border border-slate-200/80 rounded-xl shadow-lg shadow-slate-200/50 p-1.5 mb-3 transition-all focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
-          <div className="pl-3 pr-2 flex items-center pointer-events-none text-slate-400">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Busca por marca, producto o ingrediente (ej. HSN, Creatina)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            className="w-full bg-transparent text-slate-900 text-sm sm:text-base outline-none px-2 py-2 placeholder:text-slate-400 font-medium"
-          />
-          <button
-            onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-md flex-shrink-0 cursor-pointer"
-          >
-            Buscar
-          </button>
-        </div>
-
-        {/* 4. Trío de Pilares de Valor (Texto Fino Sobrio) */}
-        <div className="flex items-center justify-center gap-5 text-xs text-slate-500 font-medium flex-wrap mt-2 mb-4">
+        {/* 3. Trío de Pilares de Valor (Texto Fino Sobrio) */}
+        <div className="flex items-center justify-center gap-5 text-xs text-slate-500 font-medium flex-wrap mt-1 mb-3">
           <div className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -309,7 +289,7 @@ export default function Catalog() {
       </section>
 
       {/* ZONA DE CATÁLOGO (Filtros y Resultados) */}
-      <div id="catalogo" className="flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+      <div id="catalogo" className="scroll-mt-24 flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
 
         {/* Botón Flotante para Móviles */}
         <div className="md:hidden w-full sticky top-24 z-20 mb-4">
@@ -369,25 +349,6 @@ export default function Catalog() {
 
         {/* ESCAPARATE DE PRODUCTOS */}
         <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
-
-          {/* Banner de Estado "Top Ofertas" */}
-          {soloOfertas && (
-            <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-500 text-white p-4 sm:p-5 rounded-2xl mb-6 shadow-lg shadow-red-500/10 flex items-center justify-between flex-wrap gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-3.5">
-                <span className="text-2xl bg-white/20 p-2.5 rounded-xl backdrop-blur-md">🔥</span>
-                <div>
-                  <h3 className="font-extrabold text-base sm:text-lg leading-tight">Viendo solo ofertas y chollos destacados</h3>
-                  <p className="text-xs text-red-100 font-medium">Mostrando únicamente suplementos con precio rebajado sobre su tarifa original.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push("/#catalogo")}
-                className="bg-white hover:bg-slate-100 text-red-600 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
-              >
-                Ver todo el catálogo
-              </button>
-            </div>
-          )}
 
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
