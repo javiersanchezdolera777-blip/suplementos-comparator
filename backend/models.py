@@ -29,6 +29,7 @@ class Producto(Base):
     nombre = Column(String, index=True, nullable=False)
     descripcion = Column(String)
     precio = Column(Float, nullable=False)
+    precio_anterior = Column(Float, nullable=True)  
     imagen_url = Column(String)
     afiliado_url = Column(String)
 

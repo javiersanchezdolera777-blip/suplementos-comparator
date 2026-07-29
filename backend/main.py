@@ -98,6 +98,7 @@ def obtener_productos(
     busqueda: Optional[str] = None,
     db: Session = Depends(get_db),
     porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
+    solo_ofertas: Optional[bool] = Query(False, description="Muestra solo productos con descuento real"), 
     ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200)
@@ -132,6 +133,11 @@ def obtener_productos(
 
     if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
+    if solo_ofertas:
+        query = query.filter(
+            models.Producto.precio_anterior.isnot(None),
+            models.Producto.precio_anterior > models.Producto.precio
+        )
 
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
@@ -159,6 +165,9 @@ def obtener_productos(
         query = query.order_by(models.Producto.precio.desc())
     elif ordenar_por == "precio_kg_asc":
         query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
+    elif ordenar_por == "descuento_desc":
+        descuento = (models.Producto.precio_anterior - models.Producto.precio) / models.Producto.precio_anterior
+        query = query.order_by(desc(descuento).nulls_last())
     elif ordenar_por == "relevancia":
         marcas_top = ['Optimum Nutrition', 'Dymatize', 'HSN', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
         categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']

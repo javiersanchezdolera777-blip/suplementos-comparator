@@ -206,7 +206,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         objetivos.append(ObjetivoEnum.salud.value)
 
     c["objetivo"] = objetivos if objetivos else None
-    
+
     c["sello_calidad"] = None
     if "creapure" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.creapure.value
     elif "kyowa" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.kyowa.value
@@ -344,6 +344,7 @@ def inyectar_en_bd():
                         desc_cruda = datos_producto.get('description', '')
                         
                         precio = 0.0
+                        precio_anterior = None 
                         ofertas = datos_producto.get('offers', {})
                         try:
                             if isinstance(ofertas, dict): precio = float(ofertas.get('lowPrice', ofertas.get('price', 0.0)))
@@ -352,6 +353,7 @@ def inyectar_en_bd():
                                     if isinstance(of, dict) and float(of.get('price', 0.0)) > 0:
                                         precio = float(of.get('price', 0.0)); break
                         except: pass
+                        
                         
                         if precio == 0.0:
                             precio_meta = soup_prod.find('meta', {'property': 'product:price:amount'})
@@ -366,29 +368,53 @@ def inyectar_en_bd():
                                         if match_precio: precio = float(match_precio.group(1))
                                     except: pass
 
+                        if precio > 0:
+                            html_precio_viejo = soup_prod.find(class_=re.compile(r'old-price'))
+                            if html_precio_viejo:
+                                html_span = html_precio_viejo.find('span', class_=re.compile(r'price'))
+                                if html_span:
+                                    txt_viejo = html_span.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
+                                    try:
+                                        match_viejo = re.search(r'(\d+\.\d+)', txt_viejo)
+                                        if match_viejo:
+                                            p_viejo = float(match_viejo.group(1))
+                                            if p_viejo > precio:
+                                                precio_anterior = p_viejo
+                                    except: pass
+
                         # --- NUEVO: CAZADOR DE PESOS OCULTOS PARA HSN ---
-                        # 1. Sacamos el título de la pestaña HTML (Suele poner "Evowhey 2Kg - HSN")
                         titulo_pagina = soup_prod.find('title').text if soup_prod.find('title') else ""
-                        
-                        # 2. Buscamos el botón de formato que está seleccionado en la web
                         opcion_marcada = soup_prod.find(class_=re.compile(r'swatch-option.*selected'))
                         texto_talla = opcion_marcada.text if opcion_marcada else ""
-                        
-                        # Creamos el Súper-Título fusionando todo
                         nombre_ampliado = f"{nombre} {titulo_pagina} {texto_talla}".lower()
                         # ------------------------------------------------
 
+                        # --- NUEVO: CAZADOR DE SABORES OCULTOS PARA HSN ---
+                        opciones_sabor = soup_prod.find_all(attrs={"option-label": True})
+                        textos_sabores = [op.get("option-label", "") for op in opciones_sabor]
+                        
+                        # Plan B por si usan clases en lugar de option-label
+                        if not textos_sabores:
+                            swatches = soup_prod.find_all(class_=re.compile(r'swatch-option'))
+                            textos_sabores = [s.text for s in swatches]
+                            
+                        texto_sabores_extra = " ".join(textos_sabores).lower()
+                        # ------------------------------------------------------------
+
                         desc_limpia = limpiar_texto(desc_cruda)
-                        etiquetas = clasificar_producto(nombre, desc_limpia)
+                        
+                        # Fusionamos la descripción limpia con los sabores ocultos que hemos cazado
+                        desc_ampliada_para_cerebro = f"{desc_limpia} {texto_sabores_extra}"
+                        
+                        etiquetas = clasificar_producto(nombre, desc_ampliada_para_cerebro)
                         
                         if not etiquetas: continue
                         
-                        # ATENCIÓN: Le pasamos 'nombre_ampliado' al matemático en lugar del nombre corto
                         metricas = calcular_metricas_precio(nombre_ampliado, desc_limpia, precio)
                         url_afiliado = generar_enlace_afiliado(url_prod)
                         
                         nuevo_prod = models.Producto(
-                            nombre=nombre, descripcion=desc_limpia[:900], precio=precio, imagen_url=imagen, afiliado_url=url_afiliado,
+                            nombre=nombre, descripcion=desc_limpia[:900], precio=precio,precio_anterior=precio_anterior, imagen_url=imagen, afiliado_url=url_afiliado,
                             marca_id=marca_hsn.id, categoria_id=mapa_categorias[etiquetas["categoria"]], sabor=etiquetas["sabor"],
                             formato=etiquetas["formato"], objetivo=etiquetas["objetivo"], es_vegano=etiquetas["es_vegano"],
                             sello_calidad=etiquetas["sello_calidad"], tipo_proteina=etiquetas["tipo_proteina"],
@@ -439,6 +465,5 @@ def inyectar_en_bd():
             print(f"⚠️ Aviso: No se pudieron guardar los últimos {len(productos_nuevos)} productos.")
         
     print(f"\n🎉 ¡MISIÓN CUMPLIDA! Catálogo inyectado: {total_general} productos robustos.")
-
 if __name__ == "__main__":
     inyectar_en_bd()
