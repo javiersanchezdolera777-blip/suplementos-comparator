@@ -19,7 +19,7 @@
 | :--- | :--- | :---: | :--- |
 | **Skeleton Loaders (Carga suave)** | Frontend | **COMPLETADO** | Componente `ProductCardSkeleton.tsx` integrado en `Catalog.tsx` (8 esqueletos animados). |
 | **Empty State (Estado Vacío)** | Frontend | **COMPLETADO** | Componente `EmptyState.tsx` con ilustración, subtexto y botón "Restablecer filtros". |
-| **Escudo de Fallback de Imágenes** | Frontend | **COMPLETADO** | Handler `onError` y estado `imageError` en `ProductCard.tsx` redirigiendo al logo oficial. |
+| **Limpieza Hero & Escala Logo Navbar** | Frontend | **COMPLETADO** | Logo del Navbar escalado a 44x44 (w-11 h-11); Hero sin badges ni iconos flotantes con H1 y subtexto centrado limpio. |
 | **Multiselección de Marcas/Categorías** | Backend | **COMPLETADO** | Parámetros plurales `marcas`, `categorias`, `sabores`, `formatos` con operador `IN` en SQLAlchemy. |
 | **Filtro % Proteína & Orden Relevancia** | Backend | **COMPLETADO** | Filtro `>= porcentaje_proteina` y ordenación compuesta por marcas top y categorías principales. |
 | **Ingesta Masiva de HSN (119 ítems)** | Backend | **COMPLETADO** | Pipeline `ingestores/hsn.py` procesando catálogo oficial e insertando en Neon DB (1.784 productos). |
