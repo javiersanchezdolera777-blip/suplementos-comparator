@@ -1,18 +1,12 @@
 # 🏛️ Documentación de Arquitectura y Estado de Proyecto: Tus Suplementos (Suparator)
 
 > **Documento Fuente de Verdad para Inteligencia Artificial y Equipo Lead**  
-<<<<<<< HEAD
 > **Última Actualización:** 29 de Julio, 2026  
 > **Dominio Oficial:** `https://tussuplementos.es` (`https://www.tussuplementos.es`) (comprado en DonDominio)
-=======
-> **Última Actualización:** 28 de Julio, 2026  
-> **Dominio Oficial:** `https://tussuplementos.es` (`https://www.tussuplementos.es`)  
->>>>>>> origin/main
 > **Infraestructura:** Next.js (Vercel) + FastAPI (Render) + PostgreSQL (Neon DB)
 
 ---
 
-<<<<<<< HEAD
 ## 📊 Tabla Resumen del Estado de Desarrollo
 
 | Módulo / Funcionalidad | Área | Estado | Detalle Técnico de Implementación |
