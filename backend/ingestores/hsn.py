@@ -54,10 +54,39 @@ def generar_enlace_afiliado(url_producto: str) -> str:
     return f"https://www.hsnstore.com/affiliate/click/index?linkid={link_id}"
 
 def extraer_porcentaje_proteina(texto: str):
-    m1 = re.search(r'(\d{2,3})\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza|wpc|whey|aislado)', texto)
-    if m1: return int(m1.group(1))
-    m2 = re.search(r'(?:wpc|whey|prote[íi]na|pureza)[^\d]{0,10}(\d{2,3})\s*%', texto)
-    if m2: return int(m2.group(1))
+    if not texto: return None
+    texto = texto.lower()
+    
+    # 1. Caza formato explícito "77,3 g de proteína por 100 g"
+    m1 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,20}100\s*g', texto)
+    if m1: return round(float(m1.group(1).replace(',', '.')))
+
+    # 2. Caza formato matemático "23 g de proteína por porción de 30 g" -> Hace (23/30)*100
+    m2 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,30}(\d{2,3}(?:[.,]\d+)?)\s*g', texto)
+    if m2:
+        prot = float(m2.group(1).replace(',', '.'))
+        porcion = float(m2.group(2).replace(',', '.'))
+        if porcion > 0 and prot <= porcion:
+            return round((prot / porcion) * 100)
+
+    # 3. Caza porcentajes atados directamente a la palabra "80% de proteína" o "WPC 80%"
+    m3 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza|wpc|wpi|cfm|whey|aislado)', texto)
+    if m3: return round(float(m3.group(1).replace(',', '.')))
+
+    m4 = re.search(r'(?:wpc|wpi|cfm|whey|prote[íi]na|pureza|concentración|proteico)[^\d]{0,20}(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    if m4: return round(float(m4.group(1).replace(',', '.')))
+
+    # 4. Búsqueda Desesperada (Cazador Contextual)
+    porcentajes = re.finditer(r'(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    for p in porcentajes:
+        valor = round(float(p.group(1).replace(',', '.')))
+        if 50 <= valor <= 98: 
+            inicio = max(0, p.start() - 60)
+            fin = min(len(texto), p.end() + 60)
+            entorno = texto[inicio:fin]
+            if any(palabra in entorno for palabra in ["prote", "pureza", "aislado", "concentrado", "contenido"]):
+                return valor
+
     return None
 
 def calcular_metricas_precio(nombre: str, descripcion: str, precio: float):
@@ -177,8 +206,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c["perfil_aminoacidos"] = c["tipo_vitamina"] = None
     if c["categoria"] == CategoriaEnum.proteinas.value:
         c["porcentaje_proteina"] = extraer_porcentaje_proteina(texto_completo)
-        if any(v in texto_completo for v in ["vegetal", "soja", "guisante", "garbanzo", "calabaza", "arroz", "vegan"]):
-            c["tipo_proteina"] = TipoProteinaEnum.vegetal.value
+        if any(v in texto_completo for v in ["proteína vegetal", "proteina vegetal", "vegan protein", "proteína de soja", "proteina de soja", "proteína de guisante", "proteína de arroz", "proteína de garbanzo", "proteína de calabaza"]):            c["tipo_proteina"] = TipoProteinaEnum.vegetal.value
         elif "isolate" in texto_completo or "aislado" in texto_completo: 
             c["tipo_proteina"] = TipoProteinaEnum.isolate.value
         elif "caseina" in texto_completo or "casein" in texto_completo: 
@@ -187,6 +215,14 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             c["tipo_proteina"] = TipoProteinaEnum.hidrolizado.value
         else: 
             c["tipo_proteina"] = TipoProteinaEnum.whey.value
+        c["porcentaje_proteina"] = extraer_porcentaje_proteina(texto_completo)
+        
+        # 3. EL PLAN B (Fallback de la industria si la función matemática devuelve None)
+        if c["porcentaje_proteina"] is None:
+            if c["tipo_proteina"] == TipoProteinaEnum.isolate.value:
+                c["porcentaje_proteina"] = 93
+            elif c["tipo_proteina"] == TipoProteinaEnum.whey.value:
+                c["porcentaje_proteina"] = 75
         
     elif c["categoria"] == CategoriaEnum.creatinas.value:
         if "micronizada" in texto_completo or "mesh" in texto_completo: c["tipo_creatina"] = TipoCreatinaEnum.micronizada.value
@@ -319,12 +355,25 @@ def inyectar_en_bd():
                                         if match_precio: precio = float(match_precio.group(1))
                                     except: pass
 
+                        # --- NUEVO: CAZADOR DE PESOS OCULTOS PARA HSN ---
+                        # 1. Sacamos el título de la pestaña HTML (Suele poner "Evowhey 2Kg - HSN")
+                        titulo_pagina = soup_prod.find('title').text if soup_prod.find('title') else ""
+                        
+                        # 2. Buscamos el botón de formato que está seleccionado en la web
+                        opcion_marcada = soup_prod.find(class_=re.compile(r'swatch-option.*selected'))
+                        texto_talla = opcion_marcada.text if opcion_marcada else ""
+                        
+                        # Creamos el Súper-Título fusionando todo
+                        nombre_ampliado = f"{nombre} {titulo_pagina} {texto_talla}".lower()
+                        # ------------------------------------------------
+
                         desc_limpia = limpiar_texto(desc_cruda)
                         etiquetas = clasificar_producto(nombre, desc_limpia)
                         
                         if not etiquetas: continue
                         
-                        metricas = calcular_metricas_precio(nombre.lower(), desc_limpia, precio)
+                        # ATENCIÓN: Le pasamos 'nombre_ampliado' al matemático en lugar del nombre corto
+                        metricas = calcular_metricas_precio(nombre_ampliado, desc_limpia, precio)
                         url_afiliado = generar_enlace_afiliado(url_prod)
                         
                         nuevo_prod = models.Producto(
