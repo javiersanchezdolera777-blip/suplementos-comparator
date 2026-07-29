@@ -1,5 +1,6 @@
 [
   {
+    "id": 1,
     "name": "Whey Protein Isolate 100%",
     "description": "Proteína aislada de suero de leche de alta calidad, ideal para recuperación muscular rápida.",
     "price": 34.99,
@@ -10,16 +11,10 @@
     },
     "category": {
       "name": "Proteína"
-    },
-    "sabor": "Vainilla",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "origen": "whey",
-      "procesado": "aislado",
-      "sin_lactosa": true
     }
   },
   {
+    "id": 2,
     "name": "Creatina Monohidrato Creapure",
     "description": "Creatina monohidrato 100% pura para mejorar el rendimiento y fuerza explosiva.",
     "price": 19.95,
@@ -30,15 +25,10 @@
     },
     "category": {
       "name": "Creatina"
-    },
-    "sabor": "Sin sabor",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "tipo": "monohidrato",
-      "creapure": true
     }
   },
   {
+    "id": 3,
     "name": "Pre-Entreno Explosive Energy",
     "description": "Fórmula avanzada de pre-entrenamiento con cafeína, beta-alanina y citrulina.",
     "price": 24.50,
@@ -49,15 +39,10 @@
     },
     "category": {
       "name": "Pre-entreno"
-    },
-    "sabor": "Frutas rojas",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "tipo": "estimulante",
-      "contiene_cafeina": true
     }
   },
   {
+    "id": 4,
     "name": "Multivitamínico Daily Plus",
     "description": "Complejo vitamínico con minerales esenciales para el día a día del atleta.",
     "price": 14.99,
@@ -68,15 +53,10 @@
     },
     "category": {
       "name": "Vitaminas"
-    },
-    "sabor": "Neutral",
-    "formato": "Cápsulas",
-    "caracteristicas": {
-      "tipo": "complejo_multivitaminico",
-      "vegetariano": true
     }
   },
   {
+    "id": 5,
     "name": "Clear Whey Isolate",
     "description": "Proteína de suero hidrolizada transparente, refrescante y ligera como un zumo.",
     "price": 29.99,
@@ -87,16 +67,10 @@
     },
     "category": {
       "name": "Proteína"
-    },
-    "sabor": "Limón",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "origen": "whey",
-      "procesado": "hidrolizado",
-      "sin_lactosa": true
     }
   },
   {
+    "id": 6,
     "name": "Creatina HCL",
     "description": "Creatina clorhidrato de alta absorción, sin retención de líquidos.",
     "price": 22.95,
@@ -107,15 +81,10 @@
     },
     "category": {
       "name": "Creatina"
-    },
-    "sabor": "Sin sabor",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "tipo": "clorhidrato",
-      "creapure": false
     }
   },
   {
+    "id": 7,
     "name": "Pre-Entreno Sin Cafeína (Pump)",
     "description": "Pre-entreno enfocado en la congestión muscular y flujo sanguíneo sin estimulantes.",
     "price": 26.50,
@@ -126,15 +95,10 @@
     },
     "category": {
       "name": "Pre-entreno"
-    },
-    "sabor": "Sandía",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "tipo": "no_estimulante",
-      "contiene_cafeina": false
     }
   },
   {
+    "id": 8,
     "name": "Omega 3 Ultra Puro",
     "description": "Aceite de pescado rico en EPA y DHA para salud cardiovascular.",
     "price": 18.99,
@@ -145,15 +109,10 @@
     },
     "category": {
       "name": "Vitaminas"
-    },
-    "sabor": "Neutral",
-    "formato": "Cápsulas",
-    "caracteristicas": {
-      "tipo": "aceite_pescado",
-      "vegetariano": false
     }
   },
   {
+    "id": 9,
     "name": "Caseína Micelar Noche",
     "description": "Proteína de absorción lenta, perfecta para tomar antes de dormir.",
     "price": 31.99,
@@ -164,16 +123,10 @@
     },
     "category": {
       "name": "Proteína"
-    },
-    "sabor": "Chocolate",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "origen": "caseina",
-      "procesado": "micelar",
-      "sin_lactosa": false
     }
   },
   {
+    "id": 10,
     "name": "BCAA 8:1:1 + Glutamina",
     "description": "Aminoácidos ramificados para la recuperación y reducción de la fatiga.",
     "price": 21.90,
@@ -184,12 +137,6 @@
     },
     "category": {
       "name": "Aminoácidos"
-    },
-    "sabor": "Frutas tropicales",
-    "formato": "Polvo",
-    "caracteristicas": {
-      "proporcion": "8:1:1",
-      "contiene_glutamina": true
     }
   }
 ]
