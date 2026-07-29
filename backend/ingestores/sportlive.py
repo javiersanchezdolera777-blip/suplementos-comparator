@@ -22,7 +22,7 @@ from schemas import (
 # ... (El resto de tu código se queda exactamente igual) ...
 
 URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = "feed_temporal.json"
+ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", "sportlive_temporal.json")
 DOMINIO_TIENDA = "https://sportlivenutrition.com"
 
 db = SessionLocal()

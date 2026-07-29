@@ -19,7 +19,7 @@ from schemas import (
 )
 
 URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = "farma2go_temporal.json"
+ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", "farma2go_temporal.json")
 
 db = SessionLocal()
 
