@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Logo from './Logo';
 
 export default function Footer() {
   return (
@@ -8,16 +9,13 @@ export default function Footer() {
           
           {/* Col 1: Marca y Transparencia */}
           <div className="md:col-span-2 flex flex-col items-start gap-4">
-            <div className="text-2xl font-black tracking-tighter flex items-center gap-2 mb-2">
-              <span className="text-slate-200">⚡</span> 
-              <span className="text-white">Suparator</span>
-            </div>
+            <Logo lightMode={true} />
             <p className="text-sm text-slate-400 leading-relaxed max-w-md">
-              Suparator es el comparador líder de suplementación deportiva. Analizamos los catálogos de las principales marcas para asegurarnos de que siempre pagues el precio más justo.
+              Tus Suplementos es el comparador líder de suplementación deportiva. Analizamos los catálogos de las principales marcas oficiales para asegurarnos de que siempre pagues el precio más justo.
             </p>
             <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
               <p className="text-xs text-slate-400 leading-relaxed">
-                <strong className="text-slate-200">Transparencia de Afiliados:</strong> Suparator participa en programas de afiliación (CPA). Si compras a través de nuestros enlaces, podemos recibir una comisión sin coste extra para ti. Esto mantiene la plataforma 100% gratuita y sin anuncios.
+                <strong className="text-slate-200">Transparencia de Afiliados:</strong> Tus Suplementos participa en programas de afiliación (CPA). Si compras a través de nuestros enlaces, podemos recibir una comisión sin coste extra para ti. Esto mantiene la plataforma 100% gratuita y sin anuncios.
               </p>
             </div>
           </div>
@@ -42,7 +40,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-slate-500 font-medium">
-            © {new Date().getFullYear()} Suparator. Creado con precisión por Javier y Diego.
+            © {new Date().getFullYear()} Tus Suplementos. Creado con precisión por Javier y Diego.
           </p>
           <div className="flex items-center gap-1 text-xs text-slate-500 font-semibold">
             <span>Versión 2.0.1 (BETA)</span>

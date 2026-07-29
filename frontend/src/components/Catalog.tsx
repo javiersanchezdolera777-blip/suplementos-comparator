@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import ProductCard from "./ProductCard";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 import EmptyState from "./EmptyState";
@@ -206,15 +207,16 @@ export default function Catalog() {
   return (
     <div className="w-full flex flex-col gap-2 md:gap-4">
 
-      {/* HERO COMPACTADO */}
-      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-2 md:pt-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-4">
-          El mayor comparador de <br className="hidden sm:block" />
-          <span className="text-blue-600">suplementos de España</span>
+      {/* HERO BANNER LIMPIO & CENTRADO */}
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-4 md:pt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+        {/* Titular Principal H1 Limpio */}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight text-center leading-tight mb-4">
+          Compara precios y ahorra en tu suplementación
         </h1>
 
-        <p className="text-base text-slate-600 max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed font-medium">
-          Encuentra los mejores precios en proteínas, creatinas y vitaminas de tus marcas favoritas. Analizamos y comparamos en tiempo real para que tú ahorres.
+        {/* Subtexto de Propuesta de Valor Centrado */}
+        <p className="text-center mx-auto text-base sm:text-lg text-slate-600 max-w-2xl mt-1 mb-8 font-normal leading-relaxed">
+          Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al mejor precio.
         </p>
 
         {/* Barra de Búsqueda Protagonista */}

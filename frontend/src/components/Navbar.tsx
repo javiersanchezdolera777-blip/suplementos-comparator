@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,25 +12,40 @@ export default function Navbar() {
 
   return (
     <nav className="w-full py-4 px-6 md:px-12 flex justify-between items-center z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 transition-all duration-300">
-      <div className="text-2xl font-black tracking-tighter flex items-center gap-2">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="text-blue-600 drop-shadow-sm group-hover:scale-110 transition-transform">⚡</span>
-          <span className="text-slate-900">Suparator</span>
-        </Link>
-      </div>
-      
+
+      {/* Logo Identidad Oficial Tus Suplementos */}
+      <Link href="/" className="flex items-center gap-2.5 group cursor-pointer focus:outline-none select-none">
+        <Image
+          src="/Logo_icon2.png"
+          alt="Tus Suplementos"
+          width={44}
+          height={44}
+          className="w-11 h-11 object-contain group-hover:scale-105 transition-transform duration-200"
+          priority
+        />
+        <div className="flex items-baseline text-xl sm:text-2xl tracking-tight">
+          <span className="font-semibold text-slate-700">Tus</span>
+          <span className="font-black text-slate-900 ml-1">Suplementos</span>
+          <span className="text-blue-600 font-extrabold text-2xl leading-none ml-0.5">.</span>
+        </div>
+      </Link>
+
+      {/* Menú Principal */}
       <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-        <Link href="/#catalogo" className="hover:text-slate-900 transition-colors">Catálogo</Link>
-        <Link href="/#marcas" className="hover:text-slate-900 transition-colors">Marcas</Link>
-        
-        {/* Botón Top Ofertas con estado activo cuando solo_ofertas=true */}
-        <Link 
-          href="/?solo_ofertas=true#catalogo" 
-          className={`flex items-center gap-1.5 transition-all ${
-            isSoloOfertas 
-              ? "bg-red-50 text-red-600 border border-red-200/80 px-3.5 py-1.5 rounded-full font-extrabold shadow-sm" 
+        <Link href="/#catalogo" className="hover:text-slate-900 transition-colors">
+          Catálogo
+        </Link>
+        <Link href="/#marcas" className="hover:text-slate-900 transition-colors">
+          Marcas
+        </Link>
+
+        {/* Botón Top Ofertas */}
+        <Link
+          href="/?solo_ofertas=true#catalogo"
+          className={`flex items-center gap-1.5 transition-all ${isSoloOfertas
+              ? "bg-red-50 text-red-600 border border-red-200/80 px-3.5 py-1.5 rounded-full font-extrabold shadow-sm"
               : "hover:text-slate-900 font-semibold"
-          }`}
+            }`}
         >
           <span className="animate-pulse">🔥</span>
           <span>Top Ofertas</span>
@@ -41,10 +57,11 @@ export default function Navbar() {
         </Link>
 
         <div className="w-px h-4 bg-slate-200"></div>
-        
+
+        {/* Autenticación & Favoritos */}
         {isLoggedIn ? (
           <div className="flex items-center gap-4">
-            <Link 
+            <Link
               href="/favoritos"
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50/80 hover:bg-rose-100 border border-rose-200/60 text-rose-600 transition-all font-medium hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
             >
@@ -58,7 +75,7 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-            <button 
+            <button
               onClick={logout}
               className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
             >
@@ -67,7 +84,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="relative group">
-            <button 
+            <button
               onClick={openLoginModal}
               className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all hover:scale-105 active:scale-95 shadow-md shadow-slate-900/10 cursor-pointer"
             >
