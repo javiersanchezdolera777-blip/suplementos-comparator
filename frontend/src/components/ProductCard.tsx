@@ -61,8 +61,9 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
   
+  const [imageError, setImageError] = useState(false);
   const isFavorite = favoriteIds.includes(product.id);
-  const hasImage = product.image_url && product.image_url.trim() !== "";
+  const showImage = product.image_url && product.image_url.trim() !== "" && !imageError;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const previousPrice = product.precio_anterior ?? null;
@@ -135,15 +136,17 @@ export default function ProductCard({ product }: { product: Product }) {
         
         {/* Zona Superior: Imagen y Badges */}
         <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
-          {hasImage ? (
+          {showImage ? (
             <img
               src={product.image_url}
               alt={decodeHTML(product.name)}
+              onError={() => setImageError(true)}
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-slate-100 rounded-xl border border-slate-200 relative z-10">
-              <span className="text-slate-400 font-bold tracking-[0.2em] text-xs uppercase">Suparator</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-2xl border border-slate-200/80 p-4 text-center relative z-10">
+              <span className="text-slate-400 font-extrabold tracking-[0.2em] text-xs uppercase mb-1">Tus Suplementos</span>
+              <span className="text-slate-400 text-[10px] font-semibold">{product.brand?.name || "Oficial"}</span>
             </div>
           )}
 
@@ -249,10 +252,18 @@ export default function ProductCard({ product }: { product: Product }) {
 
             {/* Columna Izquierda: Imagen */}
             <div className="w-full md:w-1/2 h-48 md:h-full bg-slate-50 p-6 md:p-8 flex items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
-              {hasImage ? (
-                <img src={product.image_url} alt={decodeHTML(product.name)} className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md" />
+              {showImage ? (
+                <img
+                  src={product.image_url}
+                  alt={decodeHTML(product.name)}
+                  onError={() => setImageError(true)}
+                  className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md"
+                />
               ) : (
-                <span className="text-slate-300 font-black tracking-[0.3em] text-xl uppercase">Suparator</span>
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <span className="text-slate-400 font-black tracking-[0.2em] text-base uppercase mb-1">Tus Suplementos</span>
+                  <span className="text-slate-400 text-xs font-semibold">{product.brand?.name || "Oficial"}</span>
+                </div>
               )}
             </div>
 

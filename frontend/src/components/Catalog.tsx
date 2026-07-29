@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "./ProductCard";
+import ProductCardSkeleton from "./ProductCardSkeleton";
+import EmptyState from "./EmptyState";
 import FilterSidebar from "./FilterSidebar";
 
 export default function Catalog() {
@@ -45,7 +47,7 @@ export default function Catalog() {
   const [vitaminTypes, setVitaminTypes] = useState<string[]>(["Todos"]);
   const [aminoProfiles, setAminoProfiles] = useState<string[]>(["Todos"]);
 
-  const POPULAR_BRANDS = ["Optimum Nutrition", "Dymatize", "Sport Live", "MuscleTech", "Scitec", "MyProtein"];
+  const POPULAR_BRANDS = ["HSN", "Optimum Nutrition", "MyProtein", "Dymatize", "MuscleTech", "Scitec"];
 
   const [brandSearch, setBrandSearch] = useState("");
 
@@ -99,7 +101,7 @@ export default function Catalog() {
     if (searchQuery) queryParams.append("busqueda", searchQuery);
     if (selectedCategory !== "Todas") queryParams.append("categoria", selectedCategory);
     if (selectedBrands.length > 0) queryParams.append("marcas", selectedBrands.join(","));
-    
+
     if (ordenPrecio && ordenPrecio !== "relevancia") {
       queryParams.append("orden_precio", ordenPrecio);
     } else {
@@ -119,7 +121,7 @@ export default function Catalog() {
     if (selectedCategory === "Creatinas" && selectedCreatineType !== "Todos") queryParams.append("tipo_creatina", selectedCreatineType);
     if ((selectedCategory === "Vitaminas" || selectedCategory === "Vitaminas y Minerales" || selectedCategory.startsWith("Vitamina")) && selectedVitaminType !== "Todos") queryParams.append("tipo_vitamina", selectedVitaminType);
     if (selectedCategory === "Aminoácidos" && selectedAminoProfile !== "Todos") queryParams.append("perfil_aminoacidos", selectedAminoProfile);
-    
+
     return queryParams;
   };
 
@@ -344,18 +346,11 @@ export default function Catalog() {
             </div>
           </div>
 
-          {/* Contenido (Skeleton o Grid) */}
+          {/* Contenido (Skeleton, Grid o EmptyState) */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden h-[420px] animate-pulse">
-                  <div className="h-[220px] bg-slate-100"></div>
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="h-3 w-1/4 bg-slate-200 rounded mb-3"></div>
-                    <div className="h-6 w-3/4 bg-slate-200 rounded mb-4"></div>
-                    <div className="h-4 w-full bg-slate-100 rounded mb-2"></div>
-                  </div>
-                </div>
+              {[...Array(8)].map((_, i) => (
+                <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : productosFiltrados.length > 0 ? (
@@ -398,16 +393,7 @@ export default function Catalog() {
               )}
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-3xl text-center px-4 shadow-sm">
-              <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Sin resultados</h3>
-              <p className="text-slate-500 mb-6 max-w-md">No hemos encontrado suplementos con esta combinación de filtros. Prueba a ser menos específico.</p>
-              <button onClick={limpiarFiltros} className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-colors">
-                Borrar todos los filtros
-              </button>
-            </div>
+            <EmptyState resetFilters={limpiarFiltros} />
           )}
         </div>
       </div>

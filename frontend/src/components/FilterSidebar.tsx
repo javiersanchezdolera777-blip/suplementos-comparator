@@ -95,17 +95,17 @@ export default function FilterSidebar({
         w-full md:w-[280px] flex-shrink-0 transition-all duration-300
         ${
           isMobileFilterOpen
-            ? "fixed inset-0 z-[100] bg-white p-6 overflow-y-auto block"
-            : "hidden md:block sticky top-24 max-h-[calc(100vh-110px)] overflow-y-auto pr-1 text-left"
+            ? "fixed inset-0 z-[100] bg-white p-5 overflow-y-auto block"
+            : "hidden md:block sticky top-20 w-full max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 text-left"
         }
       `}
     >
       {/* Cabecera Móvil */}
-      <div className="flex justify-between items-center mb-6 md:hidden">
-        <h2 className="text-2xl font-black text-slate-900">Filtros</h2>
+      <div className="flex justify-between items-center mb-4 md:hidden">
+        <h2 className="text-xl font-black text-slate-900">Filtros</h2>
         <button
           onClick={() => setIsMobileFilterOpen(false)}
-          className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-slate-200 transition-colors"
+          className="p-1.5 bg-slate-100 rounded-full text-slate-600 hover:bg-slate-200 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -113,34 +113,35 @@ export default function FilterSidebar({
         </button>
       </div>
 
-      {/* Panel Estilizado de Filtros */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+      {/* Panel Estilizado Ultra-Compacto */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col gap-3.5">
         
-        {/* 1. Categoría Principal */}
-        <div className="flex flex-col gap-2">
+        {/* 1. CATEGORÍA PRINCIPAL */}
+        <div className="flex flex-col gap-1.5">
           <button
             type="button"
             onClick={() => toggleSection("category")}
-            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
+            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-800 uppercase tracking-wider py-0.5 hover:text-blue-600 transition-colors cursor-pointer"
           >
             <span>Categoría Principal</span>
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${
-                openSections.category ? "rotate-180" : ""
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                openSections.category !== false ? "rotate-180" : ""
               }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          {openSections.category && (
-            <div className="pt-1">
+          
+          {openSections.category !== false && (
+            <div className="pt-0.5">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all font-medium"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all font-semibold"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -154,37 +155,37 @@ export default function FilterSidebar({
 
         <div className="h-px w-full bg-slate-100"></div>
 
-        {/* 2. Subfiltros y Formato (Bloque Contextual) */}
-        <div className="flex flex-col gap-2">
+        {/* 2. FORMATO Y ESPECIFICACIONES AVANZADAS */}
+        <div className="flex flex-col gap-1.5">
           <button
             type="button"
             onClick={() => toggleSection("subfilters")}
-            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
+            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-800 uppercase tracking-wider py-0.5 hover:text-blue-600 transition-colors cursor-pointer"
           >
             <span>Formato y Especificaciones</span>
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
                 openSections.subfilters !== false ? "rotate-180" : ""
               }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
           {openSections.subfilters !== false && (
-            <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl space-y-3 mt-1">
-              {/* Selector de Formato */}
+            <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-2.5 mt-0.5">
+              {/* Formato */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
                   Formato
                 </label>
                 <select
                   value={selectedFormat}
                   onChange={(e) => setSelectedFormat(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                 >
                   {formats.map((f) => (
                     <option key={f} value={f}>
@@ -194,17 +195,17 @@ export default function FilterSidebar({
                 </select>
               </div>
 
-              {/* Subfiltros dinámicos según categoría */}
+              {/* Subfiltros dinámicos según categoría: Proteínas */}
               {selectedCategory === "Proteínas" && (
                 <>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                    <label className="text-[9px] text-blue-600 font-bold uppercase tracking-wider">
                       Tipo de Proteína
                     </label>
                     <select
                       value={selectedProteinType}
                       onChange={(e) => setSelectedProteinType(e.target.value)}
-                      className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                      className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                     >
                       {proteinTypes.map((p) => (
                         <option key={p} value={p}>
@@ -215,13 +216,13 @@ export default function FilterSidebar({
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                    <label className="text-[9px] text-blue-600 font-bold uppercase tracking-wider">
                       % Proteína Mínimo
                     </label>
                     <select
                       value={selectedProteinPercentage}
                       onChange={(e) => setSelectedProteinPercentage(e.target.value)}
-                      className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                      className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                     >
                       <option value="Todos">Todos los porcentajes</option>
                       <option value="90">&gt; 90% (Aislados / Pura Proteína)</option>
@@ -232,15 +233,16 @@ export default function FilterSidebar({
                 </>
               )}
 
+              {/* Subfiltros dinámicos según categoría: Creatinas */}
               {selectedCategory === "Creatinas" && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                  <label className="text-[9px] text-blue-600 font-bold uppercase tracking-wider">
                     Tipo de Creatina
                   </label>
                   <select
                     value={selectedCreatineType}
                     onChange={(e) => setSelectedCreatineType(e.target.value)}
-                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     {creatineTypes.map((c) => (
                       <option key={c} value={c}>
@@ -251,17 +253,18 @@ export default function FilterSidebar({
                 </div>
               )}
 
+              {/* Subfiltros dinámicos según categoría: Vitaminas */}
               {(selectedCategory === "Vitaminas" ||
                 selectedCategory === "Vitaminas y Minerales" ||
                 selectedCategory.startsWith("Vitamina")) && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                  <label className="text-[9px] text-blue-600 font-bold uppercase tracking-wider">
                     Tipo de Vitamina / Mineral
                   </label>
                   <select
                     value={selectedVitaminType}
                     onChange={(e) => setSelectedVitaminType(e.target.value)}
-                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     {vitaminTypes.map((v) => (
                       <option key={v} value={v}>
@@ -272,15 +275,16 @@ export default function FilterSidebar({
                 </div>
               )}
 
+              {/* Subfiltros dinámicos según categoría: Aminoácidos */}
               {selectedCategory === "Aminoácidos" && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                  <label className="text-[9px] text-blue-600 font-bold uppercase tracking-wider">
                     Perfil de Aminoácidos
                   </label>
                   <select
                     value={selectedAminoProfile}
                     onChange={(e) => setSelectedAminoProfile(e.target.value)}
-                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                    className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     {aminoProfiles.map((a) => (
                       <option key={a} value={a}>
@@ -293,13 +297,13 @@ export default function FilterSidebar({
 
               {/* Sabor */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
                   Sabor
                 </label>
                 <select
                   value={selectedFlavor}
                   onChange={(e) => setSelectedFlavor(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                 >
                   {flavors.map((fl) => (
                     <option key={fl} value={fl}>
@@ -311,13 +315,13 @@ export default function FilterSidebar({
 
               {/* Sello de Calidad */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
                   Sello Calidad
                 </label>
                 <select
                   value={selectedQualitySeal}
                   onChange={(e) => setSelectedQualitySeal(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm appearance-none cursor-pointer outline-none focus:border-blue-500 font-medium"
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                 >
                   {qualitySeals.map((q) => (
                     <option key={q} value={q}>
@@ -328,14 +332,14 @@ export default function FilterSidebar({
               </div>
 
               {/* Checkbox Vegano */}
-              <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-lg bg-white border border-slate-200/90 hover:bg-slate-100/60 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200/90 hover:bg-slate-100/60 transition-colors">
                 <input
                   type="checkbox"
                   checked={isVegan === true}
                   onChange={(e) => setIsVegan(e.target.checked ? true : null)}
-                  className="w-4 h-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500 cursor-pointer"
                 />
-                <span className="text-xs font-bold text-slate-700">Opción Vegana</span>
+                <span className="text-[11px] font-bold text-slate-700">Opción Vegana</span>
               </label>
             </div>
           )}
@@ -343,62 +347,61 @@ export default function FilterSidebar({
 
         <div className="h-px w-full bg-slate-100"></div>
 
-        {/* 3. Marca (Multiselección) */}
-        <div className="flex flex-col gap-3">
+        {/* 3. MARCA (BLOQUE INFERIOR) */}
+        <div className="flex flex-col gap-2">
           <button
             type="button"
             onClick={() => toggleSection("brand")}
-            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 uppercase tracking-wider py-1 hover:text-blue-600 transition-colors cursor-pointer"
+            className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-800 uppercase tracking-wider py-0.5 hover:text-blue-600 transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span>Marca</span>
               {selectedBrands.length > 0 && (
-                <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold lowercase">
-                  {selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} selec.`}
+                <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.2 rounded-md font-extrabold">
+                  {selectedBrands.length}
                 </span>
               )}
             </div>
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${
-                openSections.brand ? "rotate-180" : ""
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                openSections.brand !== false ? "rotate-180" : ""
               }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          {openSections.brand && (
-            <div className="flex flex-col gap-3 pt-1">
+          {openSections.brand !== false && (
+            <div className="flex flex-col gap-2 pt-0.5">
               {/* Chips de Marcas Seleccionadas */}
               {selectedBrands.length > 0 && (
-                <div className="flex flex-col gap-1.5 p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                <div className="flex flex-col gap-1 p-2 bg-blue-50/80 border border-blue-100 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
                       Seleccionadas ({selectedBrands.length})
                     </span>
                     <button
                       type="button"
                       onClick={() => setSelectedBrands([])}
-                      className="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer underline"
+                      className="text-[9px] font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer underline"
                     >
-                      Limpiar marcas
+                      Limpiar
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1 pt-0.5">
                     {selectedBrands.map((brand) => (
                       <span
                         key={brand}
-                        className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 text-xs font-bold px-2 py-0.5 rounded-lg shadow-sm"
+                        className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-2xs"
                       >
                         <span>{brand}</span>
                         <button
                           type="button"
                           onClick={() => setSelectedBrands((prev) => prev.filter((b) => b !== brand))}
-                          className="text-blue-400 hover:text-red-500 font-black ml-0.5 transition-colors cursor-pointer"
-                          title={`Eliminar ${brand}`}
+                          className="text-blue-400 hover:text-red-500 font-black transition-colors cursor-pointer"
                         >
                           ✕
                         </button>
@@ -408,12 +411,12 @@ export default function FilterSidebar({
                 </div>
               )}
 
-              {/* Pills Gym-First (Acceso Rápido) */}
-              <div className="flex flex-col gap-1.5 mt-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              {/* Pills Top Marcas (Ultra-compactas) */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   Top Marcas
                 </span>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {popularBrands.map((brand) => {
                     const isSelected = selectedBrands.includes(brand);
                     return (
@@ -425,9 +428,9 @@ export default function FilterSidebar({
                             isSelected ? prev.filter((b) => b !== brand) : [...prev, brand]
                           );
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${
                           isSelected
-                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
                             : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
                         }`}
                       >
@@ -438,83 +441,80 @@ export default function FilterSidebar({
                 </div>
               </div>
 
-              {/* Buscador de Marcas + Lista Inline Densa */}
-              <div className="flex flex-col gap-2 mt-1">
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar marca..."
-                    value={brandSearch}
-                    onChange={(e) => setBrandSearch(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-3 pr-8 py-1.5 text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
-                  />
-                  {brandSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setBrandSearch("")}
-                      className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 rounded-full text-xs font-bold cursor-pointer"
-                      title="Borrar búsqueda"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+              {/* Input Buscador de Marcas */}
+              <div className="relative flex items-center mt-0.5">
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar marca..."
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg pl-2.5 pr-7 py-1 text-[11px] focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                />
+                {brandSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setBrandSearch("")}
+                    className="absolute right-1.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full text-[10px] font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-                {/* Lista Inline de Marcas Acotada */}
-                <div className="max-h-[140px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar pt-0.5">
-                  {brands
-                    .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
-                    .map((brand) => {
-                      const isChecked = selectedBrands.includes(brand);
-                      const isPopular = popularBrands.includes(brand);
-                      return (
-                        <label
-                          key={brand}
-                          className={`flex items-center justify-between px-2 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors select-none ${
-                            isChecked
-                              ? "bg-blue-50/90 text-blue-700 font-bold"
-                              : "hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {
-                                setSelectedBrands((prev) =>
-                                  isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
-                                );
-                              }}
-                              className="w-3.5 h-3.5 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
-                            />
-                            <span className="truncate">{brand}</span>
-                          </div>
-                          {isPopular && (
-                            <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-1 py-0.2 rounded uppercase tracking-wider">
-                              ★ Top
-                            </span>
-                          )}
-                        </label>
-                      );
-                    })}
+              {/* Lista de Checkboxes de Marcas (115px fijo) */}
+              <div className="h-[115px] max-h-[115px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar border border-slate-100 rounded-lg p-1 bg-slate-50/50">
+                {brands
+                  .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
+                  .map((brand) => {
+                    const isChecked = selectedBrands.includes(brand);
+                    const isPopular = popularBrands.includes(brand);
+                    return (
+                      <label
+                        key={brand}
+                        className={`flex items-center justify-between px-1.5 py-0.5 rounded text-[11px] font-medium cursor-pointer transition-colors select-none ${
+                          isChecked
+                            ? "bg-blue-50 text-blue-700 font-bold"
+                            : "hover:bg-slate-100/70 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedBrands((prev) =>
+                                isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
+                              );
+                            }}
+                            className="w-3 h-3 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
+                          />
+                          <span className="truncate">{brand}</span>
+                        </div>
+                        {isPopular && (
+                          <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1 rounded uppercase">
+                            ★
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
 
-                  {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
-                    .length === 0 && (
-                    <div className="px-2 py-2 text-xs text-slate-400 text-center font-medium">
-                      No se encontraron marcas
-                    </div>
-                  )}
-                </div>
+                {brands.filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
+                  .length === 0 && (
+                  <div className="px-2 py-1.5 text-[10px] text-slate-400 text-center font-medium">
+                    Sin marcas encontradas
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Acciones del filtro móvil o reseteo */}
+        {/* Acciones de filtro móvil o reseteo */}
         {isMobileFilterOpen && (
           <button
             onClick={() => setIsMobileFilterOpen(false)}
-            className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg cursor-pointer"
+            className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md cursor-pointer"
           >
             Ver {productosCount} Resultados
           </button>
@@ -523,7 +523,7 @@ export default function FilterSidebar({
         {hasActiveFilters && (
           <button
             onClick={limpiarFiltros}
-            className="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-xl border border-red-200 transition-colors text-sm cursor-pointer"
+            className="mt-1 w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 rounded-lg border border-red-200 transition-colors text-xs cursor-pointer"
           >
             Borrar todos los filtros
           </button>

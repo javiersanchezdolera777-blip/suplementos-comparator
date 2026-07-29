@@ -160,7 +160,7 @@ def obtener_productos(
     elif ordenar_por == "precio_kg_asc":
         query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
     elif ordenar_por == "relevancia":
-        marcas_top = ['Optimum Nutrition', 'Dymatize', 'Sport Live', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex', 'HSN']
+        marcas_top = ['Optimum Nutrition', 'Dymatize', 'HSN', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
         categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
 
         marca_score = case((models.Marca.nombre.in_(marcas_top), 10), else_=0)
