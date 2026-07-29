@@ -190,12 +190,23 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         elif any(p in texto_completo for p in ["cazo", "cacito", "scoop", "mezclar"]): c["formato"] = FormatoEnum.polvo.value
 
     # Objetivos y Sellos
-    c["objetivo"] = None
-    if "volumen" in texto_completo or "gainer" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen.value
-    elif "peso" in texto_completo or "quema" in texto_completo: c["objetivo"] = ObjetivoEnum.definicion.value
-    elif "rendimiento" in texto_completo: c["objetivo"] = ObjetivoEnum.rendimiento.value
-    elif "salud" in texto_completo or "articular" in texto_completo: c["objetivo"] = ObjetivoEnum.salud.value
+    # 4. Objetivos y Sellos (AHORA ES MULTISELECCIÓN Y MÁS LISTO)
+    objetivos = []
+    
+    if any(p in texto_completo for p in ["volumen", "gainer", "masa", "crecimiento", "aumento"]): 
+        objetivos.append(ObjetivoEnum.volumen.value)
+    
+    if any(p in texto_completo for p in ["peso", "quema", "termogénico", "definición", "adelgazar", "grasa", "keto"]): 
+        objetivos.append(ObjetivoEnum.definicion.value)
+    
+    if any(p in texto_completo for p in ["rendimiento", "energía", "fuerza", "recuperación", "resistencia", "entrenamiento", "post-entreno"]): 
+        objetivos.append(ObjetivoEnum.rendimiento.value)
+        
+    if any(p in texto_completo for p in ["salud", "articular", "bienestar", "inmune", "digestión", "hueso", "articulaciones", "omega", "vitamin"]): 
+        objetivos.append(ObjetivoEnum.salud.value)
 
+    c["objetivo"] = objetivos if objetivos else None
+    
     c["sello_calidad"] = None
     if "creapure" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.creapure.value
     elif "kyowa" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.kyowa.value

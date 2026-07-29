@@ -48,7 +48,7 @@ class Producto(Base):
     # ==========================================
     # --- 🌍 FILTROS GLOBALES ---
     # ==========================================
-    objetivo = Column(String)
+    objetivo = Column(JSON, nullable=True)
     sabor = Column(JSON, default=list)
     formato = Column(String, nullable=True)                     # NUEVO: Polvo, Cápsulas, Líquido...
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
