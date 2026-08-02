@@ -11,6 +11,9 @@
 
 | Módulo / Funcionalidad | Área | Estado | Detalle Técnico de Implementación |
 | :--- | :--- | :---: | :--- |
+| **Google Analytics 4** | Frontend | **COMPLETADO** | Integrado `@next/third-parties/google` en `app/layout.tsx` sin impacto en Web Vitals. |
+| **Verificación TradeTracker** | Frontend | **COMPLETADO** | Script SuperTag de verificación de afiliado insertado en `app/layout.tsx` (afterInteractive). |
+| **Branding y Legal E-E-A-T** | Frontend | **COMPLETADO** | Páginas de Cookies, Privacidad y Aviso Legal refactorizadas con marca "Tus Suplementos", email oficial y cláusula de redes de afiliación. Actualizado Favicon. |
 | **Robots.txt Dinámico** | Frontend | **COMPLETADO** | Creado `robots.ts` en App Router para habilitar rastreo completo (`userAgent: '*'`) y vincular el sitemap absoluto de producción. |
 | **Sitemap Automático** | Frontend | **COMPLETADO** | Creado `sitemap.ts` usando Metadata API de Next.js. Integración de páginas estáticas principales y +1800 rutas dinámicas conectadas a la API (`/producto/[slug]`), con ISR a nivel de ruta. |
 | **SEO Técnico y Schema.org** | Frontend | **COMPLETADO** | Configuración avanzada en `producto/[slug]/page.tsx`: Metadatos dinámicos con inyección de precio en `<title>` y `<meta description>`, OpenGraph completo (`og:url`, `og:site_name`), e implementación de Rich Snippets mediante un bloque JSON-LD estructurando `Product` y `AggregateOffer`. |
@@ -48,7 +51,6 @@
 | **Omnibox / Buscador Global Live** | Frontend | **PENDIENTE** | Desplegable de búsqueda instantánea en el header con sugerencias visuales. |
 | **Badge de Tienda Origen** | Frontend | **PENDIENTE** | Etiqueta distintiva ("Disponible en HSN", "Disponible en Farma2go") en la tarjeta/modal. |
 | **Tracking de Clics (`POST /api/click`)** | Backend | **PENDIENTE** | Endpoint para registrar métricas de conversión y clics salientes en enlaces de afiliados. |
-=======
 ## 📌 1. Visión General e Infraestructura Activa
 
 **Tus Suplementos** es la plataforma comparadora de suplementación deportiva de referencia en España. Modela y clasifica ofertas de tiendas oficiales (Awin, TradeDoubler, HSN, Farma2go, etc.), permitiendo filtrado por especificaciones técnicas avanzadas (tipo de proteína, sellos de calidad como Creapure, opciones veganas, formato, sabores, % de proteína) y redirigiendo a los e-commerces con enlaces de afiliado.

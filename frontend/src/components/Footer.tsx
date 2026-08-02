@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Logo from './Logo';
 
 export default function Footer() {
@@ -6,10 +7,29 @@ export default function Footer() {
     <footer className="w-full border-t border-white/10 bg-[#0a0f1d] pt-16 pb-8 mt-auto relative z-10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          
+
           {/* Col 1: Marca y Transparencia */}
           <div className="md:col-span-2 flex flex-col items-start gap-4">
-            <Logo lightMode={true} />
+            <Link href="/" className="flex items-center gap-3 group focus:outline-none">
+              <Image 
+                src="/Logo_icon2.png" 
+                alt="Tus Suplementos Logo" 
+                width={36} 
+                height={36} 
+                className="w-9 h-auto group-hover:scale-105 transition-transform duration-200"
+              />
+              <div className="flex items-baseline text-xl tracking-tight select-none">
+                <span className="font-semibold text-slate-300">
+                  Tus
+                </span>
+                <span className="font-extrabold ml-1 text-white">
+                  Suplementos
+                </span>
+                <span className="text-blue-600 font-extrabold text-xl leading-none ml-0.5">
+                  .
+                </span>
+              </div>
+            </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-md">
               Tus Suplementos es el comparador líder de suplementación deportiva. Analizamos los catálogos de las principales marcas oficiales para asegurarnos de que siempre pagues el precio más justo.
             </p>

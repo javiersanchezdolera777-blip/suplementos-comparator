@@ -12,7 +12,7 @@ export default function Navbar() {
   const isSoloOfertas = searchParams ? searchParams.get('solo_ofertas') === 'true' : false;
 
   return (
-    <nav className="w-full py-3 px-4 md:px-8 lg:px-12 flex items-center justify-between z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md sticky top-0 transition-all duration-300 gap-4">
+    <nav className="w-full py-3 px-4 md:px-8 lg:px-12 flex items-center justify-between z-40 border-b border-slate-100 bg-white sticky top-0 transition-all duration-300 gap-4">
 
       {/* Logo Identidad Oficial Tus Suplementos */}
       <Link href="/" className="flex items-center gap-2.5 group cursor-pointer focus:outline-none select-none flex-shrink-0">
