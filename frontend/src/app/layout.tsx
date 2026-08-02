@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import Script from 'next/script';
 import "./globals.css";
 import Providers from "./Providers";
 
@@ -56,6 +57,22 @@ export default function RootLayout({
           {children}
         </Providers>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-GMZDENG5MM"} />
+        <Script
+          id="tradetracker-verification"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              var _TradeTrackerTagOptions = {
+                  t: 'a',
+                  s: '513818',
+                  chk: 'c75ecefc6f1b74c3facb15579341e058',
+                  overrideOptions: {}
+              };
+
+              (function() {var tt = document.createElement('script'), s = document.getElementsByTagName('script')[0]; tt.setAttribute('type', 'text/javascript'); tt.setAttribute('src', (document.location.protocol == 'https:' ? 'https' : 'http') + '://tm.tradetracker.net/tag?t=' + _TradeTrackerTagOptions.t + '&s=' + _TradeTrackerTagOptions.s + '&chk=' + _TradeTrackerTagOptions.chk); s.parentNode.insertBefore(tt, s);})();
+            `
+          }}
+        />
       </body>
     </html>
   );
