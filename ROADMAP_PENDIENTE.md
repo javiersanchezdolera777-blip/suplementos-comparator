@@ -6,6 +6,11 @@
 
 ---
 
+## ✅ 0. Tareas Completadas Recientemente
+1. **Sitemap XML Dinámico y Marcado Schema.org (`Product` & `Offer`)** (Completado)
+2. **Meta-Tags OpenGraph & Favicon** (Completado)
+3. **Analítica y Afiliación:** GA4 y TradeTracker integrados. (Completado)
+
 ## 📋 1. Tareas Pendientes del Backlog Actual
 
 ### 🟢 Frontend & UX/UI (Javier)
@@ -15,10 +20,8 @@
    - Desplegable inteligente en la barra de navegación que muestre sugerencias visuales instantáneas (con foto, marca y precio) al escribir en la barra de búsqueda.
 3. **Badge de Tienda Origen:**
    - Mostrar un distintivo visual claro en cada tarjeta y en el modal ("Disponible en HSN", "Disponible en Farma2go", "Disponible en Bulk") para elevar la confianza del usuario.
-4. **Meta-Tags OpenGraph & Favicon:**
-   - Generación dinámica de `metadata` OpenGraph (`og:title`, `og:description`, `og:image`) en Next.js App Router para compartir enlaces atractivos en WhatsApp, Twitter y LinkedIn.
-5. **Logo Vectorizado (SVG):**
-   - Incorporar versiones responsive del logo oficial en variante Light Mode y Dark Mode + `favicon.ico`.
+4. **Logo Vectorizado (SVG):**
+   - Incorporar versiones responsive del logo oficial en variante Light Mode y Dark Mode (Favicon ya completado).
 
 ### 🟡 Backend & Datos (Diego)
 1. **Endpoint de Tracking de Clics de Afiliado (`POST /api/click`):**
@@ -60,9 +63,7 @@ Estas 6 funcionalidades elevarán la plataforma a nivel institucional, diferenci
 - **Concepto:** Permitir al usuario marcar hasta 3 productos ("Añadir a comparar") y abrir un modal/pantalla con una tabla comparativa con todos sus datos frente a frente (% proteína, sello, €/kg, precio, formato, valoración).
 - **Impacto:** Ayuda decisiva al usuario indeciso para cerrar la compra de inmediato.
 
-### 🗺️ 6. Sitemap XML Dinámico y Marcado Schema.org (`Product` & `Offer`)
-- **Concepto:** Generar automáticamente `sitemap.xml` indexando las 1.784 URLs dinámicas (`/producto/[slug]`) e insertar microdatos estructurados JSON-LD (`Schema.org/Product`).
-- **Impacto:** Aparecer en los carruseles de Google Shopping y búsquedas orgánicas con precios y estrellas directamente en los resultados de Google.
+
 
 ---
 
