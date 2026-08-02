@@ -9,19 +9,19 @@ export default function PrivacyPage() {
         <h1 className="text-3xl md:text-4xl font-black tracking-tighter mb-12 text-white">
           Política de Privacidad
         </h1>
-        
+
         <div className="space-y-8 text-slate-400 text-sm leading-relaxed">
           <section>
             <h2 className="text-xl font-bold text-slate-200 mb-3">1. Recopilación de Datos</h2>
             <p>
-              En Suparator respetamos tu privacidad. Como usuarios de nuestra herramienta de comparación, actualmente no recopilamos datos personales de navegación de manera intrusiva ni requerimos registro obligatorio para visualizar los precios de los suplementos.
+              En Tus Suplementos respetamos tu privacidad. Como usuarios de nuestra herramienta de comparación, actualmente no recopilamos datos personales de navegación de manera intrusiva ni requerimos registro obligatorio para visualizar los precios de los suplementos.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-slate-200 mb-3">2. Uso de Cookies</h2>
             <p>
-              Utilizamos cookies técnicas estrictamente necesarias para el funcionamiento del sitio web. Adicionalmente, al utilizar los enlaces de afiliado para ir a comprar un producto, las redes de afiliación (como Awin o Tradedoubler) pueden insertar cookies en tu navegador para rastrear el origen de la venta y asignar la comisión correspondiente a Suparator de forma completamente anónima.
+              Utilizamos cookies técnicas estrictamente necesarias para el funcionamiento del sitio web. Adicionalmente, al utilizar los enlaces de afiliado para ir a comprar un producto, las redes de afiliación (como Awin o Tradedoubler) pueden insertar cookies en tu navegador para rastrear el origen de la venta y asignar la comisión correspondiente a Tus Suplementos de forma completamente anónima.
             </p>
           </section>
 

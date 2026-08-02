@@ -223,7 +223,7 @@ export default function Catalog() {
 
         {/* 2. Subtexto Claro */}
         <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
-          Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo por kilo.
+          Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 
         {/* 3. Trío de Pilares de Valor (Texto Fino Sobrio) */}
@@ -274,11 +274,10 @@ export default function Catalog() {
                     }
                     document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    isSelected
+                  className={`cursor-pointer transition-all duration-200 ${isSelected
                       ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
                       : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
-                  } ${brand.style}`}
+                    } ${brand.style}`}
                 >
                   {brand.displayName}
                 </button>

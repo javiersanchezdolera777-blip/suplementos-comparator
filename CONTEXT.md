@@ -11,6 +11,9 @@
 
 | Módulo / Funcionalidad | Área | Estado | Detalle Técnico de Implementación |
 | :--- | :--- | :---: | :--- |
+| **Robots.txt Dinámico** | Frontend | **COMPLETADO** | Creado `robots.ts` en App Router para habilitar rastreo completo (`userAgent: '*'`) y vincular el sitemap absoluto de producción. |
+| **Sitemap Automático** | Frontend | **COMPLETADO** | Creado `sitemap.ts` usando Metadata API de Next.js. Integración de páginas estáticas principales y +1800 rutas dinámicas conectadas a la API (`/producto/[slug]`), con ISR a nivel de ruta. |
+| **SEO Técnico y Schema.org** | Frontend | **COMPLETADO** | Configuración avanzada en `producto/[slug]/page.tsx`: Metadatos dinámicos con inyección de precio en `<title>` y `<meta description>`, OpenGraph completo (`og:url`, `og:site_name`), e implementación de Rich Snippets mediante un bloque JSON-LD estructurando `Product` y `AggregateOffer`. |
 | **Skeleton Loaders (Carga suave)** | Frontend | **COMPLETADO** | Componente `ProductCardSkeleton.tsx` integrado en `Catalog.tsx` (8 esqueletos animados). |
 | **Empty State (Estado Vacío)** | Frontend | **COMPLETADO** | Componente `EmptyState.tsx` con ilustración, subtexto y botón "Restablecer filtros". |
 | **Simplificación de Navegación** | Frontend | **COMPLETADO** | Eliminación del enlace 'Marcas' del `Navbar.tsx` para reducir la carga cognitiva y focalizar la atención del usuario en 'Catálogo' y 'Top Ofertas'. |
