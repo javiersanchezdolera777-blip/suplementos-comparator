@@ -72,6 +72,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
     }
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
+# --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     skip: int = 0, 
@@ -98,6 +99,7 @@ def obtener_productos(
     q: Optional[str] = Query(None, description="Alias de búsqueda"),
     db: Session = Depends(get_db),
     porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
+    solo_ofertas: Optional[bool] = Query(False, description="Muestra solo productos con descuento real"), 
     ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200)
@@ -105,7 +107,7 @@ def obtener_productos(
     # Join inicial maestro para evitar conflictos
     query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)
     
-    # 1. Filtros de Categoría (Soporta multiselección separada por comas)
+    # 1. Filtros de Categoría
     cat_str = categorias or categoria
     if cat_str and cat_str.lower() != "todos":
         lista_cats = [c.strip() for c in cat_str.split(",") if c.strip()]
@@ -123,26 +125,25 @@ def obtener_productos(
     if porcentaje_proteina is not None:
         query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_proteina)
 
-    # 4. Filtros Básicos (Con soporte multiselección para la nueva UI)
+    # 4. Filtros Básicos (Formatos, Vegano, Sellos)
     formato_str = formatos or formato
     if formato_str:
         lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
         if lista_formatos:
             query = query.filter(models.Producto.formato.in_(lista_formatos))
 
-    objetivo_str = objetivos or objetivo
-    if objetivo_str:
-        lista_objetivos = [o.strip() for o in objetivo_str.split(",") if o.strip()]
-        if lista_objetivos:
-            query = query.filter(models.Producto.objetivo.in_(lista_objetivos))
-
     if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
+    if solo_ofertas:
+        query = query.filter(
+            models.Producto.precio_anterior.isnot(None),
+            models.Producto.precio_anterior > models.Producto.precio
+        )
 
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
         
-    # 5. Sub-filtros (A prueba de mayúsculas/minúsculas)
+    # 5. Sub-filtros
     if tipo_proteina: query = query.filter(models.Producto.tipo_proteina.ilike(f"%{tipo_proteina}%"))
     if tipo_creatina: query = query.filter(models.Producto.tipo_creatina.ilike(f"%{tipo_creatina}%"))
     if perfil_aminoacidos: query = query.filter(models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%"))
@@ -166,6 +167,9 @@ def obtener_productos(
         query = query.order_by(models.Producto.precio.desc())
     elif ordenar_por == "precio_kg_asc":
         query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
+    elif ordenar_por == "descuento_desc":
+        descuento = (models.Producto.precio_anterior - models.Producto.precio) / models.Producto.precio_anterior
+        query = query.order_by(desc(descuento).nulls_last())
     elif ordenar_por == "relevancia":
         marcas_top = ['Optimum Nutrition', 'Dymatize', 'HSN', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
         categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
@@ -178,22 +182,39 @@ def obtener_productos(
             desc(models.Producto.id)
         )
 
-    # 8. Extraer y filtrar Sabores (Soporta Multiselección de Javiki)
+    # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
+    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON!
     productos_raw = query.all()
 
     sabor_str = sabores or sabor
-    if sabor_str:
-        sabores_lista = [s.strip().lower() for s in sabor_str.split(",") if s.strip()]
-        
-        def tiene_sabor(producto):
-            valor = getattr(producto, "sabor", None)
-            if isinstance(valor, list):
-                return any(str(item).lower() in sabores_lista for item in valor)
-            if isinstance(valor, str):
-                return any(s in valor.lower() for s in sabores_lista)
-            return False
+    sabores_lista = [s.strip().lower() for s in sabor_str.split(",") if s.strip()] if sabor_str else []
 
-        productos_filtrados = [p for p in productos_raw if tiene_sabor(p)]
+    objetivo_str = objetivos or objetivo
+    objetivos_lista = [o.strip().lower() for o in objetivo_str.split(",") if o.strip()] if objetivo_str else []
+
+    def cumple_filtros_arrays(producto):
+        # ¿Cumple el sabor?
+        if sabores_lista:
+            valor_sabor = getattr(producto, "sabor", None)
+            if isinstance(valor_sabor, list):
+                if not any(str(item).lower() in sabores_lista for item in valor_sabor): return False
+            elif isinstance(valor_sabor, str):
+                if not any(s in valor_sabor.lower() for s in sabores_lista): return False
+            else: return False
+            
+        # ¿Cumple el objetivo?
+        if objetivos_lista:
+            valor_obj = getattr(producto, "objetivo", None)
+            if isinstance(valor_obj, list):
+                if not any(str(item).lower() in objetivos_lista for item in valor_obj): return False
+            elif isinstance(valor_obj, str):
+                if not any(o in valor_obj.lower() for o in objetivos_lista): return False
+            else: return False
+            
+        return True
+
+    if sabores_lista or objetivos_lista:
+        productos_filtrados = [p for p in productos_raw if cumple_filtros_arrays(p)]
     else:
         productos_filtrados = productos_raw
 

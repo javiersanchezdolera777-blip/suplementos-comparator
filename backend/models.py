@@ -29,6 +29,7 @@ class Producto(Base):
     nombre = Column(String, index=True, nullable=False)
     descripcion = Column(String)
     precio = Column(Float, nullable=False)
+    precio_anterior = Column(Float, nullable=True)  
     imagen_url = Column(String)
     afiliado_url = Column(String)
 
@@ -48,7 +49,7 @@ class Producto(Base):
     # ==========================================
     # --- 🌍 FILTROS GLOBALES ---
     # ==========================================
-    objetivo = Column(String)
+    objetivo = Column(JSON, nullable=True)
     sabor = Column(JSON, default=list)
     formato = Column(String, nullable=True)                     # NUEVO: Polvo, Cápsulas, Líquido...
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False

@@ -105,6 +105,7 @@ class ProductResponse(BaseModel):
     name: str = Field(validation_alias="nombre")
     description: str = Field(validation_alias="descripcion")
     price: float = Field(validation_alias="precio")
+    precio_anterior: Optional[float] = None  
     image_url: str = Field(validation_alias="imagen_url")
     affiliate_url: str = Field(validation_alias="afiliado_url", default="")
 
@@ -119,7 +120,7 @@ class ProductResponse(BaseModel):
     # --- Filtros Globales ---
     flavor: List[str] = Field(validation_alias="sabor", default_factory=list)
     format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
-    goal: Optional[ObjetivoEnum] = Field(validation_alias="objetivo", default=None)
+    goals: Optional[List[str]] = Field(validation_alias="objetivos", default=None)
     is_vegan: bool = Field(validation_alias="es_vegano", default=False)
     quality_seal: Optional[SelloCalidadEnum] = Field(validation_alias="sello_calidad", default=None)
 

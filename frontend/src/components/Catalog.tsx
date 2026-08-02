@@ -222,7 +222,7 @@ export default function Catalog() {
         </h1>
 
         {/* 2. Subtexto Claro */}
-        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
+        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">  
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 

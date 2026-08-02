@@ -54,10 +54,39 @@ def generar_enlace_afiliado(url_producto: str) -> str:
     return f"https://www.hsnstore.com/affiliate/click/index?linkid={link_id}"
 
 def extraer_porcentaje_proteina(texto: str):
-    m1 = re.search(r'(\d{2,3})\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza|wpc|whey|aislado)', texto)
-    if m1: return int(m1.group(1))
-    m2 = re.search(r'(?:wpc|whey|prote[íi]na|pureza)[^\d]{0,10}(\d{2,3})\s*%', texto)
-    if m2: return int(m2.group(1))
+    if not texto: return None
+    texto = texto.lower()
+    
+    # 1. Caza formato explícito "77,3 g de proteína por 100 g"
+    m1 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,20}100\s*g', texto)
+    if m1: return round(float(m1.group(1).replace(',', '.')))
+
+    # 2. Caza formato matemático "23 g de proteína por porción de 30 g" -> Hace (23/30)*100
+    m2 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,30}(\d{2,3}(?:[.,]\d+)?)\s*g', texto)
+    if m2:
+        prot = float(m2.group(1).replace(',', '.'))
+        porcion = float(m2.group(2).replace(',', '.'))
+        if porcion > 0 and prot <= porcion:
+            return round((prot / porcion) * 100)
+
+    # 3. Caza porcentajes atados directamente a la palabra "80% de proteína" o "WPC 80%"
+    m3 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza|wpc|wpi|cfm|whey|aislado)', texto)
+    if m3: return round(float(m3.group(1).replace(',', '.')))
+
+    m4 = re.search(r'(?:wpc|wpi|cfm|whey|prote[íi]na|pureza|concentración|proteico)[^\d]{0,20}(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    if m4: return round(float(m4.group(1).replace(',', '.')))
+
+    # 4. Búsqueda Desesperada (Cazador Contextual)
+    porcentajes = re.finditer(r'(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    for p in porcentajes:
+        valor = round(float(p.group(1).replace(',', '.')))
+        if 50 <= valor <= 98: 
+            inicio = max(0, p.start() - 60)
+            fin = min(len(texto), p.end() + 60)
+            entorno = texto[inicio:fin]
+            if any(palabra in entorno for palabra in ["prote", "pureza", "aislado", "concentrado", "contenido"]):
+                return valor
+
     return None
 
 def calcular_metricas_precio(nombre: str, descripcion: str, precio: float):
@@ -161,11 +190,22 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         elif any(p in texto_completo for p in ["cazo", "cacito", "scoop", "mezclar"]): c["formato"] = FormatoEnum.polvo.value
 
     # Objetivos y Sellos
-    c["objetivo"] = None
-    if "volumen" in texto_completo or "gainer" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen.value
-    elif "peso" in texto_completo or "quema" in texto_completo: c["objetivo"] = ObjetivoEnum.definicion.value
-    elif "rendimiento" in texto_completo: c["objetivo"] = ObjetivoEnum.rendimiento.value
-    elif "salud" in texto_completo or "articular" in texto_completo: c["objetivo"] = ObjetivoEnum.salud.value
+    # 4. Objetivos y Sellos (AHORA ES MULTISELECCIÓN Y MÁS LISTO)
+    objetivos = []
+    
+    if any(p in texto_completo for p in ["volumen", "gainer", "masa", "crecimiento", "aumento"]): 
+        objetivos.append(ObjetivoEnum.volumen.value)
+    
+    if any(p in texto_completo for p in ["peso", "quema", "termogénico", "definición", "adelgazar", "grasa", "keto"]): 
+        objetivos.append(ObjetivoEnum.definicion.value)
+    
+    if any(p in texto_completo for p in ["rendimiento", "energía", "fuerza", "recuperación", "resistencia", "entrenamiento", "post-entreno"]): 
+        objetivos.append(ObjetivoEnum.rendimiento.value)
+        
+    if any(p in texto_completo for p in ["salud", "articular", "bienestar", "inmune", "digestión", "hueso", "articulaciones", "omega", "vitamin"]): 
+        objetivos.append(ObjetivoEnum.salud.value)
+
+    c["objetivo"] = objetivos if objetivos else None
 
     c["sello_calidad"] = None
     if "creapure" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.creapure.value
@@ -177,8 +217,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c["perfil_aminoacidos"] = c["tipo_vitamina"] = None
     if c["categoria"] == CategoriaEnum.proteinas.value:
         c["porcentaje_proteina"] = extraer_porcentaje_proteina(texto_completo)
-        if any(v in texto_completo for v in ["vegetal", "soja", "guisante", "garbanzo", "calabaza", "arroz", "vegan"]):
-            c["tipo_proteina"] = TipoProteinaEnum.vegetal.value
+        if any(v in texto_completo for v in ["proteína vegetal", "proteina vegetal", "vegan protein", "proteína de soja", "proteina de soja", "proteína de guisante", "proteína de arroz", "proteína de garbanzo", "proteína de calabaza"]):            c["tipo_proteina"] = TipoProteinaEnum.vegetal.value
         elif "isolate" in texto_completo or "aislado" in texto_completo: 
             c["tipo_proteina"] = TipoProteinaEnum.isolate.value
         elif "caseina" in texto_completo or "casein" in texto_completo: 
@@ -187,6 +226,14 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             c["tipo_proteina"] = TipoProteinaEnum.hidrolizado.value
         else: 
             c["tipo_proteina"] = TipoProteinaEnum.whey.value
+        c["porcentaje_proteina"] = extraer_porcentaje_proteina(texto_completo)
+        
+        # 3. EL PLAN B (Fallback de la industria si la función matemática devuelve None)
+        if c["porcentaje_proteina"] is None:
+            if c["tipo_proteina"] == TipoProteinaEnum.isolate.value:
+                c["porcentaje_proteina"] = 93
+            elif c["tipo_proteina"] == TipoProteinaEnum.whey.value:
+                c["porcentaje_proteina"] = 75
         
     elif c["categoria"] == CategoriaEnum.creatinas.value:
         if "micronizada" in texto_completo or "mesh" in texto_completo: c["tipo_creatina"] = TipoCreatinaEnum.micronizada.value
@@ -297,6 +344,7 @@ def inyectar_en_bd():
                         desc_cruda = datos_producto.get('description', '')
                         
                         precio = 0.0
+                        precio_anterior = None 
                         ofertas = datos_producto.get('offers', {})
                         try:
                             if isinstance(ofertas, dict): precio = float(ofertas.get('lowPrice', ofertas.get('price', 0.0)))
@@ -305,6 +353,7 @@ def inyectar_en_bd():
                                     if isinstance(of, dict) and float(of.get('price', 0.0)) > 0:
                                         precio = float(of.get('price', 0.0)); break
                         except: pass
+                        
                         
                         if precio == 0.0:
                             precio_meta = soup_prod.find('meta', {'property': 'product:price:amount'})
@@ -319,16 +368,53 @@ def inyectar_en_bd():
                                         if match_precio: precio = float(match_precio.group(1))
                                     except: pass
 
+                        if precio > 0:
+                            html_precio_viejo = soup_prod.find(class_=re.compile(r'old-price'))
+                            if html_precio_viejo:
+                                html_span = html_precio_viejo.find('span', class_=re.compile(r'price'))
+                                if html_span:
+                                    txt_viejo = html_span.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
+                                    try:
+                                        match_viejo = re.search(r'(\d+\.\d+)', txt_viejo)
+                                        if match_viejo:
+                                            p_viejo = float(match_viejo.group(1))
+                                            if p_viejo > precio:
+                                                precio_anterior = p_viejo
+                                    except: pass
+
+                        # --- NUEVO: CAZADOR DE PESOS OCULTOS PARA HSN ---
+                        titulo_pagina = soup_prod.find('title').text if soup_prod.find('title') else ""
+                        opcion_marcada = soup_prod.find(class_=re.compile(r'swatch-option.*selected'))
+                        texto_talla = opcion_marcada.text if opcion_marcada else ""
+                        nombre_ampliado = f"{nombre} {titulo_pagina} {texto_talla}".lower()
+                        # ------------------------------------------------
+
+                        # --- NUEVO: CAZADOR DE SABORES OCULTOS PARA HSN ---
+                        opciones_sabor = soup_prod.find_all(attrs={"option-label": True})
+                        textos_sabores = [op.get("option-label", "") for op in opciones_sabor]
+                        
+                        # Plan B por si usan clases en lugar de option-label
+                        if not textos_sabores:
+                            swatches = soup_prod.find_all(class_=re.compile(r'swatch-option'))
+                            textos_sabores = [s.text for s in swatches]
+                            
+                        texto_sabores_extra = " ".join(textos_sabores).lower()
+                        # ------------------------------------------------------------
+
                         desc_limpia = limpiar_texto(desc_cruda)
-                        etiquetas = clasificar_producto(nombre, desc_limpia)
+                        
+                        # Fusionamos la descripción limpia con los sabores ocultos que hemos cazado
+                        desc_ampliada_para_cerebro = f"{desc_limpia} {texto_sabores_extra}"
+                        
+                        etiquetas = clasificar_producto(nombre, desc_ampliada_para_cerebro)
                         
                         if not etiquetas: continue
                         
-                        metricas = calcular_metricas_precio(nombre.lower(), desc_limpia, precio)
+                        metricas = calcular_metricas_precio(nombre_ampliado, desc_limpia, precio)
                         url_afiliado = generar_enlace_afiliado(url_prod)
                         
                         nuevo_prod = models.Producto(
-                            nombre=nombre, descripcion=desc_limpia[:900], precio=precio, imagen_url=imagen, afiliado_url=url_afiliado,
+                            nombre=nombre, descripcion=desc_limpia[:900], precio=precio,precio_anterior=precio_anterior, imagen_url=imagen, afiliado_url=url_afiliado,
                             marca_id=marca_hsn.id, categoria_id=mapa_categorias[etiquetas["categoria"]], sabor=etiquetas["sabor"],
                             formato=etiquetas["formato"], objetivo=etiquetas["objetivo"], es_vegano=etiquetas["es_vegano"],
                             sello_calidad=etiquetas["sello_calidad"], tipo_proteina=etiquetas["tipo_proteina"],
@@ -379,6 +465,5 @@ def inyectar_en_bd():
             print(f"⚠️ Aviso: No se pudieron guardar los últimos {len(productos_nuevos)} productos.")
         
     print(f"\n🎉 ¡MISIÓN CUMPLIDA! Catálogo inyectado: {total_general} productos robustos.")
-
 if __name__ == "__main__":
     inyectar_en_bd()

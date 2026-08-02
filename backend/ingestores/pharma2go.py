@@ -19,7 +19,7 @@ from schemas import (
 )
 
 URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = "farma2go_temporal.json"
+ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", "farma2go_temporal.json")
 
 db = SessionLocal()
 
@@ -132,10 +132,39 @@ def calcular_metricas_precio(item: dict, precio: float):
     return metricas
 
 def extraer_porcentaje_proteina(texto: str):
-    m = re.search(r'(\d{2,3})\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza)', texto)
-    if m: return int(m.group(1))
-    m2 = re.search(r'prote[íi]na[^\d]{0,20}(\d{2,3})\s*%', texto)
-    if m2: return int(m2.group(1))
+    if not texto: return None
+    texto = texto.lower()
+    
+    # 1. Caza formato explícito "77,3 g de proteína por 100 g"
+    m1 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,20}100\s*g', texto)
+    if m1: return round(float(m1.group(1).replace(',', '.')))
+
+    # 2. Caza formato matemático "23 g de proteína por porción de 30 g" -> Hace (23/30)*100
+    m2 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*g\s*(?:de\s*)?prote[íi]na[^\d]{1,30}(\d{2,3}(?:[.,]\d+)?)\s*g', texto)
+    if m2:
+        prot = float(m2.group(1).replace(',', '.'))
+        porcion = float(m2.group(2).replace(',', '.'))
+        if porcion > 0 and prot <= porcion:
+            return round((prot / porcion) * 100)
+
+    # 3. Caza porcentajes atados directamente a la palabra "80% de proteína" o "WPC 80%"
+    m3 = re.search(r'(\d{2}(?:[.,]\d+)?)\s*%\s*(?:de\s*)?(?:prote[íi]na|pureza|wpc|wpi|cfm|whey|aislado)', texto)
+    if m3: return round(float(m3.group(1).replace(',', '.')))
+
+    m4 = re.search(r'(?:wpc|wpi|cfm|whey|prote[íi]na|pureza|concentración|proteico)[^\d]{0,20}(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    if m4: return round(float(m4.group(1).replace(',', '.')))
+
+    # 4. Búsqueda Desesperada (Cazador Contextual)
+    porcentajes = re.finditer(r'(\d{2}(?:[.,]\d+)?)\s*%', texto)
+    for p in porcentajes:
+        valor = round(float(p.group(1).replace(',', '.')))
+        if 50 <= valor <= 98: 
+            inicio = max(0, p.start() - 60)
+            fin = min(len(texto), p.end() + 60)
+            entorno = texto[inicio:fin]
+            if any(palabra in entorno for palabra in ["prote", "pureza", "aislado", "concentrado", "contenido"]):
+                return valor
+
     return None
 
 def clasificar_producto(nombre: str, desc_limpia: str):
@@ -213,12 +242,22 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         
     c["sabor"] = sabores_encontrados 
 
-    c["objetivo"] = None
-    if "gainer" in texto_completo or "volumen" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen
-    elif "peso" in texto_completo or "termogen" in texto_completo or "quema" in texto_completo: c["objetivo"] = ObjetivoEnum.definicion
-    elif "rendimiento" in texto_completo: c["objetivo"] = ObjetivoEnum.rendimiento
-    elif "salud" in texto_completo or "articular" in texto_completo or "omega" in texto_completo: c["objetivo"] = ObjetivoEnum.salud
+    # 4. Objetivos y Sellos (AHORA ES MULTISELECCIÓN Y MÁS LISTO)
+    objetivos = []
+    
+    if any(p in texto_completo for p in ["volumen", "gainer", "masa", "crecimiento", "aumento"]): 
+        objetivos.append(ObjetivoEnum.volumen.value)
+    
+    if any(p in texto_completo for p in ["peso", "quema", "termogénico", "definición", "adelgazar", "grasa", "keto"]): 
+        objetivos.append(ObjetivoEnum.definicion.value)
+    
+    if any(p in texto_completo for p in ["rendimiento", "energía", "fuerza", "recuperación", "resistencia", "entrenamiento", "post-entreno"]): 
+        objetivos.append(ObjetivoEnum.rendimiento.value)
+        
+    if any(p in texto_completo for p in ["salud", "articular", "bienestar", "inmune", "digestión", "hueso", "articulaciones", "omega", "vitamin"]): 
+        objetivos.append(ObjetivoEnum.salud.value)
 
+    c["objetivo"] = objetivos if objetivos else None
     c["sello_calidad"] = None
     if "creapure" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.creapure
     elif "kyowa" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.kyowa
@@ -228,12 +267,25 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c["perfil_aminoacidos"] = c["tipo_vitamina"] = None
     
     if c["categoria"] == CategoriaEnum.proteinas.value:
+        # 1. Primero determinamos el TIPO de proteína (¡ADIÓS FALSOS POSITIVOS!)
+        if any(v in texto_completo for v in ["proteína vegetal", "proteina vegetal", "vegan protein", "proteína de soja", "proteina de soja", "proteína de guisante", "proteína de arroz", "proteína de garbanzo", "proteína de calabaza"]):
+            c["tipo_proteina"] = TipoProteinaEnum.vegetal.value
+        elif "isolate" in texto_completo or "aislado" in texto_completo: 
+            c["tipo_proteina"] = TipoProteinaEnum.isolate.value
+        elif "caseina" in texto_completo or "casein" in texto_completo: 
+            c["tipo_proteina"] = TipoProteinaEnum.caseina.value
+        elif "hidrolizado" in texto_completo: 
+            c["tipo_proteina"] = TipoProteinaEnum.hidrolizado.value
+        else: 
+            c["tipo_proteina"] = TipoProteinaEnum.whey.value
         c["porcentaje_proteina"] = extraer_porcentaje_proteina(texto_completo)
-        if "isolate" in texto_completo or "aislado" in texto_completo: c["tipo_proteina"] = TipoProteinaEnum.isolate
-        elif "vegetal" in texto_completo or "vegan" in texto_completo: c["tipo_proteina"] = TipoProteinaEnum.vegetal
-        elif "caseina" in texto_completo or "casein" in texto_completo: c["tipo_proteina"] = TipoProteinaEnum.caseina
-        elif "hidrolizado" in texto_completo: c["tipo_proteina"] = TipoProteinaEnum.hidrolizado
-        else: c["tipo_proteina"] = TipoProteinaEnum.whey
+        
+        # 3. EL PLAN B (Fallback de la industria si la función matemática devuelve None)
+        if c["porcentaje_proteina"] is None:
+            if c["tipo_proteina"] == TipoProteinaEnum.isolate.value:
+                c["porcentaje_proteina"] = 93
+            elif c["tipo_proteina"] == TipoProteinaEnum.whey.value:
+                c["porcentaje_proteina"] = 75
         
     elif c["categoria"] == CategoriaEnum.creatinas.value:
         if "micronizada" in texto_completo or "mesh" in texto_completo: c["tipo_creatina"] = TipoCreatinaEnum.micronizada
@@ -310,13 +362,27 @@ def inyectar_en_bd():
             cache_marcas[nombre_marca] = marca_db.id
 
         precio = 0.0
+        precio_anterior = None
         afiliado_url = ""
         ofertas = item.get("offers", [])
         if ofertas:
             afiliado_url = ofertas[0].get("productUrl", "")
-            historial = ofertas[0].get("priceHistory", [])
-            if historial and "price" in historial[0]:
-                precio = float(historial[0]["price"].get("value", 0))
+            
+            # 1. Intentamos sacar el precio rebajado y el original de la API
+            oferta = ofertas[0]
+            if "price" in oferta and isinstance(oferta["price"], dict):
+                precio = float(oferta["price"].get("value", 0.0))
+                
+            if "previousPrice" in oferta and isinstance(oferta["previousPrice"], dict):
+                p_previo = float(oferta["previousPrice"].get("value", 0.0))
+                if p_previo > precio:
+                    precio_anterior = p_previo
+                    
+            # 2. Respaldo antiguo (Historial) por si falla lo de arriba
+            if precio == 0.0:
+                historial = oferta.get("priceHistory", [])
+                if historial and "price" in historial[0]:
+                    precio = float(historial[0]["price"].get("value", 0))
 
         imagen_url = item.get("productImage", {}).get("url", "")
 
@@ -326,6 +392,7 @@ def inyectar_en_bd():
             nombre=nombre,
             descripcion=desc_limpia[:900], 
             precio=precio,
+            precio_anterior=precio_anterior,
             imagen_url=imagen_url,
             afiliado_url=afiliado_url,
             marca_id=cache_marcas[nombre_marca],

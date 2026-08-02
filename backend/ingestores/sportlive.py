@@ -22,7 +22,7 @@ from schemas import (
 # ... (El resto de tu código se queda exactamente igual) ...
 
 URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = "feed_temporal.json"
+ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", "sportlive_temporal.json")
 DOMINIO_TIENDA = "https://sportlivenutrition.com"
 
 db = SessionLocal()
@@ -196,12 +196,22 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             c["formato"] = FormatoEnum.polvo.value
 
 
-    c["objetivo"] = None
-    if "gainer" in texto_completo or "volumen" in texto_completo: c["objetivo"] = ObjetivoEnum.volumen
-    elif "peso" in texto_completo or "termogen" in texto_completo or "quema" in texto_completo: c["objetivo"] = ObjetivoEnum.definicion
-    elif "rendimiento" in texto_completo: c["objetivo"] = ObjetivoEnum.rendimiento
-    elif "salud" in texto_completo or "articular" in texto_completo or "omega" in texto_completo: c["objetivo"] = ObjetivoEnum.salud
+    # 4. Objetivos y Sellos (AHORA ES MULTISELECCIÓN Y MÁS LISTO)
+    objetivos = []
+    
+    if any(p in texto_completo for p in ["volumen", "gainer", "masa", "crecimiento", "aumento"]): 
+        objetivos.append(ObjetivoEnum.volumen.value)
+    
+    if any(p in texto_completo for p in ["peso", "quema", "termogénico", "definición", "adelgazar", "grasa", "keto"]): 
+        objetivos.append(ObjetivoEnum.definicion.value)
+    
+    if any(p in texto_completo for p in ["rendimiento", "energía", "fuerza", "recuperación", "resistencia", "entrenamiento", "post-entreno"]): 
+        objetivos.append(ObjetivoEnum.rendimiento.value)
+        
+    if any(p in texto_completo for p in ["salud", "articular", "bienestar", "inmune", "digestión", "hueso", "articulaciones", "omega", "vitamin"]): 
+        objetivos.append(ObjetivoEnum.salud.value)
 
+    c["objetivo"] = objetivos if objetivos else None
     c["sello_calidad"] = None
     if "creapure" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.creapure
     elif "kyowa" in texto_completo: c["sello_calidad"] = SelloCalidadEnum.kyowa
@@ -279,13 +289,27 @@ def inyectar_en_bd():
             continue
 
         precio = 0.0
+        precio_anterior = None 
         afiliado_url = ""
         ofertas = item.get("offers", [])
         if ofertas:
             afiliado_url = ofertas[0].get("productUrl", "")
-            historial = ofertas[0].get("priceHistory", [])
-            if historial and "price" in historial[0]:
-                precio = float(historial[0]["price"].get("value", 0))
+            
+            # 1. Intentamos sacar el precio rebajado y el original de la API
+            oferta = ofertas[0]
+            if "price" in oferta and isinstance(oferta["price"], dict):
+                precio = float(oferta["price"].get("value", 0.0))
+                
+            if "previousPrice" in oferta and isinstance(oferta["previousPrice"], dict):
+                p_previo = float(oferta["previousPrice"].get("value", 0.0))
+                if p_previo > precio:
+                    precio_anterior = p_previo
+                    
+            # 2. Respaldo antiguo (Historial) por si falla lo de arriba
+            if precio == 0.0:
+                historial = oferta.get("priceHistory", [])
+                if historial and "price" in historial[0]:
+                    precio = float(historial[0]["price"].get("value", 0))
 
         img = item.get("productImage", {}).get("url", "")
         imagen_url = f"{DOMINIO_TIENDA}{img}" if img else ""
@@ -295,6 +319,7 @@ def inyectar_en_bd():
             nombre=nombre,
             descripcion=desc_limpia[:900], 
             precio=precio,
+            precio_anterior=precio_anterior, 
             imagen_url=imagen_url,
             afiliado_url=afiliado_url,
             marca_id=marca_oficial.id,
