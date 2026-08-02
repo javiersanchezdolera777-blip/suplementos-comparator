@@ -43,8 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) {
     return {
-      title: 'Producto no encontrado | Suparator',
-      description: 'El suplemento solicitado no está disponible en Suparator.'
+      title: 'Producto no encontrado | Tus Suplementos',
+      description: 'El suplemento solicitado no está disponible en Tus Suplementos.'
     };
   }
 
@@ -53,8 +53,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? decodeHTML(product.description).slice(0, 150)
     : `Compara precios y especificaciones de ${cleanName} en tiendas oficiales.`;
 
-  const title = `${cleanName} - Mejor Precio | Suparator`;
-  const description = `Compara precios y especificaciones de ${cleanName} en tiendas oficiales. ${cleanDescription}...`;
+  const price = product.price ? product.price.toFixed(2) : "0.00";
+  const title = `${cleanName} desde ${price}€ - Mejor Precio | Tus Suplementos`;
+  const description = `Compara precios y especificaciones de ${cleanName} en tiendas oficiales. Encuéntralo hoy desde ${price}€. ${cleanDescription}...`;
+  const url = `https://www.tussuplementos.com/producto/${slug}`;
 
   return {
     title,
@@ -62,6 +64,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
+      url,
+      siteName: 'Tus Suplementos',
       images: product.image_url ? [{ url: product.image_url }] : [],
       type: 'website',
     },
@@ -88,10 +92,34 @@ export default async function ProductDetailPage({ params }: Props) {
   const brandName = product.brand?.name || "Sin marca";
   const proteinPercent = product.protein_percentage ?? product.porcentaje_proteina;
 
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": cleanName,
+    "image": product.image_url || "",
+    "description": product.description ? decodeHTML(product.description).slice(0, 300) : `Compara precios de ${cleanName}`,
+    "brand": {
+      "@type": "Brand",
+      "name": brandName
+    },
+    "offers": {
+      "@type": "AggregateOffer",
+      "url": `https://www.tussuplementos.com/producto/${slug}`,
+      "priceCurrency": "EUR",
+      "lowPrice": product.price || 0,
+      "highPrice": product.price || 0,
+      "offerCount": 1
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-6xl mx-auto">
-        
+
         {/* 1. NAVEGACIÓN Y BREADCRUMB */}
         <div className="flex items-center justify-between gap-4 mb-6 text-sm">
           <nav className="flex items-center gap-2 text-slate-500 font-medium overflow-x-auto py-1">
@@ -107,7 +135,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* 2. TARJETA PRINCIPAL DEL PRODUCTO */}
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
-          
+
           {/* COLUMNA IZQUIERDA: IMAGEN Y BADGES */}
           <div className="lg:col-span-5 bg-slate-50 p-8 sm:p-12 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-slate-100 relative min-h-[380px]">
             {/* Badges superiores */}
@@ -137,7 +165,7 @@ export default async function ProductDetailPage({ params }: Props) {
               />
             ) : (
               <div className="flex flex-col items-center justify-center text-slate-300">
-                <span className="font-black tracking-[0.3em] text-2xl uppercase">Suparator</span>
+                <span className="font-black tracking-[0.3em] text-2xl uppercase">Tus Suplementos</span>
                 <span className="text-xs font-medium mt-2">Imagen no disponible</span>
               </div>
             )}

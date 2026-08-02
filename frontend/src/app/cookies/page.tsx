@@ -9,7 +9,7 @@ export default function CookiesPage() {
         <h1 className="text-3xl md:text-4xl font-black tracking-tighter mb-12 text-white">
           Política de Cookies
         </h1>
-        
+
         <div className="space-y-8 text-slate-400 text-sm leading-relaxed">
           <section>
             <h2 className="text-xl font-bold text-slate-200 mb-3">1. ¿Qué son las cookies?</h2>
@@ -21,8 +21,8 @@ export default function CookiesPage() {
           <section>
             <h2 className="text-xl font-bold text-slate-200 mb-3">2. Tipos de Cookies que utilizamos</h2>
             <p>
-              <strong>Cookies Técnicas:</strong> Son estrictamente necesarias para el funcionamiento de la web (por ejemplo, recordar tus ajustes de filtrado en el catálogo).<br/><br/>
-              <strong>Cookies de Afiliación (Terceros):</strong> Como parte de nuestro modelo de negocio CPA, al hacer clic en "Ver oferta", redes como Awin pueden instalar una cookie para saber que has llegado desde Suparator y asignarnos la comisión correspondiente.
+              <strong>Cookies Técnicas:</strong> Son estrictamente necesarias para el funcionamiento de la web (por ejemplo, recordar tus ajustes de filtrado en el catálogo).<br /><br />
+              <strong>Cookies de Afiliación (Terceros):</strong> Como parte de nuestro modelo de negocio CPA, al hacer clic en "Ver oferta", redes como Awin, TradeDoubler o Amazon Afiliados pueden instalar una cookie para saber que has llegado desde Tus Suplementos y asignarnos la comisión correspondiente.
             </p>
           </section>
 

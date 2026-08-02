@@ -13,11 +13,11 @@ export default function ContactPage() {
           Contacto
         </h1>
         <p className="text-base text-slate-400 mb-10 leading-relaxed">
-          ¿Tienes alguna sugerencia, has encontrado un error o eres una marca que quiere aparecer en Suparator? Escríbenos y te responderemos lo antes posible.
+          ¿Tienes alguna sugerencia, has encontrado un error o eres una marca que quiere aparecer en Tus Suplementos? Escríbenos y te responderemos lo antes posible.
         </p>
 
-        <a href="mailto:contacto@suparator.com" className="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-slate-200 transition-all shadow-lg shadow-white/10 hover:shadow-white/20 active:scale-95">
-          contacto@suparator.com
+        <a href="mailto:hola@tussuplementos.com" className="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-slate-200 transition-all shadow-lg shadow-white/10 hover:shadow-white/20 active:scale-95">
+          hola@tussuplementos.com
         </a>
 
         <p className="text-xs text-slate-500 mt-12">
