@@ -2,7 +2,10 @@ import sys
 import os
 import time
 import random
+import traceback
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import json
 import base64
@@ -260,6 +263,8 @@ def clasificar_producto(nombre: str, desc_limpia: str):
 # 4. INYECCIÓN PRINCIPAL BLINDADA
 # ==========================================
 def inyectar_en_bd():
+    db = SessionLocal()
+
     try:
         nombre_marca = normalizar_marca("HSN")
         marca_hsn = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
@@ -289,7 +294,17 @@ def inyectar_en_bd():
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
         'Connection': 'keep-alive',
+        'Referer': 'https://www.hsnstore.com/',
     })
+    retry_strategy = Retry(
+        total=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=['GET'],
+        backoff_factor=1
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount('https://', adapter)
+    session.mount('http://', adapter)
 
     productos_nuevos = []
     enlaces_procesados = set()
@@ -299,13 +314,23 @@ def inyectar_en_bd():
         print(f"\n🌐 Explorando: {url_cat}")
         cat_count = 0
         pagina = 1
-        max_paginas = 20
+        try:
+            max_paginas = int(os.getenv('HSN_MAX_PAGES', '20'))
+        except Exception:
+            max_paginas = 20
         
         while pagina <= max_paginas:
             url_pagina = f"{url_cat}?p={pagina}" if pagina > 1 else url_cat
             try:
                 res_cat = session.get(url_pagina, timeout=30)
-                soup_cat = BeautifulSoup(res_cat.text, 'lxml')
+                if res_cat.status_code != 200:
+                    print(f"   ⚠️ Página {pagina} devolvió {res_cat.status_code}. Saltando categoría.")
+                    break
+                try:
+                    soup_cat = BeautifulSoup(res_cat.text, 'lxml')
+                except Exception:
+                    soup_cat = BeautifulSoup(res_cat.text, 'html.parser')
+
                 enlaces_pagina = [a.get('href') for a in soup_cat.select('.product-item-link') if a.get('href')]
                 
                 if not enlaces_pagina: 
@@ -319,54 +344,86 @@ def inyectar_en_bd():
                     
                     try:
                         res_prod = session.get(url_prod, timeout=20)
-                        soup_prod = BeautifulSoup(res_prod.text, 'lxml')
-                        
-                        stock = soup_prod.find('meta', {'itemprop': 'availability'})
+                        if res_prod.status_code != 200:
+                            print(f"      ⚠️ Producto {url_prod} devolvió {res_prod.status_code}. Continuando...")
+                            continue
+                        # Preferir extraer JSON-LD sin parsear todo el HTML (ahorra trabajo a lxml)
+                        datos_producto = None
+                        try:
+                            # Buscar bloques <script type="application/ld+json">...</script>
+                            bloques = re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', res_prod.text, flags=re.S|re.I)
+                            for bloque in bloques:
+                                try:
+                                    contenido = json.loads(bloque.strip())
+                                    if isinstance(contenido, dict) and contenido.get('@type') == 'Product':
+                                        datos_producto = contenido
+                                        break
+                                    if isinstance(contenido, list):
+                                        for item in contenido:
+                                            if isinstance(item, dict) and item.get('@type') == 'Product':
+                                                datos_producto = item
+                                                break
+                                        if datos_producto: break
+                                except Exception:
+                                    continue
+                        except Exception:
+                            datos_producto = None
+
+                        # Si no hay JSON-LD, caer back a BeautifulSoup (html.parser primero, lxml si falla)
+                        if not datos_producto:
+                            try:
+                                soup_prod = BeautifulSoup(res_prod.text, 'html.parser')
+                            except Exception:
+                                try:
+                                    soup_prod = BeautifulSoup(res_prod.text, 'lxml')
+                                except Exception:
+                                    print(f"      ⚠️ Fallo al parsear HTML de {url_prod}. Saltando producto.")
+                                    continue
+                            stock = soup_prod.find('meta', {'itemprop': 'availability'})
+                        else:
+                            # No disponemos de 'stock' desde JSON-LD de forma fiable
+                            stock = None
                         if stock and 'outofstock' in stock.get('content', '').lower():
                             continue 
                         
-                        bloques_json = soup_prod.find_all('script', type='application/ld+json')
-                        datos_producto = None
-                        
-                        for bloque in bloques_json:
+                        # Si aún no tenemos datos_producto (extraído por regex), usar lo ya calculado
+                        if datos_producto:
+                            # Creamos un soup ligero para operaciones puntuales (title, swatches)
                             try:
-                                contenido = json.loads(bloque.string.strip())
-                                if isinstance(contenido, dict) and contenido.get('@type') == 'Product': datos_producto = contenido; break
-                                elif isinstance(contenido, list):
-                                    for item in contenido:
-                                        if isinstance(item, dict) and item.get('@type') == 'Product': datos_producto = item; break
-                            except: pass
-                        
-                        if not datos_producto: continue
-                        
-                        nombre = datos_producto.get('name', 'Sin nombre')
-                        imagen = datos_producto.get('image', '')
-                        desc_cruda = datos_producto.get('description', '')
-                        
-                        precio = 0.0
-                        precio_anterior = None 
-                        ofertas = datos_producto.get('offers', {})
-                        try:
-                            if isinstance(ofertas, dict): precio = float(ofertas.get('lowPrice', ofertas.get('price', 0.0)))
-                            elif isinstance(ofertas, list):
-                                for of in ofertas:
-                                    if isinstance(of, dict) and float(of.get('price', 0.0)) > 0:
-                                        precio = float(of.get('price', 0.0)); break
-                        except: pass
-                        
-                        
-                        if precio == 0.0:
-                            precio_meta = soup_prod.find('meta', {'property': 'product:price:amount'})
-                            if precio_meta:
-                                precio = float(precio_meta.get('content', 0.0))
-                            else:
-                                precio_html = soup_prod.find('span', class_=re.compile(r'price'))
-                                if precio_html:
-                                    txt = precio_html.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
-                                    try: 
+                                soup_prod = BeautifulSoup(res_prod.text, 'html.parser')
+                            except Exception:
+                                soup_prod = None
+                            nombre = datos_producto.get('name', 'Sin nombre')
+                            imagen = datos_producto.get('image', '')
+                            desc_cruda = datos_producto.get('description', '')
+
+                            precio = 0.0
+                            precio_anterior = None
+                            ofertas = datos_producto.get('offers', {})
+                            try:
+                                if isinstance(ofertas, dict):
+                                    precio = float(ofertas.get('lowPrice', ofertas.get('price', 0.0) or 0.0))
+                                elif isinstance(ofertas, list):
+                                    for of in ofertas:
+                                        if isinstance(of, dict) and float(of.get('price', 0.0) or 0.0) > 0:
+                                            precio = float(of.get('price', 0.0)); break
+                            except Exception:
+                                precio = 0.0
+                        else:
+                            # intentar extraer precio desde el HTML ya parseado
+                            try:
+                                precio = 0.0
+                                precio_meta = soup_prod.find('meta', {'property': 'product:price:amount'})
+                                if precio_meta:
+                                    precio = float(precio_meta.get('content', 0.0))
+                                else:
+                                    precio_html = soup_prod.find('span', class_=re.compile(r'price'))
+                                    if precio_html:
+                                        txt = precio_html.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
                                         match_precio = re.search(r'(\d+\.\d+)', txt)
                                         if match_precio: precio = float(match_precio.group(1))
-                                    except: pass
+                            except Exception:
+                                precio = 0.0
 
                         if precio > 0:
                             html_precio_viejo = soup_prod.find(class_=re.compile(r'old-price'))
@@ -383,9 +440,17 @@ def inyectar_en_bd():
                                     except: pass
 
                         # --- NUEVO: CAZADOR DE PESOS OCULTOS PARA HSN ---
-                        titulo_pagina = soup_prod.find('title').text if soup_prod.find('title') else ""
-                        opcion_marcada = soup_prod.find(class_=re.compile(r'swatch-option.*selected'))
-                        texto_talla = opcion_marcada.text if opcion_marcada else ""
+                        # Campos adicionales desde HTML solo si tenemos soup_prod
+                        titulo_pagina = ''
+                        texto_talla = ''
+                        if 'soup_prod' in locals():
+                            try:
+                                titulo_pagina = soup_prod.find('title').text if soup_prod.find('title') else ''
+                                opcion_marcada = soup_prod.find(class_=re.compile(r'swatch-option.*selected'))
+                                texto_talla = opcion_marcada.text if opcion_marcada else ''
+                            except Exception:
+                                titulo_pagina = ''
+                                texto_talla = ''
                         nombre_ampliado = f"{nombre} {titulo_pagina} {texto_talla}".lower()
                         # ------------------------------------------------
 
@@ -402,26 +467,62 @@ def inyectar_en_bd():
                         # ------------------------------------------------------------
 
                         desc_limpia = limpiar_texto(desc_cruda)
-                        
                         # Fusionamos la descripción limpia con los sabores ocultos que hemos cazado
                         desc_ampliada_para_cerebro = f"{desc_limpia} {texto_sabores_extra}"
-                        
                         etiquetas = clasificar_producto(nombre, desc_ampliada_para_cerebro)
                         
                         if not etiquetas: continue
                         
                         metricas = calcular_metricas_precio(nombre_ampliado, desc_limpia, precio)
                         url_afiliado = generar_enlace_afiliado(url_prod)
-                        
-                        nuevo_prod = models.Producto(
-                            nombre=nombre, descripcion=desc_limpia[:900], precio=precio,precio_anterior=precio_anterior, imagen_url=imagen, afiliado_url=url_afiliado,
-                            marca_id=marca_hsn.id, categoria_id=mapa_categorias[etiquetas["categoria"]], sabor=etiquetas["sabor"],
-                            formato=etiquetas["formato"], objetivo=etiquetas["objetivo"], es_vegano=etiquetas["es_vegano"],
-                            sello_calidad=etiquetas["sello_calidad"], tipo_proteina=etiquetas["tipo_proteina"],
-                            porcentaje_proteina=etiquetas["porcentaje_proteina"], tipo_creatina=etiquetas["tipo_creatina"],
-                            perfil_aminoacidos=etiquetas["perfil_aminoacidos"], tipo_vitamina=etiquetas["tipo_vitamina"],
-                            peso_gramos=metricas["peso_gramos"], precio_por_kg=metricas["precio_por_kg"], slug=generar_slug(nombre),
-                        )
+
+                        # Normalizar tipos y proteger contra valores no serializables
+                        try:
+                            nombre_norm = str(nombre)[:255]
+                            descripcion_norm = str(desc_limpia)[:900]
+                            precio_norm = float(precio or 0.0)
+                            precio_ant_norm = float(precio_anterior) if precio_anterior not in (None, '', 0) else None
+                            slug_norm = generar_slug(nombre_norm)
+                            peso_norm = int(metricas.get('peso_gramos')) if metricas.get('peso_gramos') else None
+                            preciokg_norm = float(metricas.get('precio_por_kg')) if metricas.get('precio_por_kg') else None
+                            porcentaje_proteina = etiquetas.get('porcentaje_proteina')
+                            try:
+                                porcentaje_proteina = int(porcentaje_proteina) if porcentaje_proteina is not None else None
+                            except Exception:
+                                porcentaje_proteina = None
+
+                            objetivo_norm = etiquetas.get('objetivo')
+                            if isinstance(objetivo_norm, str): objetivo_norm = [objetivo_norm]
+                            sabor_norm = etiquetas.get('sabor')
+                            if sabor_norm is None: sabor_norm = []
+
+                            nuevo_prod = models.Producto(
+                                nombre=nombre_norm,
+                                descripcion=descripcion_norm,
+                                precio=precio_norm,
+                                precio_anterior=precio_ant_norm,
+                                imagen_url=str(imagen) if imagen else None,
+                                afiliado_url=url_afiliado,
+                                marca_id=marca_hsn.id,
+                                categoria_id=mapa_categorias[etiquetas["categoria"]],
+                                sabor=sabor_norm,
+                                formato=etiquetas.get("formato"),
+                                objetivo=objetivo_norm,
+                                es_vegano=bool(etiquetas.get("es_vegano")),
+                                sello_calidad=etiquetas.get("sello_calidad"),
+                                tipo_proteina=etiquetas.get("tipo_proteina"),
+                                porcentaje_proteina=porcentaje_proteina,
+                                tipo_creatina=etiquetas.get("tipo_creatina"),
+                                perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
+                                tipo_vitamina=etiquetas.get("tipo_vitamina"),
+                                peso_gramos=peso_norm,
+                                precio_por_kg=preciokg_norm,
+                                slug=slug_norm,
+                            )
+                        except Exception as e_prod:
+                            print(f"      ⚠️ Error al normalizar/crear producto {url_prod}: {e_prod}")
+                            traceback.print_exc()
+                            continue
                         productos_nuevos.append(nuevo_prod)
                         cat_count += 1
                         total_general += 1
@@ -433,7 +534,8 @@ def inyectar_en_bd():
                                 db.commit()
                             except Exception as db_err:
                                 db.rollback() # <- ESTO SALVA EL SCRIPT
-                                print(f"      ⚠️ Advertencia BD: {db_err.__class__.__name__}. Reintentando en el próximo lote.")
+                                print(f"      ⚠️ Advertencia BD: {db_err.__class__.__name__}: {db_err}. Reintentando en el próximo lote.")
+                                traceback.print_exc()
                             finally:
                                 productos_nuevos = [] 
                             
@@ -462,8 +564,13 @@ def inyectar_en_bd():
             db.commit()
         except Exception as e:
             db.rollback()
-            print(f"⚠️ Aviso: No se pudieron guardar los últimos {len(productos_nuevos)} productos.")
+            print(f"⚠️ Aviso: No se pudieron guardar los últimos {len(productos_nuevos)} productos. Error: {e.__class__.__name__}: {e}")
+            traceback.print_exc()
         
     print(f"\n🎉 ¡MISIÓN CUMPLIDA! Catálogo inyectado: {total_general} productos robustos.")
+    
+    db.close()
+    print("🚪 Conexión a la base de datos cerrada.")
+
 if __name__ == "__main__":
     inyectar_en_bd()

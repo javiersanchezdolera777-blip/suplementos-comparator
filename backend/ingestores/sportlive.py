@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import requests
 import zipfile
+import gzip
 import io
 import json
 import re
@@ -28,19 +29,45 @@ DOMINIO_TIENDA = "https://sportlivenutrition.com"
 db = SessionLocal()
 
 def descargar_datos():
+    # 1. Intentamos leer la caché si existe
     if os.path.exists(ARCHIVO_CACHE):
-        with open(ARCHIVO_CACHE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(ARCHIVO_CACHE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print("⚠️ El archivo temporal estaba corrupto. Lo borramos y descargamos de nuevo...")
+            os.remove(ARCHIVO_CACHE)
     
+    print("🌐 Conectando con Tradedoubler para descargar catálogo...")
     response = requests.get(URL_FEED, headers={'User-Agent': 'Mozilla/5.0'})
+    
+    if response.status_code != 200:
+        print(f"❌ ERROR DE RED: Tradedoubler ha devuelto el código {response.status_code}")
+        sys.exit(1)
+
+    # 3. Intentamos descomprimir (Tradedoubler envía GZIP, no ZIP tradicional)
     try:
-        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-            datos_json = json.load(z.open(z.namelist()[0]))
-    except:
-        datos_json = response.json()
-        
+        # Extraemos los datos comprimidos en .gz y los pasamos a texto
+        contenido_descomprimido = gzip.decompress(response.content)
+        datos_json = json.loads(contenido_descomprimido.decode('utf-8'))
+    except Exception as e:
+        print("⚠️ No era un archivo GZIP. Intentando como ZIP...")
+        try:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+                datos_json = json.load(z.open(z.namelist()[0]))
+        except Exception as e2:
+            print("⚠️ Tampoco era un ZIP. Intentando leer como JSON plano...")
+            try:
+                datos_json = response.json()
+            except Exception as e3:
+                print("❌ ERROR FATAL: La respuesta de la tienda es irreconocible.")
+                sys.exit(1)
+            
+        os.makedirs(os.path.dirname(ARCHIVO_CACHE), exist_ok=True)
+    
     with open(ARCHIVO_CACHE, 'w', encoding='utf-8') as f:
         json.dump(datos_json, f, ensure_ascii=False, indent=4)
+        
     return datos_json
 
 # --- MATEMÁTICAS Y LIMPIEZA ---
