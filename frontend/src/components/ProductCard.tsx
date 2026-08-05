@@ -60,6 +60,21 @@ const formatTitle = (nombre: string, marca?: string) => {
   return nombre.replace(regex, '');
 };
 
+const formatStoreName = (name: string) => {
+  if (!name) return "";
+  const lower = name.trim().toLowerCase();
+  if (lower === 'hsn') return 'HSN';
+  if (lower === 'farma2go' || lower === 'pharma2go') return 'Farma2Go';
+  if (lower === 'amazon') return 'Amazon';
+  if (lower === 'miravia') return 'Miravia';
+  if (lower === 'promofarma') return 'PromoFarma';
+  if (lower === 'nutritienda') return 'Nutritienda';
+  return lower.replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const AFFILIATE_NETWORKS = ['tradedoubler', 'awin', 'cj', 'impact', 'webgains', 'belboon', 'zanox', 'linkshare', 'tradetracker', 'hsnafiliados', 'hsnaffiliates', 'amazonafiliados', 'zumub'];
+
+
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -86,13 +101,63 @@ export default function ProductCard({ product }: { product: Product }) {
     (typeof product.store === 'string' && product.store) ||
     "";
 
+  // Extraer tienda desde URL de afiliado como fallback definitivo
+  const getStoreFromUrl = (url: string): string => {
+    if (!url) return "";
+    try {
+      let targetUrl = url;
+      
+      // Si es un enlace de seguimiento de afiliados, buscar la URL de destino real en los parámetros query
+      if (url.includes('url=')) {
+        const match = url.match(/url=([^&]+)/);
+        if (match && match[1]) {
+          targetUrl = decodeURIComponent(match[1]);
+        }
+      }
+
+      const host = new URL(targetUrl).hostname.toLowerCase();
+
+      if (host.includes('hsnstore') || host.includes('hsn.')) return 'HSN';
+      if (host.includes('sportlive')) return 'SportLive';
+      if (host.includes('farma2go') || host.includes('pharma2go')) return 'Farma2Go';
+      if (host.includes('prozis')) return 'Prozis';
+      if (host.includes('myprotein')) return 'MyProtein';
+      if (host.includes('bulk') || host.includes('bulkpowders')) return 'Bulk';
+      if (host.includes('amazon')) return 'Amazon';
+      if (host.includes('miravia')) return 'Miravia';
+      if (host.includes('promofarma')) return 'PromoFarma';
+      if (host.includes('nutritienda')) return 'Nutritienda';
+      if (host.includes('masmusculo')) return 'MasMusculo';
+      if (host.includes('pontemasfuerte')) return 'PonteMasFuerte';
+      if (host.includes('zumub')) return 'Zumub';
+
+      // Fallback genérico: extraer dominio principal
+      const parts = host.split('.');
+      if (parts.length >= 2) {
+        const domain = parts[parts.length - 2];
+        if (!AFFILIATE_NETWORKS.includes(domain) && domain !== 'com' && domain !== 'es' && domain !== 'co' && domain !== 'net') {
+          return domain.charAt(0).toUpperCase() + domain.slice(1);
+        }
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  };
+
+  const sanitizedRawStore = AFFILIATE_NETWORKS.some(net => rawStore.toLowerCase().includes(net)) ? "" : rawStore;
+  const finalStoreName = sanitizedRawStore || getStoreFromUrl(product.affiliate_url);
+
   const brandName = product.brand?.name || "";
 
-  // Solo renderizar si existe tienda vendedora real y NO coincide con la marca del producto
-  const sellerStore =
-    rawStore && rawStore.trim().toLowerCase() !== brandName.trim().toLowerCase()
-      ? rawStore.trim()
-      : null;
+  // Renderizar tienda vendedora real
+  const sellerStore = finalStoreName ? finalStoreName.trim() : null;
+
+  // Comprobación para evitar redundancia visual si la marca y la tienda son idénticas
+  const isSameBrandAndStore = 
+    brandName.trim().toLowerCase() !== "" &&
+    sellerStore !== null &&
+    brandName.trim().toLowerCase() === sellerStore.toLowerCase();
 
   const previousPrice = product.precio_anterior ?? null;
   const currentPrice = product.precio_actual ?? product.price;
@@ -182,11 +247,6 @@ export default function ProductCard({ product }: { product: Product }) {
 
           {/* Badges Superpuestos Superior Izquierda: Tienda Origen y Oferta */}
           <div className="absolute top-2.5 left-2.5 z-20 flex flex-col items-start gap-1 pointer-events-none max-w-[calc(100%-65px)]">
-            {sellerStore && (
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-900/90 text-white backdrop-blur-md shadow-md truncate max-w-full">
-                Disponible en {sellerStore}
-              </span>
-            )}
             {hasOffer && (
               <span className="bg-red-600 text-white font-extrabold text-[11px] px-2 py-0.5 rounded-md shadow-sm">
                 -{discountPercentage}%
@@ -222,9 +282,19 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
         <div className="p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-900 mb-1 transition-none truncate">
-            {product.brand?.name || "Sin marca"}
-          </p>
+          <div className="flex flex-col gap-0.5 mb-1">
+            {/* Línea 1: Marca (Oscura, destacada y en mayúsculas) */}
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
+              {product.brand?.name || "Sin marca"}
+            </span>
+            
+            {/* Línea 2: Tienda Vendedora (Sobria, con contraste limpio y sin fondos, SOLO si es distinta) */}
+            {sellerStore && !isSameBrandAndStore && (
+              <span className="text-[12px] font-normal text-slate-500">
+                Vendido por <span className="font-semibold text-slate-700">{formatStoreName(sellerStore)}</span>
+              </span>
+            )}
+          </div>
 
           <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
             {formattedName}
@@ -307,12 +377,19 @@ export default function ProductCard({ product }: { product: Product }) {
             {/* Columna Derecha: Información y Scroll Exclusivo para Textos */}
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
                {/* Zona Superior Fija */}
-               <div className="flex justify-between items-center mb-2 pr-10">
-                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900 transition-none">
-                   {product.brand?.name || "Sin marca"}
-                 </p>
+               <div className="flex justify-between items-start mb-2 pr-10">
+                 <div className="flex flex-col gap-0.5 mb-1">
+                   <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                     {product.brand?.name || "Sin marca"}
+                   </span>
+                   {sellerStore && !isSameBrandAndStore && (
+                     <span className="text-[12px] font-normal text-slate-500">
+                       Vendido por <span className="font-semibold text-slate-700">{formatStoreName(sellerStore)}</span>
+                     </span>
+                   )}
+                 </div>
                  
-                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
+                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
                    <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
                      isFavorite 
                        ? "bg-red-50 border-red-200 scale-105" 
@@ -361,7 +438,7 @@ export default function ProductCard({ product }: { product: Product }) {
                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
                    {sellerStore && (
-                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{sellerStore}</span></div>
+                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
                    )}
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
 
