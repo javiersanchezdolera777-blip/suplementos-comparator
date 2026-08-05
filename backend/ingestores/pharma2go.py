@@ -390,6 +390,7 @@ def inyectar_en_bd():
             precio_anterior=precio_anterior,
             imagen_url=imagen_url,
             afiliado_url=afiliado_url,
+            tienda="Farma2Go",
             marca_id=cache_marcas[nombre_marca],
             categoria_id=categoria_id,
             

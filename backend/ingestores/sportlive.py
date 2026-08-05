@@ -271,6 +271,7 @@ def inyectar_en_bd():
                 precio_anterior=precio_anterior, 
                 imagen_url=imagen_url,
                 afiliado_url=afiliado_url,
+                tienda="Sportlive",
                 marca_id=marca_oficial.id,
                 categoria_id=categoria_id,
                 sabor=etiquetas["sabor"],

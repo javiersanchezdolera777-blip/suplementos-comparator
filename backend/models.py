@@ -34,6 +34,7 @@ class Producto(Base):
     afiliado_url = Column(String)
 
     # --- NUEVAS COLUMNAS ---
+    tienda = Column(String, nullable=True)
     slug = Column(String, index=True) 
     peso_gramos = Column(Integer, nullable=True) # Ej: 1000 para 1kg, 2000 para 2kg
     precio_por_kg = Column(Float, nullable=True) # <-- Columna real

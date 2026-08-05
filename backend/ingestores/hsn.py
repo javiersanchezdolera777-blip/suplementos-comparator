@@ -518,6 +518,7 @@ def inyectar_en_bd():
                                 precio_anterior=precio_ant_norm,
                                 imagen_url=str(imagen) if imagen else None,
                                 afiliado_url=url_afiliado,
+                                tienda="HSN",
                                 marca_id=marca_hsn.id,
                                 categoria_id=categoria_id,
                                 sabor=sabor_norm,

@@ -114,6 +114,8 @@ class ProductResponse(BaseModel):
     @field_validator("affiliate_url", mode="before")
     def normalize_affiliate_url(cls, v):
         return v or ""
+    
+    tienda: Optional[str] = None
     weight_grams: Optional[int] = Field(validation_alias="peso_gramos", default=None)
     price_per_kg: Optional[float] = Field(validation_alias="precio_por_kg", default=None)
     
