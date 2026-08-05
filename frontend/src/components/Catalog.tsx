@@ -7,6 +7,7 @@ import ProductCard from "./ProductCard";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 import EmptyState from "./EmptyState";
 import FilterSidebar from "./FilterSidebar";
+import Pagination from "./Pagination";
 
 export default function Catalog() {
   const searchParams = useSearchParams();
@@ -18,7 +19,7 @@ export default function Catalog() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const [totalResultados, setTotalResultados] = useState<number>(0);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const BATCH_SIZE = 36;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,7 +139,7 @@ export default function Catalog() {
 
     const queryParams = buildQueryParams();
     queryParams.append("limit", BATCH_SIZE.toString());
-    queryParams.append("skip", "0");
+    queryParams.append("page", currentPage.toString());
 
     fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
       .then((res) => res.json())
@@ -155,31 +156,22 @@ export default function Catalog() {
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
     selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
-    isVegan, soloOfertas, apiUrl
+    isVegan, soloOfertas, apiUrl, currentPage
   ]);
 
-  const cargarMasProductos = () => {
-    if (loadingMore || productos.length >= totalResultados) return;
-    setLoadingMore(true);
+  // Reset page to 1 when any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchQuery, selectedCategory, selectedBrands, ordenPrecio,
+    selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
+    selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
+    isVegan, soloOfertas
+  ]);
 
-    const queryParams = buildQueryParams();
-    queryParams.append("limit", BATCH_SIZE.toString());
-    queryParams.append("skip", productos.length.toString());
-
-    fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const nuevosProductos = Array.isArray(data) ? data : data.productos || [];
-        setProductos((prev) => [...prev, ...nuevosProductos]);
-        if (!Array.isArray(data) && data.total_resultados !== undefined) {
-          setTotalResultados(data.total_resultados);
-        }
-        setLoadingMore(false);
-      })
-      .catch((error) => {
-        console.error("Error cargando más productos:", error);
-        setLoadingMore(false);
-      });
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const limpiarFiltros = () => {
@@ -351,8 +343,10 @@ export default function Catalog() {
 
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
-            <div className="text-slate-500 text-sm">
-              Mostrando <span className="text-slate-900 font-black text-base">{productosFiltrados.length}</span> de <span className="text-slate-900 font-black text-base">{soloOfertas ? productosFiltrados.length : totalResultados}</span> suplementos
+            <div className="text-slate-600 text-sm">
+              Mostrando <span className="font-semibold text-slate-900">
+                {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
+              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> suplementos
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -384,35 +378,13 @@ export default function Catalog() {
                 ))}
               </div>
 
-              {/* Botón Cargar Más Suplementos */}
-              {!soloOfertas && productos.length < totalResultados && (
-                <div className="flex flex-col items-center justify-center mt-10 mb-6 gap-3">
-                  <button
-                    onClick={cargarMasProductos}
-                    disabled={loadingMore}
-                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-base rounded-2xl shadow-lg shadow-blue-600/25 transition-all duration-200 active:scale-95 flex items-center gap-3 cursor-pointer"
-                  >
-                    {loadingMore ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Cargando más suplementos...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Cargar más suplementos</span>
-                        <span className="text-xs bg-blue-500/50 px-2.5 py-0.5 rounded-lg font-mono">
-                          +{Math.min(BATCH_SIZE, totalResultados - productos.length)}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                  <span className="text-xs text-slate-400 font-medium">
-                    Has visto {productos.length} de {totalResultados} suplementos
-                  </span>
-                </div>
+              {/* Paginación */}
+              {totalResultados > BATCH_SIZE && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(totalResultados / BATCH_SIZE)}
+                  onPageChange={handlePageChange}
+                />
               )}
             </>
           ) : (
