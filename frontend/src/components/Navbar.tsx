@@ -21,6 +21,7 @@ export default function Navbar() {
           alt="Tus Suplementos"
           width={44}
           height={44}
+          style={{ width: 'auto', height: 'auto' }}
           className="w-10 h-10 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform duration-200"
           priority
         />

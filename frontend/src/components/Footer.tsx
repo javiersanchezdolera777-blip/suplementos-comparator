@@ -16,6 +16,7 @@ export default function Footer() {
                 alt="Tus Suplementos Logo" 
                 width={36} 
                 height={36} 
+                style={{ width: 'auto', height: 'auto' }}
                 className="w-9 h-auto group-hover:scale-105 transition-transform duration-200"
               />
               <div className="flex items-baseline text-xl tracking-tight select-none">

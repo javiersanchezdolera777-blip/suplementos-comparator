@@ -52,6 +52,25 @@ const decodeHTML = (str: string) => {
     .replace(/&gt;/g, ">");
 };
 
+const sanitizeDescription = (text?: string | null): string => {
+  if (!text) return "";
+  let cleaned = text.trim();
+
+  // 1. Eliminar preguntas genéricas de relleno SEO al inicio del texto (ej: "¿por qué debemos utilizar...?")
+  cleaned = cleaned.replace(/^¿por qué [^?]+\?\s*/i, '');
+
+  // 2. Corregir puntos pegados a palabras sin espacio (ej: "apatía.es frecuente" -> "apatía. es frecuente")
+  cleaned = cleaned.replace(/\.([a-zA-ZáéíóúñÁÉÍÓÚÑ])/g, '. $1');
+
+  // 3. Capitalizar la primera letra después de un punto y seguido (ej: ". los más" -> ". Los más")
+  cleaned = cleaned.replace(/\.\s+([a-zñáéíóú])/g, (_, letter) => `. ${letter.toUpperCase()}`);
+
+  // 4. Capitalizar la primera letra alfabética del texto (incluso si empieza por signos como ¿, ", ()
+  cleaned = cleaned.replace(/^([^a-zA-ZáéíóúñÁÉÍÓÚÑ]*)([a-zñáéíóú])/, (_, prefix, letter) => prefix + letter.toUpperCase());
+
+  return cleaned;
+};
+
 // Helper para limpiar el nombre del producto si ya empieza por la marca (evita redundancia)
 const formatTitle = (nombre: string, marca?: string) => {
   if (!marca || !nombre) return nombre;
@@ -101,63 +120,43 @@ export default function ProductCard({ product }: { product: Product }) {
     (typeof product.store === 'string' && product.store) ||
     "";
 
-  // Extraer tienda desde URL de afiliado como fallback definitivo
+  // Detectar tienda de forma infalible buscando patrones en la cadena de la URL completa
   const getStoreFromUrl = (url: string): string => {
     if (!url) return "";
-    try {
-      let targetUrl = url;
-      
-      // Si es un enlace de seguimiento de afiliados, buscar la URL de destino real en los parámetros query
-      if (url.includes('url=')) {
-        const match = url.match(/url=([^&]+)/);
-        if (match && match[1]) {
-          targetUrl = decodeURIComponent(match[1]);
-        }
-      }
+    const lowerUrl = url.toLowerCase();
 
-      const host = new URL(targetUrl).hostname.toLowerCase();
+    if (lowerUrl.includes('sportlive')) return 'SportLive';
+    if (lowerUrl.includes('hsnstore') || lowerUrl.includes('hsn.')) return 'HSN';
+    if (lowerUrl.includes('farma2go') || lowerUrl.includes('pharma2go')) return 'Farma2Go';
+    if (lowerUrl.includes('prozis')) return 'Prozis';
+    if (lowerUrl.includes('myprotein')) return 'MyProtein';
+    if (lowerUrl.includes('bulk')) return 'Bulk';
+    if (lowerUrl.includes('amazon')) return 'Amazon';
+    if (lowerUrl.includes('miravia')) return 'Miravia';
+    if (lowerUrl.includes('promofarma')) return 'PromoFarma';
+    if (lowerUrl.includes('nutritienda')) return 'Nutritienda';
+    if (lowerUrl.includes('masmusculo')) return 'MasMusculo';
+    if (lowerUrl.includes('pontemasfuerte')) return 'PonteMasFuerte';
+    if (lowerUrl.includes('zumub')) return 'Zumub';
 
-      if (host.includes('hsnstore') || host.includes('hsn.')) return 'HSN';
-      if (host.includes('sportlive')) return 'SportLive';
-      if (host.includes('farma2go') || host.includes('pharma2go')) return 'Farma2Go';
-      if (host.includes('prozis')) return 'Prozis';
-      if (host.includes('myprotein')) return 'MyProtein';
-      if (host.includes('bulk') || host.includes('bulkpowders')) return 'Bulk';
-      if (host.includes('amazon')) return 'Amazon';
-      if (host.includes('miravia')) return 'Miravia';
-      if (host.includes('promofarma')) return 'PromoFarma';
-      if (host.includes('nutritienda')) return 'Nutritienda';
-      if (host.includes('masmusculo')) return 'MasMusculo';
-      if (host.includes('pontemasfuerte')) return 'PonteMasFuerte';
-      if (host.includes('zumub')) return 'Zumub';
-
-      // Fallback genérico: extraer dominio principal
-      const parts = host.split('.');
-      if (parts.length >= 2) {
-        const domain = parts[parts.length - 2];
-        if (!AFFILIATE_NETWORKS.includes(domain) && domain !== 'com' && domain !== 'es' && domain !== 'co' && domain !== 'net') {
-          return domain.charAt(0).toUpperCase() + domain.slice(1);
-        }
-      }
-      return "";
-    } catch {
-      return "";
-    }
+    return "";
   };
 
-  const sanitizedRawStore = AFFILIATE_NETWORKS.some(net => rawStore.toLowerCase().includes(net)) ? "" : rawStore;
-  const finalStoreName = sanitizedRawStore || getStoreFromUrl(product.affiliate_url);
+  // Determinar la tienda vendedora real
+  const urlStore = getStoreFromUrl(product.affiliate_url);
+  const rawDbStore = rawStore;
+  const cleanDbStore = rawDbStore && !['tradedoubler', 'awin', 'cj'].some(net => rawDbStore.toLowerCase().includes(net)) ? rawDbStore : null;
+
+  // La tienda detectada en la URL MANDA siempre. Si no, usa la de la base de datos saneada.
+  const sellerStore = urlStore || cleanDbStore;
 
   const brandName = product.brand?.name || "";
 
-  // Renderizar tienda vendedora real
-  const sellerStore = finalStoreName ? finalStoreName.trim() : null;
-
-  // Comprobación para evitar redundancia visual si la marca y la tienda son idénticas
+  // Comprobar si marca y tienda son la misma entidad (ej: HSN == HSN)
   const isSameBrandAndStore = 
     brandName.trim().toLowerCase() !== "" &&
     sellerStore !== null &&
-    brandName.trim().toLowerCase() === sellerStore.toLowerCase();
+    brandName.trim().toLowerCase() === sellerStore.trim().toLowerCase();
 
   const previousPrice = product.precio_anterior ?? null;
   const currentPrice = product.precio_actual ?? product.price;
@@ -167,6 +166,8 @@ export default function ProductCard({ product }: { product: Product }) {
     : 0;
 
   const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name);
+  const cleanDescription = sanitizeDescription(product.description);
+  const isLongDescription = cleanDescription.length > 230;
 
   const handleOpenProduct = () => {
     setIsModalOpen(true);
@@ -282,16 +283,14 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
         <div className="p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <div className="flex flex-col gap-0.5 mb-1">
-            {/* Línea 1: Marca (Oscura, destacada y en mayúsculas) */}
+          <div className="flex flex-col gap-0.5 mb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
-              {product.brand?.name || "Sin marca"}
+              {brandName || "Sin marca"}
             </span>
             
-            {/* Línea 2: Tienda Vendedora (Sobria, con contraste limpio y sin fondos, SOLO si es distinta) */}
             {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[12px] font-normal text-slate-500">
-                Vendido por <span className="font-semibold text-slate-700">{formatStoreName(sellerStore)}</span>
+              <span className="text-[12px] font-normal text-slate-500 truncate">
+                Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
               </span>
             )}
           </div>
@@ -380,11 +379,11 @@ export default function ProductCard({ product }: { product: Product }) {
                <div className="flex justify-between items-start mb-2 pr-10">
                  <div className="flex flex-col gap-0.5 mb-1">
                    <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                     {product.brand?.name || "Sin marca"}
+                     {brandName || "Sin marca"}
                    </span>
                    {sellerStore && !isSameBrandAndStore && (
                      <span className="text-[12px] font-normal text-slate-500">
-                       Vendido por <span className="font-semibold text-slate-700">{formatStoreName(sellerStore)}</span>
+                       Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
                      </span>
                    )}
                  </div>
@@ -426,10 +425,10 @@ export default function ProductCard({ product }: { product: Product }) {
                
                {/* Zona Central con Scroll Interno Exclusivo */}
                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">
-                 <div className={`text-slate-600 text-sm leading-relaxed mb-2 ${!isExpanded ? 'line-clamp-3' : ''}`}>
-                   {product.description}
+                 <div className={`text-slate-600 text-sm leading-relaxed mb-2 ${isLongDescription && !isExpanded ? 'line-clamp-3' : ''}`}>
+                   {cleanDescription}
                  </div>
-                 {product.description && product.description.length > 120 && (
+                 {isLongDescription && (
                    <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-600 text-xs font-bold mb-4 hover:text-blue-700 self-start cursor-pointer">
                      {isExpanded ? 'Leer menos' : 'Leer más...'}
                    </button>
