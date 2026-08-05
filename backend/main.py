@@ -22,14 +22,19 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="API de Suplementos")
 
 # --- CONFIGURACIÓN DE CORS ---
+origins = [
+    "https://www.tussuplementos.com",
+    "https://tussuplementos.com",
+    "https://www.tussuplementos.es",
+    "https://tussuplementos.es",
+    "https://suplementos-comparator.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://tussuplementos.es",
-        "https://www.tussuplementos.es",
-    ], 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,7 +76,6 @@ def obtener_filtros(db: Session = Depends(get_db)):
         "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum]
     }
 
-# --- RUTA PRINCIPAL DE PRODUCTOS ---
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
