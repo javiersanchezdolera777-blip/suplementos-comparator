@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import case, desc, or_
+from sqlalchemy import case, desc, or_, func
 from typing import List, Optional
 from datetime import datetime
 from fastapi import Query  # ✅ Correcto
@@ -121,9 +121,9 @@ def obtener_productos(
     # 2. Filtros de Marca
     marca_str = marcas or marca
     if marca_str:
-        lista_marcas = [m.strip() for m in marca_str.split(",") if m.strip()]
-        if lista_marcas:
-            query = query.filter(models.Marca.nombre.in_(lista_marcas))
+        lista_marcas_lower = [m.strip().lower() for m in marca_str.split(",") if m.strip()]
+        if lista_marcas_lower:
+            query = query.filter(func.lower(models.Marca.nombre).in_(lista_marcas_lower))
 
     # 3. Filtro Porcentaje Proteína
     if porcentaje_proteina is not None:
