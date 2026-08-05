@@ -1,11 +1,9 @@
 import sys
 import os
-import time
 import random
+import time
 import traceback
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import json
 import base64
@@ -17,6 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import models
 from database import SessionLocal
+from ingestores.http_client import create_session, get_with_backoff
 from schemas import (
     SaborEnum, FormatoEnum, ObjetivoEnum, SelloCalidadEnum, 
     TipoProteinaEnum, TipoCreatinaEnum, PerfilAminoacidosEnum, TipoVitaminaEnum, CategoriaEnum, normalizar_marca
@@ -269,9 +268,15 @@ def inyectar_en_bd():
         nombre_marca = normalizar_marca("HSN")
         marca_hsn = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
         if not marca_hsn:
-            marca_hsn = models.Marca(nombre=nombre_marca)
-            db.add(marca_hsn)
-            db.commit(); db.refresh(marca_hsn)
+            try:
+                marca_hsn = models.Marca(nombre=nombre_marca)
+                db.add(marca_hsn)
+                db.commit(); db.refresh(marca_hsn)
+            except Exception:
+                db.rollback()
+                marca_hsn = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
+                if not marca_hsn:
+                    raise
 
         print("🧹 Limpiando catálogo antiguo de HSN...")
         db.query(models.Producto).filter(models.Producto.marca_id == marca_hsn.id).delete()
@@ -281,30 +286,26 @@ def inyectar_en_bd():
         for cat in CategoriaEnum:
             cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
             if not cat_db:
-                cat_db = models.Categoria(nombre=cat.value); db.add(cat_db); db.commit(); db.refresh(cat_db)
+                try:
+                    cat_db = models.Categoria(nombre=cat.value); db.add(cat_db); db.commit(); db.refresh(cat_db)
+                except Exception:
+                    db.rollback()
+                    cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+                    if not cat_db:
+                        raise
             mapa_categorias[cat.value] = cat_db.id
     except Exception as e:
         db.rollback()
         print(f"❌ Error al inicializar BBDD: {e}")
         return
 
-    session = requests.Session()
-    session.headers.update({
+    session = create_session({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
         'Connection': 'keep-alive',
         'Referer': 'https://www.hsnstore.com/',
     })
-    retry_strategy = Retry(
-        total=3,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=['GET'],
-        backoff_factor=1
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount('https://', adapter)
-    session.mount('http://', adapter)
 
     productos_nuevos = []
     enlaces_procesados = set()
@@ -322,7 +323,12 @@ def inyectar_en_bd():
         while pagina <= max_paginas:
             url_pagina = f"{url_cat}?p={pagina}" if pagina > 1 else url_cat
             try:
-                res_cat = session.get(url_pagina, timeout=30)
+                try:
+                    res_cat = get_with_backoff(session, url_pagina, timeout=30)
+                except Exception as net_err:
+                    print(f"   ⚠️ No se pudo cargar la página {url_pagina}: {net_err}")
+                    break
+
                 if res_cat.status_code != 200:
                     print(f"   ⚠️ Página {pagina} devolvió {res_cat.status_code}. Saltando categoría.")
                     break
@@ -343,7 +349,12 @@ def inyectar_en_bd():
                     enlaces_procesados.add(url_prod)
                     
                     try:
-                        res_prod = session.get(url_prod, timeout=20)
+                        try:
+                            res_prod = get_with_backoff(session, url_prod, timeout=20)
+                        except Exception as net_err:
+                            print(f"      ⚠️ No se pudo cargar el producto {url_prod}: {net_err}")
+                            continue
+
                         if res_prod.status_code != 200:
                             print(f"      ⚠️ Producto {url_prod} devolvió {res_prod.status_code}. Continuando...")
                             continue
@@ -496,6 +507,10 @@ def inyectar_en_bd():
                             sabor_norm = etiquetas.get('sabor')
                             if sabor_norm is None: sabor_norm = []
 
+                            categoria_id = mapa_categorias.get(etiquetas["categoria"])
+                            if not categoria_id:
+                                categoria_id = next(iter(mapa_categorias.values()))
+
                             nuevo_prod = models.Producto(
                                 nombre=nombre_norm,
                                 descripcion=descripcion_norm,
@@ -504,7 +519,7 @@ def inyectar_en_bd():
                                 imagen_url=str(imagen) if imagen else None,
                                 afiliado_url=url_afiliado,
                                 marca_id=marca_hsn.id,
-                                categoria_id=mapa_categorias[etiquetas["categoria"]],
+                                categoria_id=categoria_id,
                                 sabor=sabor_norm,
                                 formato=etiquetas.get("formato"),
                                 objetivo=objetivo_norm,
@@ -541,12 +556,12 @@ def inyectar_en_bd():
                             
                         time.sleep(0.3 + random.random() * 0.5)
                         
-                    except requests.exceptions.RequestException:
+                    except Exception:
                         continue 
                     
-            except requests.exceptions.RequestException as net_err:
+            except Exception as net_err:
                 # --- ESCUDO ANTI-APAGONES DE RED ---
-                print(f"   ⚠️ Corte de internet detectado en página {pagina}. Saltando...")
+                print(f"   ⚠️ Corte de internet detectado en página {pagina}: {net_err}. Saltando...")
                 time.sleep(2) # Pausa para que el router se recupere
                 break 
             except Exception as e:
