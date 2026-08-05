@@ -29,11 +29,12 @@ class Producto(Base):
     nombre = Column(String, index=True, nullable=False)
     descripcion = Column(String)
     precio = Column(Float, nullable=False)
-    precio_anterior = Column(Float, nullable=True)  
+    precio_anterior = Column(Float, nullable=True)
     imagen_url = Column(String)
     afiliado_url = Column(String)
 
     # --- NUEVAS COLUMNAS ---
+    tienda = Column(String, nullable=True)
     slug = Column(String, index=True) 
     peso_gramos = Column(Integer, nullable=True) # Ej: 1000 para 1kg, 2000 para 2kg
     precio_por_kg = Column(Float, nullable=True) # <-- Columna real

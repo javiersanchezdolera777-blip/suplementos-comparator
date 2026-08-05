@@ -2,15 +2,12 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import requests
-import zipfile
-import gzip
-import io
 import json
 import re
 import unicodedata
 import models
 from database import SessionLocal
+from ingestores.http_client import download_json_with_cache
 
 from schemas import (
     SaborEnum, FormatoEnum, ObjetivoEnum, SelloCalidadEnum, 
@@ -18,38 +15,19 @@ from schemas import (
     CategoriaEnum, normalizar_marca
 )
 
-URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"
-ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", "farma2go_temporal.json")
+URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059"
+ARCHIVO_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cache_ingestores", "farma2go_temporal.json")
 
 db = SessionLocal()
 
 def descargar_datos():
-    if os.path.exists(ARCHIVO_CACHE):
-        print("📦 Leyendo datos desde la caché local...")
-        with open(ARCHIVO_CACHE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    
-    print("🌐 Descargando catálogo desde Tradedoubler...")
-    response = requests.get(URL_FEED, headers={'User-Agent': 'Mozilla/5.0'})
-    
-    if response.status_code != 200:
-        print(f"🛑 Error HTTP: {response.status_code}")
-        sys.exit(1)
-
-    try:
-        datos_descomprimidos = gzip.decompress(response.content)
-        datos_json = json.loads(datos_descomprimidos)
-    except OSError:
-        try:
-            datos_json = response.json()
-        except Exception:
-            print("🛑 Error: El archivo no es GZIP ni JSON válido.")
-            sys.exit(1)
-            
-    with open(ARCHIVO_CACHE, 'w', encoding='utf-8') as f:
-        json.dump(datos_json, f, ensure_ascii=False, indent=4)
-        
-    return datos_json
+    return download_json_with_cache(
+        url=URL_FEED,
+        cache_path=ARCHIVO_CACHE,
+        ttl_hours=12,
+        timeout=45,
+        headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json, application/gzip"},
+    )
 
 def limpiar_texto(texto: str) -> str:
     if not texto: return ""
@@ -311,18 +289,25 @@ def clasificar_producto(nombre: str, desc_limpia: str):
 
 def inyectar_en_bd():
     print("🔄 Descargando y procesando datos de Farma2Go...")
+    datos = descargar_datos()
+    if not datos:
+        print("⚠️ No se recibieron datos del feed. Se aborta la inserción.")
+        return
     
     mapa_categorias = {}
     for cat in CategoriaEnum:
         cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
         if not cat_db:
-            cat_db = models.Categoria(nombre=cat.value)
-            db.add(cat_db)
-            db.commit()
-            db.refresh(cat_db)
-        mapa_categorias[cat.value] = cat_db.id
-
-    datos = descargar_datos()
+                try:
+                    cat_db = models.Categoria(nombre=cat.value)
+                    db.add(cat_db)
+                    db.commit()
+                    db.refresh(cat_db)
+                except Exception:
+                    db.rollback()
+                    cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+                    if not cat_db:
+                        raise
     productos_nuevos = []
     cache_marcas = {}
     
@@ -355,10 +340,16 @@ def inyectar_en_bd():
         if nombre_marca not in cache_marcas:
             marca_db = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
             if not marca_db:
-                marca_db = models.Marca(nombre=nombre_marca)
-                db.add(marca_db)
-                db.commit()
-                db.refresh(marca_db)
+                try:
+                    marca_db = models.Marca(nombre=nombre_marca)
+                    db.add(marca_db)
+                    db.commit()
+                    db.refresh(marca_db)
+                except Exception:
+                    db.rollback()
+                    marca_db = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
+                    if not marca_db:
+                        raise
             cache_marcas[nombre_marca] = marca_db.id
 
         precio = 0.0
@@ -388,6 +379,10 @@ def inyectar_en_bd():
 
         metricas = calcular_metricas_precio(item, precio)
         
+        categoria_id = mapa_categorias.get(etiquetas["categoria"])
+        if not categoria_id:
+            categoria_id = next(iter(mapa_categorias.values()))
+
         nuevo_producto = models.Producto(
             nombre=nombre,
             descripcion=desc_limpia[:900], 
@@ -395,8 +390,9 @@ def inyectar_en_bd():
             precio_anterior=precio_anterior,
             imagen_url=imagen_url,
             afiliado_url=afiliado_url,
+            tienda="Farma2Go",
             marca_id=cache_marcas[nombre_marca],
-            categoria_id=mapa_categorias[etiquetas["categoria"]],
+            categoria_id=categoria_id,
             
             sabor=etiquetas["sabor"],
             formato=etiquetas["formato"],
