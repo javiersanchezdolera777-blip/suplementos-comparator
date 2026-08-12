@@ -1,9 +1,9 @@
 name: Publicador Automático de Chollos en Telegram
 
 on:
-  # 1. Programado para ejecutarse a las 10:00, 15:00 y 20:00 (Hora UTC)
   schedule:
-    - cron: '0 10,15,20 * * *'
+    # 08:00, 13:00 y 18:00 UTC == 10:00, 15:00 y 20:00 hora de España (CEST)
+    - cron: '0 8,13,18 * * *'
   
   # 2. Permitir ejecución manual desde la pestaña "Actions" en GitHub
   workflow_dispatch:
