@@ -1,8 +1,8 @@
 # ⚡ Tus Suplementos - Informe de Estado del Proyecto y Arquitectura Actual
 
 > **Documento de Sincronización para Inteligencia Artificial (Gemini Agent / Equipo)**  
-> **Fecha de Actualización:** 02 de Agosto, 2026  
-> **Estado:** 1.784 Productos Oficiales (BBDD Local SQLite) | Backend & Frontend Sincronizados | Integración SEO, Legal y GA4 completada.
+> **Fecha de Actualización:** 12 de Agosto, 2026  
+> **Estado:** 1.784 Productos Oficiales (BBDD Local SQLite) | Backend & Frontend Sincronizados | Bot Telegram Activo | Afiliación Webgains.
 
 ---
 
@@ -33,6 +33,7 @@ app_suplementos/
 │   ├── models.py                # Modelos ORM SQLAlchemy: Producto, Marca, Categoria, Usuario, Favorito
 │   ├── schemas.py               # Schemas Pydantic & Enums: DTOs de respuesta en Inglés y validadores safe
 │   ├── ingestar_tradedoubler.py # Pipeline de datos: Descarga feed, clasifica, calcula slugs y sube a BD
+│   ├── send_telegram_deals.py   # Script de publicación automatizada de chollos en Telegram (Anti-duplicados)
 │   ├── reset_db.py              # Script de reseteo total de tablas de la base de datos
 │   ├── seed.py                  # Script de siembra inicial / mock para tests locales
 │   ├── database.py             # Configuración de conexiones SQLAlchemy (SQLite/Neon)
@@ -102,12 +103,15 @@ app_suplementos/
 - **Normalización:** Inclusión de `CategoriaEnum` y `normalizar_marca()`.
 
 ### 🎨 PR #24: Sprint UX/UI & Resiliencia del Modal
-- **Solución Definitiva de Z-Index:** Overlay del modal ajustado a `fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md`, flotando 100% por encima de la barra de búsqueda (`z-10`) y la Navbar (`z-50`).
-- **Centrado en Viewport:** Tarjeta interna configurada con `max-h-[85vh] my-auto overflow-y-auto` para garantizar espacio vertical en cualquier pantalla.
-- **Botón de Cierre 'X':** Reposicionado sin colisionar con el botón de Favoritos (que cuenta con margen de seguridad `pr-12`).
-- **Sanitización HTML:** Creado helper `decodeHTML()` en `ProductCard.tsx` que convierte entidades como `&#8211;` ➔ `–` y `&amp;` ➔ `&`.
-- **Auto-Reset de Descripción:** Creado helper `closeModal()` que resetea `isExpanded = false` al cerrar el modal, garantizando que vuelva a abrirse colapsado.
-- **Interactividad:** Clase `cursor-pointer` agregada en todos los elementos interactivos del Modal y Navbar.
+- **Solución Definitiva de Z-Index:** Overlay del modal ajustado a `fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md`.
+- **Centrado en Viewport:** Tarjeta interna configurada con `max-h-[85vh]`.
+- **Sanitización HTML y Texto:** Creados helpers `decodeHTML()` y `sanitizeDescription()` en `ProductCard.tsx` para sanear descripciones SEO basura. Layout purificado eliminando espaciadores rígidos.
+
+### 🤖 PR #25: Automatización, Bot de Telegram & Webgains
+- **Bot de Chollos (Telegram):** Creado `send_telegram_deals.py` que consulta chollos (>15% descuento) y los publica con foto, HTML y affiliate URL.
+- **Sistema Anti-duplicados:** Añadida columna booleana `publicado_telegram` en PostgreSQL para asegurar envíos únicos.
+- **GitHub Actions (Cron Job):** Creado workflow `.github/workflows/telegram_deals.yml` ejecutado 3 veces al día con Secrets configurados.
+- **Afiliación Webgains:** Cuenta validada con acceso solicitado a Aldous Bio, Naturecan, Nature's Finest y AliExpress.
 
 ---
 

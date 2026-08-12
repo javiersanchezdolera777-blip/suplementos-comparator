@@ -100,6 +100,11 @@ export default function ProductCard({ product }: { product: Product }) {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  const trackClick = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${apiUrl}/api/click/${product.id}`, { method: 'POST' }).catch(() => {});
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -320,7 +325,10 @@ export default function ProductCard({ product }: { product: Product }) {
               href={product.affiliate_url || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                trackClick();
+              }}
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
             >
               Ver oferta
@@ -461,6 +469,7 @@ export default function ProductCard({ product }: { product: Product }) {
                    href={product.affiliate_url || "#"} 
                    target="_blank" 
                    rel="noopener noreferrer" 
+                   onClick={trackClick}
                    className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
                  >
                    Ver oferta en la tienda oficial

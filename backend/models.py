@@ -38,7 +38,8 @@ class Producto(Base):
     slug = Column(String, index=True) 
     peso_gramos = Column(Integer, nullable=True) # Ej: 1000 para 1kg, 2000 para 2kg
     precio_por_kg = Column(Float, nullable=True) # <-- Columna real
-
+    clics_count = Column(Integer, default=0)     # NUEVO: Tracking de clics
+    publicado_telegram = Column(Boolean, default=False) # NUEVO: Control anti-duplicados Telegram
     
     # --- RELACIONES BÁSICAS ---
     categoria_id = Column(Integer, ForeignKey("categorias.id"))

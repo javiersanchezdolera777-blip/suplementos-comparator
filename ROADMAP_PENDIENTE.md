@@ -6,36 +6,32 @@
 
 ---
 
-## ✅ 0. Tareas Completadas Recientemente
-1. **Sitemap XML Dinámico y Marcado Schema.org (`Product` & `Offer`)** (Completado)
-2. **Meta-Tags OpenGraph & Favicon** (Completado)
-3. **Analítica y Afiliación:** GA4 y TradeTracker integrados. (Completado)
+## ✅ 0. Tareas Completadas Recientemente (Sprint Actual)
+1. **Frontend y UX/UI:** Layout natural sin espaciados artificiales, Sanitizador Inteligente de Descripciones (`sanitizeDescription`) y optimización del botón "Leer más" (>230 caracteres). (Completado)
+2. **Backend & Telegram Bot:** Script `send_telegram_deals.py` para publicación automática con fotos y formato HTML. Control Anti-Duplicados en PostgreSQL (columna `publicado_telegram`). (Completado)
+3. **DevOps & Automatización:** Workflow de GitHub Actions (`telegram_deals.yml`) con ejecución Cron 3 veces al día y GitHub Secrets inyectados. (Completado)
+4. **Integraciones & Afiliación:** Webgains (cuenta Particular aprobada) y registro en programas clave (Aldous Bio, Naturecan, AliExpress, etc.). (Completado)
+5. **Sitemap XML, OpenGraph, Schema.org & Analítica:** Completados en sprints previos.
 
-## 📋 1. Tareas Pendientes del Backlog Actual
+---
 
-### 🟢 Frontend & UX/UI (Javier)
-1. **Skeleton Loaders (Carga Suave):**
-   - Implementar componentes de carga parpadeante (`animate-pulse`) en `Catalog.tsx` mientras los productos son consultados a la API, eliminando parpadeos bruscos.
-2. **Omnibox / Buscador Global en Tiempo Real:**
-   - Desplegable inteligente en la barra de navegación que muestre sugerencias visuales instantáneas (con foto, marca y precio) al escribir en la barra de búsqueda.
-3. **Badge de Tienda Origen:**
-   - Mostrar un distintivo visual claro en cada tarjeta y en el modal ("Disponible en HSN", "Disponible en Farma2go", "Disponible en Bulk") para elevar la confianza del usuario.
-4. **Logo Vectorizado (SVG):**
-   - Incorporar versiones responsive del logo oficial en variante Light Mode y Dark Mode (Favicon ya completado).
+## 📋 1. Tareas Pendientes del Backlog Estratégico (Re-priorizado)
 
-### 🟡 Backend & Datos (Diego)
-1. **Endpoint de Tracking de Clics de Afiliado (`POST /api/click`):**
-   - Registrar cada clic en el botón "Ver oferta" (ID producto, timestamp, tienda origen, dispositivo) para medir conversiones reales de afiliación.
-2. **Automatización de Ingestas (CRON Job):**
-   - Configurar tareas programadas en el servidor/Render (1-2 veces al día) para ejecutar automáticamente `hsn.py`, `sportlive.py` y mantener precios/stock sincronizados sin bloqueos.
-3. **Fuzzy Search (Búsqueda Tolerante a Errores):**
-   - Implementar búsqueda flexible en PostgreSQL (`pg_trgm` o `ilike` mejorado) para tolerar errores tipográficos y tildes (ej: "creatina creapur", "proteina chocolat").
+### 📈 Bloque A: SEO Programático y Crecimiento Orgánico
+1. **Rutas Dinámicas SSR y Metadata:** Completar `/producto/[slug]/page.tsx` con SSR (`generateMetadata`) para indexación precisa de cada suplemento.
+2. **Páginas de Categoría y Marca:** Endpoints y vistas dinámicas (`/categoria/[slug]` y `/marca/[slug]`) con textos SEO autogenerados.
+3. **Fuzzy Search (Búsqueda Tolerante):** Implementar búsqueda flexible en PostgreSQL (`pg_trgm`) para tolerar errores ortográficos en el Omnibox.
 
-### 🔵 Agregador y Comparación Multi-tienda
-1. **Algoritmo de Agrupación Multi-tienda:**
-   - Algoritmo en backend para agrupar ofertas del mismo suplemento exacto vendidas en distintas tiendas (ej. HSN vs Farma2go vs Amazon).
-2. **Tabla Comparativa de Precios por Tienda:**
-   - Vista en modal o ficha donde el usuario vea una tabla ordenada de menor a mayor precio para elegir dónde comprar.
+### 🕸️ Bloque B: Sistema Avanzado de Ingestión (Scrapers y Agregadores)
+1. **Algoritmo de Agrupación Multi-tienda:** Backend capaz de detectar el mismo suplemento exacto en distintas tiendas para fusionarlo en una sola tarjeta ("Disponible desde X€").
+2. **Vista Comparativa Lado a Lado:** Modal donde el usuario vea una tabla comparativa de precios por tienda.
+3. **Automatización de Ingestas (CRON Job):** Configurar tareas programadas en Render/GitHub Actions para sincronizar precios y stock 1-2 veces al día de forma automática para `hsn.py`, `sportlive.py` y feeds futuros.
+
+### 👤 Bloque C: Conversión, Usuarios y Alertas
+1. **Sistema de "Avísame cuando baje de precio":** Alertas personalizadas (email/Telegram) para captación de leads.
+2. **Calculadora de Coste por Dosis / Toma Real:** Mostrar el precio por cazo/toma efectiva para atletas.
+3. **Tracking de Clics de Afiliado (`POST /api/click`):** Endpoint interno para medir en BBDD qué productos generan más clics salientes (conversión real).
+4. **Skeleton Loaders (Carga Suave):** Reemplazar los loadings bruscos por `animate-pulse` en `Catalog.tsx`.
 
 ---
 
@@ -73,15 +69,15 @@ Estas 6 funcionalidades elevarán la plataforma a nivel institucional, diferenci
 gantt
     title Hoja de Ruta de Desarrollo
     dateFormat  YYYY-MM-DD
-    section Sprint 1 - UX & Carga
-    Skeleton Loaders            :active, s1, 2026-07-29, 2d
-    Tracking Clics /api/click   :s2, 2026-07-31, 2d
-    section Sprint 2 - Branding & SEO
-    Meta-Tags OpenGraph & Favicon:s3, 2026-08-02, 2d
-    Schema.org JSON-LD          :s4, 2026-08-04, 2d
-    section Sprint 3 - Automatización & Valor
-    CRON Jobs de Ingesta        :s5, 2026-08-06, 2d
-    Calculadora Coste por Dosis :s6, 2026-08-08, 3d
+    section Bloque A - SEO Programático
+    SSR & Metadata Dinámico     :active, s1, 2026-08-14, 3d
+    Fuzzy Search                :s2, 2026-08-17, 2d
+    section Bloque B - Scrapers & Agregadores
+    Agrupación Multi-tienda     :s3, 2026-08-20, 4d
+    Automatización CRON Ingestas:s4, 2026-08-25, 2d
+    section Bloque C - Usuarios & Alertas
+    Alertas Bajas de Precio     :s5, 2026-08-28, 4d
+    Tracking Clics /api/click   :s6, 2026-09-02, 2d
 ```
 
 ---
