@@ -247,6 +247,16 @@ def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
 
+# --- RUTA DE TRACKING DE CLICS DE AFILIADOS ---
+@app.post("/api/click/{product_id}")
+def track_click(product_id: int, db: Session = Depends(get_db)):
+    # Incrementa el contador de clics del producto
+    producto = db.query(models.Producto).filter(models.Producto.id == product_id).first()
+    if producto:
+        producto.clics_count = (producto.clics_count or 0) + 1
+        db.commit()
+        return {"status": "ok", "clics": producto.clics_count}
+    raise HTTPException(status_code=404, detail="Producto no encontrado")
 
 # ==========================================
 # --- RUTAS DE AUTENTICACIÓN Y USUARIOS ---

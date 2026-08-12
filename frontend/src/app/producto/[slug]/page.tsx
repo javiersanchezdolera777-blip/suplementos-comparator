@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import TrackedAffiliateLink from '@/components/TrackedAffiliateLink';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -259,17 +260,16 @@ export default async function ProductDetailPage({ params }: Props) {
 
             {/* BOTÓN CTA COMPRA AFILIADO */}
             <div className="pt-4 border-t border-slate-100">
-              <a
+              <TrackedAffiliateLink
                 href={product.affiliate_url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
+                productId={product.id}
                 className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-base transition-all shadow-lg shadow-blue-600/25 active:scale-98 cursor-pointer"
               >
                 <span>Ver oferta en la tienda oficial</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-              </a>
+              </TrackedAffiliateLink>
             </div>
           </div>
         </div>
