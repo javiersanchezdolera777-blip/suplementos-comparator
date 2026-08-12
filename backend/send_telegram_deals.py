@@ -83,7 +83,8 @@ def send_telegram_deal(photo_url, caption):
         print(f"❌ Error de red al conectar con Telegram: {e}")
         return False
 
-def fetch_best_deals(limit=1, min_discount=15):
+
+def fetch_best_deals(limit=3, min_discount=15):
     """Consulta la base de datos en busca de los mejores chollos no publicados recientemente"""
     if not DB_URL:
         print("❌ Error: DATABASE_URL no está configurada.")
