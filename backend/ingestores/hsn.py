@@ -194,9 +194,9 @@ def inyectar_en_bd():
         cat_count = 0
         pagina = 1
         try:
-            max_paginas = int(os.getenv('HSN_MAX_PAGES', '20'))
+            max_paginas = int(os.getenv('HSN_MAX_PAGES', '50'))
         except Exception:
-            max_paginas = 20
+            max_paginas = 50
         
         while pagina <= max_paginas:
             url_pagina = f"{url_cat}?p={pagina}" if pagina > 1 else url_cat
