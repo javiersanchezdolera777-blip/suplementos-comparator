@@ -106,13 +106,12 @@ def obtener_productos(
     tipo_creatina: Optional[str] = None,
     perfil_aminoacidos: Optional[str] = None,
     tipo_vitamina: Optional[str] = None,
-    orden_precio: Optional[str] = None,
     busqueda: Optional[str] = None,
     q: Optional[str] = Query(None, description="Alias de búsqueda"),
     db: Session = Depends(get_db),
     porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
     solo_ofertas: Optional[bool] = Query(False, description="Muestra solo productos con descuento real"), 
-    ordenar_por: str = Query("relevancia", description="Orden de los resultados: relevancia, precio_kg_asc, etc."),
+    orden: str = Query("relevancia", description="Orden de resultados: relevancia, precio_asc, precio_desc, descuento"),
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200)
 ):
@@ -173,25 +172,20 @@ def obtener_productos(
         )
         
     # 7. ORDENACIÓN
-    if orden_precio == "asc":
+    if orden == "precio_asc":
         query = query.order_by(models.Producto.precio.asc())
-    elif orden_precio == "desc":
+    elif orden == "precio_desc":
         query = query.order_by(models.Producto.precio.desc())
-    elif ordenar_por == "precio_kg_asc":
-        query = query.order_by(models.Producto.precio_por_kg.asc().nulls_last())
-    elif ordenar_por == "descuento_desc":
-        descuento = (models.Producto.precio_anterior - models.Producto.precio) / models.Producto.precio_anterior
-        query = query.order_by(desc(descuento).nulls_last())
-    elif ordenar_por == "relevancia":
-        marcas_top = ['Optimum Nutrition', 'Dymatize', 'HSN', 'MuscleTech', 'Scitec Nutrition', 'California Gold Nutrition', 'Drasanvi', 'BSN', 'Cellucor', 'Nutrex']
-        categorias_top = ['Proteínas', 'Creatinas', 'Pre-Entrenos', 'Aminoácidos']
-
-        marca_score = case((models.Marca.nombre.in_(marcas_top), 10), else_=0)
-        categoria_score = case((models.Categoria.nombre.in_(categorias_top), 5), else_=0)
-
+    elif orden == "descuento":
+        # Ordenar por mayor importe descontado
+        query = query.order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+    else:
+        # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
+        # 1º Productos con más clics reales de usuarios
+        # 2º Orden natural de inyección (Página 1 de la tienda)
         query = query.order_by(
-            desc(marca_score + categoria_score),
-            desc(models.Producto.id)
+            models.Producto.clics_count.desc(),
+            models.Producto.id.asc()
         )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
