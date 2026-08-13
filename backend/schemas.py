@@ -76,14 +76,20 @@ class TipoVitaminaEnum(str, Enum):
     omega3 = "Omega-3"
 
 def normalizar_marca(nombre: str) -> str:
-    """
-    Recibe un nombre de marca caótico y lo devuelve limpio y capitalizado.
-    Ejemplo: "  my PROTEIN  " -> "My Protein"
-    """
     if not nombre:
         return "Desconocida"
-    # Quita espacios dobles y a los lados, y capitaliza cada palabra
-    return " ".join(nombre.split()).title()
+    n_limpio = " ".join(str(nombre).split()).title()
+    n_lower = n_limpio.lower()
+    
+    # Unificación estricta HSN
+    if n_lower in ["hsn", "hsn store", "hsnstore", "hsn-store"]:
+        return "HSN"
+    
+    # Erradicación de marcas fantasma (Nombres de tiendas)
+    if n_lower in ["sportlive", "sport live", "pharma2go", "farma2go", "desconocida"]:
+        return "Desconocida"
+        
+    return n_limpio
 
 # ==========================================
 # --- 2. LOS ESQUEMAS DE RESPUESTA (100% INGLÉS PARA EL FRONTEND) ---

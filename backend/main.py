@@ -60,11 +60,19 @@ def health_check():
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
-    marcas_db = db.query(models.Marca).all()
+    from sqlalchemy import func
+    marcas_activas = (
+        db.query(models.Marca)
+        .join(models.Producto)
+        .group_by(models.Marca.id)
+        .having(func.count(models.Producto.id) > 0)
+        .filter(models.Marca.nombre != "Desconocida")
+        .all()
+    )
     categorias_db = db.query(models.Categoria).all()
     
     return {
-        "brands": [m.nombre for m in marcas_db],
+        "brands": [m.nombre for m in marcas_activas],
         "categories": [c.nombre for c in categorias_db],
         "flavors": [sabor.value for sabor in schemas.SaborEnum],
         "formats": [formato.value for formato in schemas.FormatoEnum],
