@@ -81,11 +81,12 @@ def normalizar_marca(nombre: str) -> str:
     n_limpio = " ".join(str(nombre).split()).title()
     n_lower = n_limpio.lower()
     
-    # Unificación estricta HSN
-    if n_lower in ["hsn", "hsn store", "hsnstore", "hsn-store"]:
+    if n_lower in ["hsn", "hsn store", "hsnstore", "hsn-store", "hsn packs"]:
         return "HSN"
-    
-    # Erradicación de marcas fantasma (Nombres de tiendas)
+    if "now" in n_lower:
+        return "NOW Foods"
+    if "swanson" in n_lower:
+        return "Swanson"
     if n_lower in ["sportlive", "sport live", "pharma2go", "farma2go", "desconocida"]:
         return "Desconocida"
         
