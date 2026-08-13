@@ -116,11 +116,10 @@ def clasificar_producto(
     desc_limpia: str,
     categorias_raw: Optional[Union[List, str]] = None
 ) -> Optional[Dict[str, Any]]:
-    """Clasificador central enriquecido con vocabulario industrial y descarte estricto."""
+    """Clasificador central quirúrgico con resolución de colisiones y vocabulario hiper-enriquecido."""
     n = str(nombre or "").lower()
 
-    # 1. FILTRO DE BASURA EXTREMO (Cosmética, Tópico y Merchandising)
-    # NOTA: Incluimos cosméticos y cremas corporales (ej. gel reductor), permitiendo geles comestibles.
+    # 1. FILTRO DE BASURA EXTREMO (Solo merchandising, ropa, accesorios y cosmética/tópicos)
     basura = [
         "shaker", "mezclador", "toalla", "facial", "corporal", "champú", "champu",
         "dientes", "dental", "serum", "cosmética", "cosmetica", "higiene", "pañal", 
@@ -131,13 +130,12 @@ def clasificar_producto(
         "bebé", "infantil", "chupete", "biberón", "ortopedia", "muñequera", "rodillera", 
         "termómetro", "tiritas", "apósito", "venda", "alcohol", "agua micelar", 
         "desmaquillante", "balón", "balon", "neceser", "regalo", "botiquín", "óptica", 
-        "sexual", "perfumería", "camiseta", "mochila"
+        "sexual", "perfumería", "camiseta", "mochila", "pastillero"
     ]
 
     if any(p in n for p in basura):
         return None
 
-    # Filtro de categorías JSON si vienen del feed
     if categorias_raw:
         cat_list = [str(c).lower() for c in (categorias_raw if isinstance(categorias_raw, list) else [categorias_raw])]
         prohibidas = ["cosmética", "higiene", "bebé", "ortopedia", "facial", "corporal", "capilar", "solar", "maternidad", "infantil", "bucal", "dental", "botiquín", "óptica", "sexual", "perfumería"]
@@ -146,39 +144,59 @@ def clasificar_producto(
 
     c = {}
 
-    # 2. EVALUACIÓN DE LAS 8 CATEGORÍAS OFICIALES (VOCABULARIO ENRIQUECIDO)
-    
-    # A) PROTEÍNAS (Incluye Whey, Isolate, Caseínas, Hidrolizados como Evohydro, Albúmina y Gainers)
-    if any(p in n for p in [
+    # Detección de Colágeno y Espinacas para resolver colisiones
+    es_colageno = any(p in n for p in ["colágeno", "colageno", "collagen"])
+    es_espinaca = "espinaca" in n
+
+    # 2. EVALUACIÓN DE LAS 8 CATEGORÍAS (CON PRIORIDAD CORREGIDA)
+
+    # A) SALUD Y BIENESTAR (Máxima prioridad para Colágeno y Digestivos)
+    if es_colageno or any(p in n for p in [
+        "omega", "articulacio", "digestiv", "probiótico", "probiotico", 
+        "extracto", "cúrcuma", "curcuma", "ashwagandha", "espirulina", "spirulina", "ginseng", 
+        "ginkgo", "valeriana", "sueño", "ansiedad", "termogen", "evoburn", "evodren", "detox", 
+        "condroitina", "glucosamina", "evoptogen", "evoblocker", "estroblock", "glucomanano", 
+        "evosterone", "cla", "té verde", "resveratrol", "maca", "saw palmetto", "silicio", 
+        "psyllium", "inulina", "própolis", "hialurónico", "mct", "aceite de coco", "keto", 
+        "sauce", "pack", "giftbox", "melatonina", "aceite", "krill", "onagra", "bacalao", "care", 
+        "digezyme", "enzim", "enzima", "lactasa", "pepsina", "papaina", "msm", "uc-ii", "uc2", 
+        "5-htp", "5htp", "inositol", "same", "ala", "lipoico", "astaxantina", "coq10", "q10", 
+        "ubiquinol", "rutina", "antiox", "fórmula", "formula"
+    ]):
+        c["categoria"] = CategoriaEnum.salud.value
+
+    # B) PROTEÍNAS (Excluye colágeno explícitamente)
+    elif not es_colageno and any(p in n for p in [
         "whey", "protein", "proteína", "proteina", "isolate", "aislado", "evowhey", "evoisolate", 
         "casein", "caseína", "caseina", "evocasein", "albúmina", "albumina", "evoegg", "huevo", 
         "gainer", "evomass", "mass gainer", "hydro", "hidrolizad", "hidrolizado", "evohydro", "peptopro"
     ]): 
         c["categoria"] = CategoriaEnum.proteinas.value
 
-    # B) CREATINAS
+    # C) CREATINAS
     elif "creatin" in n or "kre-alkalyn" in n: 
         c["categoria"] = CategoriaEnum.creatinas.value
 
-    # C) AMINOÁCIDOS (Incluye Aminogramas Específicos, GABA, HMB, NAC)
-    elif any(p in n for p in [
+    # D) AMINOÁCIDOS (Resuelto el bug de espiNACa usando regex para \bnac\b)
+    elif not es_espinaca and (bool(re.search(r'\bnac\b', n)) or any(p in n for p in [
         "amino", "bcaa", "glutamina", "carnitina", "citrulina", "eaa", "leucina", "arginina", 
         "ornitina", "aspártico", "aspartico", "d-aa", "lisina", "taurina", "tirosina", 
         "tyrosine", "triptófano", "triptofano", "tryptophan", "beta-alanina", "alanina", 
-        "hmb", "gaba", "nac", "glutat"
-    ]): 
+        "hmb", "gaba", "glutat"
+    ])): 
         c["categoria"] = CategoriaEnum.aminoacidos.value
 
-    # D) PRE-ENTRENOS, INTRA Y RENDIMIENTO (Incluye Evobolic, Electrolitos, Isotónicos, Geles)
+    # E) PRE-ENTRENOS, INTRA Y RENDIMIENTO
     elif any(p in n for p in [
         "pre-entreno", "pre entreno", "gel energético", "gel energ", "evoenergy", "electrolito", 
         "electrolitos", "evolytes", "isotónico", "isotonico", "evotonic", "evorecovery", 
         "evocarbs", "evodextrin", "dextrina", "ciclodextrina", "amilopectina", "vitargo", 
-        "hidratación", "hidratacion", "evordx", "hydrop", "pump", "nitrico", "evobolic", "anabolic"
+        "hidratación", "hidratacion", "evordx", "hydrop", "pump", "nitrico", "evobolic", "anabolic", 
+        "cafeína", "cafeina", "caffeine", "teanina", "theanine"
     ]): 
         c["categoria"] = CategoriaEnum.pre_entrenos.value
 
-    # E) VITAMINAS Y MINERALES (Incluye Minerales Puros y Nombres Propios de HSN)
+    # F) VITAMINAS Y MINERALES
     elif any(p in n for p in [
         "vitamin", "mineral", "magnesio", "calcio", "zinc", "manganeso", "cromo", "picolinato", 
         "potasio", "sodio", "hierro", "yodo", "cobre", "selenio", "evovits", "evozma", "zma", 
@@ -186,33 +204,21 @@ def clasificar_producto(
     ]): 
         c["categoria"] = CategoriaEnum.vitaminas.value
 
-    # F) ALIMENTACIÓN SALUDABLE (Incluye Flapjacks, Barritas, Harinas y Snacks)
-    elif any(p in n for p in [
+    # G) ALIMENTACIÓN SALUDABLE (Incluye Espinaca y Cremas)
+    elif es_espinaca or any(p in n for p in [
         "harina", "copos", "mermelada", "avena", "eritritol", "peanut", "crema de cacahuete", 
         "crema de arroz", "salsa 0", "sirope 0", "snack", "gummy", "evogummy", "barrita", 
-        "flapjack", "energy bar", "bar", "galleta", "cookie", "pancake"
+        "flapjack", "energy bar", "bar", "galleta", "cookie", "pancake", "almendra", "pistacho", 
+        "semilla", "chía", "chia", "lino", "pipas", "calabaza", "chocolate", "tableta"
     ]): 
         c["categoria"] = CategoriaEnum.alimentacion.value
 
-    # G) SALUD Y BIENESTAR
-    elif any(p in n for p in [
-        "omega", "colágeno", "colageno", "articulacio", "digestiv", "probiótico", "probiotico", 
-        "extracto", "cúrcuma", "curcuma", "ashwagandha", "espirulina", "spirulina", "ginseng", 
-        "ginkgo", "valeriana", "sueño", "ansiedad", "termogen", "evoburn", "evodren", "detox", 
-        "condroitina", "glucosamina", "evoptogen", "evoblocker", "estroblock", "glucomanano", 
-        "evosterone", "cla", "té verde", "resveratrol", "maca", "saw palmetto", "silicio", 
-        "psyllium", "inulina", "própolis", "hialurónico", "mct", "aceite de coco", "keto", 
-        "sauce", "pack", "giftbox", "melatonina", "aceite esencial"
-    ]): 
+    else:
         c["categoria"] = CategoriaEnum.salud.value
 
-    else:
-        # Descarte estricto para lo que verdaderamente no sea suplementación ni alimentación
-        return None
-
-    # Subfiltros y Sabores (se mantiene igual)
+    # Subfiltros y Sabores
     texto_completo = n + " " + str(desc_limpia or "").lower()
-    c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein", "vegana", "vegetal"]) else False
+    c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein", "vegana", "vegetal", "100% vegano"]) else False
 
     sabores = []
     if "vainilla" in texto_completo: sabores.append(SaborEnum.vainilla.value)
@@ -227,14 +233,15 @@ def clasificar_producto(
     if not sabores: sabores.append(SaborEnum.neutro.value)
     c["sabor"] = sabores
 
+    # FORMATO: Priorizar título para cápsulas/perlas antes de buscar polvo
     c["formato"] = None
-    if any(p in texto_completo for p in ["cápsula", "capsula", "comprimido", "perla", "tableta"]): 
+    if any(p in n for p in ["cápsula", "capsula", "caps", "comprimido", "perla", "tableta", "tablets", "veg caps"]): 
         c["formato"] = FormatoEnum.capsulas.value
     elif any(p in texto_completo for p in ["vial", "gel", "líquido", "gotas"]): 
         c["formato"] = FormatoEnum.liquido.value
     elif any(p in texto_completo for p in ["polvo", "harina"]): 
         c["formato"] = FormatoEnum.polvo.value
-    elif "barrita" in texto_completo: 
+    elif "barrita" in texto_completo or "flapjack" in texto_completo: 
         c["formato"] = FormatoEnum.barrita.value
 
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c["perfil_aminoacidos"] = c["tipo_vitamina"] = None
@@ -246,7 +253,7 @@ def clasificar_producto(
             c["tipo_proteina"] = TipoProteinaEnum.isolate.value
         elif "caseina" in texto_completo or "casein" in texto_completo: 
             c["tipo_proteina"] = TipoProteinaEnum.caseina.value
-        elif "hidrolizado" in texto_completo: 
+        elif "hidrolizado" in texto_completo or "hydro" in texto_completo: 
             c["tipo_proteina"] = TipoProteinaEnum.hidrolizado.value
         else: 
             c["tipo_proteina"] = TipoProteinaEnum.whey.value

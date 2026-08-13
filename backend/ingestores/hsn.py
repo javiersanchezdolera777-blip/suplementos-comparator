@@ -286,35 +286,52 @@ def inyectar_en_bd():
                             imagen = datos_producto.get('image', '')
                             desc_cruda = datos_producto.get('description', '')
 
-                            precio = 0.0
+                            brand_raw = "HSN"
+                            if datos_producto:
+                                brand_data = datos_producto.get("brand")
+                                if isinstance(brand_data, dict):
+                                    brand_raw = brand_data.get("name") or "HSN"
+                                elif isinstance(brand_data, str) and brand_data.strip():
+                                    brand_raw = brand_data.strip()
+                            marca_final = normalizar_marca(brand_raw)
+
+                            marca_actual = db.query(models.Marca).filter_by(nombre=marca_final).first()
+                            if not marca_actual:
+                                try:
+                                    marca_actual = models.Marca(nombre=marca_final)
+                                    db.add(marca_actual)
+                                    db.commit()
+                                    db.refresh(marca_actual)
+                                except Exception:
+                                    db.rollback()
+                                    marca_actual = marca_hsn
+
                             precio_anterior = None
-                            ofertas = datos_producto.get('offers', {})
+                            raw_precio = None
+                            if datos_producto:
+                                offers = datos_producto.get("offers")
+                                if isinstance(offers, dict):
+                                    raw_precio = offers.get("price") or offers.get("lowPrice") or offers.get("highPrice")
+                                elif isinstance(offers, list) and len(offers) > 0:
+                                    first_offer = offers[0]
+                                    if isinstance(first_offer, dict):
+                                        raw_precio = first_offer.get("price") or first_offer.get("lowPrice")
+
+                            if not raw_precio and soup_prod:
+                                elem = soup_prod.select_one('[data-price-amount], .price-wrapper .price, .price-final_price .price')
+                                if elem:
+                                    raw_precio = elem.get('data-price-amount') or elem.get_text()
+                                    m = re.search(r'(\d+[.,]\d{2})', str(raw_precio))
+                                    if m: raw_precio = m.group(1)
+
                             try:
-                                if isinstance(ofertas, dict):
-                                    precio = float(ofertas.get('lowPrice', ofertas.get('price', 0.0) or 0.0))
-                                elif isinstance(ofertas, list):
-                                    for of in ofertas:
-                                        if isinstance(of, dict) and float(of.get('price', 0.0) or 0.0) > 0:
-                                            precio = float(of.get('price', 0.0)); break
-                            except Exception:
-                                precio = 0.0
-                        else:
-                            # intentar extraer precio desde el HTML ya parseado
-                            try:
-                                precio = 0.0
-                                precio_meta = soup_prod.find('meta', {'property': 'product:price:amount'})
-                                if precio_meta:
-                                    precio = float(precio_meta.get('content', 0.0))
-                                else:
-                                    precio_html = soup_prod.find('span', class_=re.compile(r'price'))
-                                    if precio_html:
-                                        txt = precio_html.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
-                                        match_precio = re.search(r'(\d+\.\d+)', txt)
-                                        if match_precio: precio = float(match_precio.group(1))
-                            except Exception:
+                                precio = float(str(raw_precio).replace(',', '.'))
+                            except (ValueError, TypeError):
                                 precio = 0.0
 
-                        if precio > 0:
+                            if precio <= 0:
+                                continue # Omitir si sigue siendo 0.0€
+
                             html_precio_viejo = soup_prod.find(class_=re.compile(r'old-price'))
                             if html_precio_viejo:
                                 html_span = html_precio_viejo.find('span', class_=re.compile(r'price'))
@@ -397,7 +414,7 @@ def inyectar_en_bd():
                                 imagen_url=str(imagen) if imagen else None,
                                 afiliado_url=url_afiliado,
                                 tienda="HSN",
-                                marca_id=marca_hsn.id,
+                                marca_id=marca_actual.id,
                                 categoria_id=categoria_id,
                                 sabor=sabor_norm,
                                 formato=etiquetas.get("formato"),
