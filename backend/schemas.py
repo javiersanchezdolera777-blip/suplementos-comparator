@@ -91,6 +91,8 @@ def normalizar_marca(nombre: str) -> str:
         "keto series", "ketoseries",
         "flavour series", "flavourseries",
         "myco nutrition", "myconutrition"
+        "bio series", "bioseries",
+        
     ]
     if any(linea in n_lower for linea in lineas_hsn):
         return "HSN"

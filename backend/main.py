@@ -57,6 +57,12 @@ def health_check():
     }
 
 
+# --- RUTA DE MARCAS (CON PRODUCTOS) ---
+@app.get("/api/marcas", response_model=List[schemas.BrandResponse])
+def listar_marcas(db: Session = Depends(get_db)):
+    """Devuelve únicamente las marcas que tienen productos en catálogo."""
+    return db.query(models.Marca).filter(models.Marca.productos.any()).order_by(models.Marca.nombre.asc()).all()
+
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
