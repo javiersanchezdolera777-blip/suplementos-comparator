@@ -15,7 +15,7 @@ import models
 import schemas
 from database import engine, SessionLocal
 import security
-from busqueda import normalizar_texto, expandir_terminos_busqueda
+from busqueda import expandir_terminos_busqueda
 
 # Orden de construcción
 models.Base.metadata.create_all(bind=engine)
