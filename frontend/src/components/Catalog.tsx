@@ -18,6 +18,17 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  useEffect(() => {
+    if (isMobileFilterOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isMobileFilterOpen]);
+
   const [totalResultados, setTotalResultados] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const BATCH_SIZE = 36;
@@ -37,6 +48,8 @@ export default function Catalog() {
   const [selectedVitaminType, setSelectedVitaminType] = useState("Todos");
   const [selectedAminoProfile, setSelectedAminoProfile] = useState("Todos");
   const [isVegan, setIsVegan] = useState<boolean | null>(null);
+  const [sinGluten, setSinGluten] = useState<boolean | null>(null);
+  const [sinLactosa, setSinLactosa] = useState<boolean | null>(null);
 
   const [categories, setCategories] = useState<string[]>(["Todas"]);
   const [brands, setBrands] = useState<string[]>(["Todas"]);
@@ -122,6 +135,8 @@ export default function Catalog() {
     if (selectedGoal !== "Todos") queryParams.append("objetivo", selectedGoal);
     if (selectedQualitySeal !== "Todos") queryParams.append("sello_calidad", selectedQualitySeal);
     if (isVegan === true) queryParams.append("es_vegano", "true");
+    if (sinGluten === true) queryParams.append("sin_gluten", "true");
+    if (sinLactosa === true) queryParams.append("sin_lactosa", "true");
 
     if (selectedCategory === "Proteínas") {
       if (selectedProteinType !== "Todos") queryParams.append("tipo_proteina", selectedProteinType);
@@ -156,7 +171,7 @@ export default function Catalog() {
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
     selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
-    isVegan, soloOfertas, apiUrl, currentPage
+    isVegan, sinGluten, sinLactosa, soloOfertas, apiUrl, currentPage
   ]);
 
   // Reset page to 1 when any filter changes
@@ -166,7 +181,7 @@ export default function Catalog() {
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
     selectedProteinType, selectedProteinPercentage, selectedCreatineType, selectedVitaminType, selectedAminoProfile,
-    isVegan, soloOfertas
+    isVegan, sinGluten, sinLactosa, soloOfertas
   ]);
 
   const handlePageChange = (page: number) => {
@@ -189,6 +204,8 @@ export default function Catalog() {
     setSelectedVitaminType("Todos");
     setSelectedAminoProfile("Todos");
     setIsVegan(null);
+    setSinGluten(null);
+    setSinLactosa(null);
     setIsMobileFilterOpen(false);
 
     if (soloOfertas) {
@@ -196,7 +213,7 @@ export default function Catalog() {
     }
   };
 
-  const hasActiveFilters = soloOfertas || selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
+  const hasActiveFilters = soloOfertas || selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || sinGluten === true || sinLactosa === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");
 
   // Filtrado de respaldo en cliente cuando soloOfertas está activo
   const productosFiltrados = soloOfertas
@@ -333,9 +350,13 @@ export default function Catalog() {
           aminoProfiles={aminoProfiles}
           isVegan={isVegan}
           setIsVegan={setIsVegan}
+          sinGluten={sinGluten}
+          setSinGluten={setSinGluten}
+          sinLactosa={sinLactosa}
+          setSinLactosa={setSinLactosa}
           limpiarFiltros={limpiarFiltros}
           hasActiveFilters={hasActiveFilters}
-          productosCount={productosFiltrados.length}
+          productosCount={totalResultados}
         />
 
         {/* ESCAPARATE DE PRODUCTOS */}

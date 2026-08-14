@@ -144,74 +144,89 @@ def clasificar_producto(
 
     c = {}
 
-    # Detección de Colágeno y Espinacas para resolver colisiones
+    # Detección de entidades base
     es_colageno = any(p in n for p in ["colágeno", "colageno", "collagen"])
     es_espinaca = "espinaca" in n
 
-    # 2. EVALUACIÓN DE LAS 8 CATEGORÍAS (CON PRIORIDAD CORREGIDA)
+    # Términos explícitos de proteína (incluye adjetivos 'proteico/proteica')
+    tiene_termino_proteina = any(p in n for p in [
+        "whey", "protein", "proteína", "proteina", "proteico", "proteica", 
+        "isolate", "aislado", "evowhey", "evoisolate", "casein", "caseína", 
+        "caseina", "evocasein", "albúmina", "albumina", "evoegg", "gainer", 
+        "evomass", "mass gainer", "hydro", "hidrolizad", "hidrolizado", 
+        "evohydro", "peptopro"
+    ])
 
-    # A) SALUD Y BIENESTAR (Máxima prioridad para Colágeno y Digestivos)
-    if es_colageno or any(p in n for p in [
-        "omega", "articulacio", "digestiv", "probiótico", "probiotico", 
-        "extracto", "cúrcuma", "curcuma", "ashwagandha", "espirulina", "spirulina", "ginseng", 
-        "ginkgo", "valeriana", "sueño", "ansiedad", "termogen", "evoburn", "evodren", "detox", 
-        "condroitina", "glucosamina", "evoptogen", "evoblocker", "estroblock", "glucomanano", 
-        "evosterone", "cla", "té verde", "resveratrol", "maca", "saw palmetto", "silicio", 
-        "psyllium", "inulina", "própolis", "hialurónico", "mct", "aceite de coco", "keto", 
-        "sauce", "pack", "giftbox", "melatonina", "aceite", "krill", "onagra", "bacalao", "care", 
-        "digezyme", "enzim", "enzima", "lactasa", "pepsina", "papaina", "msm", "uc-ii", "uc2", 
-        "5-htp", "5htp", "inositol", "same", "ala", "lipoico", "astaxantina", "coq10", "q10", 
+    # Términos específicos de alimentación preparada/postres proteicos
+    es_alimentacion_preparada = any(p in n for p in [
+        "pudding", "mousse", "flan", "natilla", "café proteico", "cafe proteico", 
+        "protein coffee", "tortita", "pancake", "cookie", "galleta", "barrita", 
+        "bar", "flapjack", "snack", "crema de", "peanut butter", "sirope", "salsa", 
+        "harina", "copos", "avena", "chía", "chia", "lino", "semilla", "pipas", 
+        "mermelada", "eritritol", "chocolate"
+    ])
+
+    # 1. SALUD Y BIENESTAR: Colágeno tiene prioridad absoluta
+    if es_colageno:
+        c["categoria"] = CategoriaEnum.salud.value
+
+    # 2. ALIMENTACIÓN SALUDABLE (Postres, cafés proteicos, cremas, harinas)
+    elif es_espinaca or es_alimentacion_preparada:
+        c["categoria"] = CategoriaEnum.alimentacion.value
+
+    # 3. PROTEÍNAS (Si contiene términos de proteína, NO debe ser secuestrado por 'digezyme' ni 'keto')
+    elif tiene_termino_proteina:
+        c["categoria"] = CategoriaEnum.proteinas.value
+
+    # 4. CREATINAS
+    elif "creatin" in n or "kre-alkalyn" in n:
+        c["categoria"] = CategoriaEnum.creatinas.value
+
+    # 5. AMINOÁCIDOS (Aminograma completo: L-Histidina, Metionina, Treonina, etc.)
+    elif bool(re.search(r'\bnac\b', n)) or any(p in n for p in [
+        "amino", "bcaa", "glutamina", "carnitina", "citrulina", "eaa", "leucina", 
+        "arginina", "arginine", "ornitina", "aspártico", "aspartico", "d-aa", "lisina", 
+        "lysine", "taurina", "tirosina", "tyrosine", "triptófano", "triptofano", 
+        "tryptophan", "beta-alanina", "alanina", "hmb", "gaba", "glutat",
+        "histidina", "histidine", "metionina", "methionine", "treonina", "threonine",
+        "fenilalanina", "phenylalanine", "valina", "valine", "isoleucina", "isoleucine",
+        "glicina", "glycine", "prolina", "serina", "cisteína", "cisteina"
+    ]):
+        c["categoria"] = CategoriaEnum.aminoacidos.value
+
+    # 6. PRE-ENTRENOS, INTRA Y RENDIMIENTO
+    elif any(p in n for p in [
+        "pre-entreno", "pre entreno", "gel energético", "gel energ", "evoenergy", 
+        "electrolito", "electrolitos", "evolytes", "isotónico", "isotonico", "evotonic", 
+        "evorecovery", "evocarbs", "evodextrin", "dextrina", "ciclodextrina", "amilopectina", 
+        "vitargo", "hidratación", "hidratacion", "evordx", "hydrop", "pump", "nitrico", 
+        "evobolic", "anabolic", "cafeína", "cafeina", "caffeine", "teanina", "theanine"
+    ]):
+        c["categoria"] = CategoriaEnum.pre_entrenos.value
+
+    # 7. VITAMINAS Y MINERALES
+    elif any(p in n for p in [
+        "vitamin", "mineral", "magnesio", "calcio", "zinc", "manganeso", "cromo", 
+        "picolinato", "potasio", "sodio", "hierro", "yodo", "cobre", "selenio", 
+        "evovits", "evozma", "zma", "multivitam"
+    ]):
+        c["categoria"] = CategoriaEnum.vitaminas.value
+
+    # 8. SALUD Y BIENESTAR GENERAL (Catch-All de Salud)
+    elif any(p in n for p in [
+        "omega", "articulacio", "digestiv", "probiótico", "probiotico", "extracto", 
+        "cúrcuma", "curcuma", "ashwagandha", "espirulina", "spirulina", "ginseng", 
+        "ginkgo", "valeriana", "sueño", "ansiedad", "termogen", "evoburn", "evodren", 
+        "detox", "condroitina", "glucosamina", "evoptogen", "evoblocker", "estroblock", 
+        "glucomanano", "evosterone", "cla", "té verde", "resveratrol", "maca", 
+        "saw palmetto", "silicio", "psyllium", "inulina", "própolis", "hialurónico", 
+        "mct", "aceite de coco", "keto", "sauce", "pack", "giftbox", "melatonina", 
+        "aceite", "krill", "onagra", "bacalao", "care", "digezyme", "enzim", "enzima", 
+        "lactasa", "pepsina", "papaina", "msm", "uc-ii", "uc2", "5-htp", "5htp", 
+        "inositol", "same", "ala", "lipoico", "astaxantina", "coq10", "q10", 
         "ubiquinol", "rutina", "antiox", "fórmula", "formula"
     ]):
         c["categoria"] = CategoriaEnum.salud.value
-
-    # B) PROTEÍNAS (Excluye colágeno explícitamente)
-    elif not es_colageno and any(p in n for p in [
-        "whey", "protein", "proteína", "proteina", "isolate", "aislado", "evowhey", "evoisolate", 
-        "casein", "caseína", "caseina", "evocasein", "albúmina", "albumina", "evoegg", "huevo", 
-        "gainer", "evomass", "mass gainer", "hydro", "hidrolizad", "hidrolizado", "evohydro", "peptopro"
-    ]): 
-        c["categoria"] = CategoriaEnum.proteinas.value
-
-    # C) CREATINAS
-    elif "creatin" in n or "kre-alkalyn" in n: 
-        c["categoria"] = CategoriaEnum.creatinas.value
-
-    # D) AMINOÁCIDOS (Resuelto el bug de espiNACa usando regex para \bnac\b)
-    elif not es_espinaca and (bool(re.search(r'\bnac\b', n)) or any(p in n for p in [
-        "amino", "bcaa", "glutamina", "carnitina", "citrulina", "eaa", "leucina", "arginina", 
-        "ornitina", "aspártico", "aspartico", "d-aa", "lisina", "taurina", "tirosina", 
-        "tyrosine", "triptófano", "triptofano", "tryptophan", "beta-alanina", "alanina", 
-        "hmb", "gaba", "glutat"
-    ])): 
-        c["categoria"] = CategoriaEnum.aminoacidos.value
-
-    # E) PRE-ENTRENOS, INTRA Y RENDIMIENTO
-    elif any(p in n for p in [
-        "pre-entreno", "pre entreno", "gel energético", "gel energ", "evoenergy", "electrolito", 
-        "electrolitos", "evolytes", "isotónico", "isotonico", "evotonic", "evorecovery", 
-        "evocarbs", "evodextrin", "dextrina", "ciclodextrina", "amilopectina", "vitargo", 
-        "hidratación", "hidratacion", "evordx", "hydrop", "pump", "nitrico", "evobolic", "anabolic", 
-        "cafeína", "cafeina", "caffeine", "teanina", "theanine"
-    ]): 
-        c["categoria"] = CategoriaEnum.pre_entrenos.value
-
-    # F) VITAMINAS Y MINERALES
-    elif any(p in n for p in [
-        "vitamin", "mineral", "magnesio", "calcio", "zinc", "manganeso", "cromo", "picolinato", 
-        "potasio", "sodio", "hierro", "yodo", "cobre", "selenio", "evovits", "evozma", "zma", 
-        "multivitam"
-    ]): 
-        c["categoria"] = CategoriaEnum.vitaminas.value
-
-    # G) ALIMENTACIÓN SALUDABLE (Incluye Espinaca y Cremas)
-    elif es_espinaca or any(p in n for p in [
-        "harina", "copos", "mermelada", "avena", "eritritol", "peanut", "crema de cacahuete", 
-        "crema de arroz", "salsa 0", "sirope 0", "snack", "gummy", "evogummy", "barrita", 
-        "flapjack", "energy bar", "bar", "galleta", "cookie", "pancake", "almendra", "pistacho", 
-        "semilla", "chía", "chia", "lino", "pipas", "calabaza", "chocolate", "tableta"
-    ]): 
-        c["categoria"] = CategoriaEnum.alimentacion.value
 
     else:
         c["categoria"] = CategoriaEnum.salud.value
@@ -219,6 +234,12 @@ def clasificar_producto(
     # Subfiltros y Sabores
     texto_completo = n + " " + str(desc_limpia or "").lower()
     c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein", "vegana", "vegetal", "100% vegano"]) else False
+    c["sin_gluten"] = any(p in texto_completo for p in [
+        "sin gluten", "gluten free", "gluten-free", "libre de gluten", "no gluten", "0% gluten"
+    ])
+    c["sin_lactosa"] = any(p in texto_completo for p in [
+        "sin lactosa", "lactose free", "lactose-free", "libre de lactosa", "no lactosa", "0% lactosa", "zero lactose"
+    ])
 
     sabores = []
     if "vainilla" in texto_completo: sabores.append(SaborEnum.vainilla.value)

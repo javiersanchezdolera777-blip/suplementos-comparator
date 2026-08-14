@@ -26,10 +26,10 @@ export default function Logo({ className = "", lightMode = false }: LogoProps = 
 
       {/* Tipografía de Marca */}
       <div className="flex items-baseline text-xl tracking-tight select-none">
-        <span className={`font-semibold ${lightMode ? "text-slate-300" : "text-slate-700 dark:text-slate-200"}`}>
+        <span className={`font-semibold ${lightMode ? "text-slate-300" : "text-slate-700"}`}>
           Tus
         </span>
-        <span className={`font-extrabold ml-1 ${lightMode ? "text-white" : "text-slate-900 dark:text-white"}`}>
+        <span className={`font-extrabold ml-1 ${lightMode ? "text-white" : "text-slate-900"}`}>
           Suplementos
         </span>
         <span className="text-blue-600 font-extrabold text-xl leading-none ml-0.5">

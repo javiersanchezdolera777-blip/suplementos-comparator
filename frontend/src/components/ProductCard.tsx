@@ -267,7 +267,6 @@ export default function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
 
-          {/* Icono de Favorito */}
           <div className="absolute top-3 right-3 z-20 group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
             <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
               isFavorite 
