@@ -1,7 +1,7 @@
 # Estado Actual del Proyecto
 
 ## Dominio y Entorno Operativo
-*   **Dominio Oficial Activo:** [https://tussuplementos.es](https://tussuplementos.es)
+*   **Dominio Oficial Activo (Canónico):** [https://www.tussuplementos.com](https://www.tussuplementos.com) (con redirección desde .es)
 *   **Backend URL:** Desplegado en Render (o similar configurado).
 *   **Frontend URL:** Desplegado en Vercel.
 

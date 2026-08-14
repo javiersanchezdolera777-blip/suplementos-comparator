@@ -18,11 +18,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tus Suplementos | Comparador de Precios de Nutrición Deportiva",
   description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
-  metadataBase: new URL('https://tussuplementos.es'),
+  metadataBase: new URL('https://www.tussuplementos.com'),
+  alternates: {
+    canonical: 'https://www.tussuplementos.com',
+  },
   openGraph: {
     title: "Tus Suplementos | Comparador de Precios de Nutrición Deportiva",
     description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
-    url: 'https://tussuplementos.es',
+    url: 'https://www.tussuplementos.com',
     siteName: 'Tus Suplementos',
     locale: 'es_ES',
     type: 'website',

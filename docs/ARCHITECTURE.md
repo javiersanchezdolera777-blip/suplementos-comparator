@@ -4,7 +4,7 @@ Este documento consolida la arquitectura tecnológica del proyecto, sirviendo co
 
 ## Stack Tecnológico Completo
 
-*   **Frontend:** Next.js App Router (React 19, TypeScript, Tailwind CSS). Alojado en **Vercel**.
+*   **Frontend:** Next.js App Router (React 19, TypeScript, Tailwind CSS). Alojado en **Vercel** (Dominio de producción: `https://www.tussuplementos.com` con redirección desde `.es`).
 *   **Backend:** FastAPI (Python). Alojado en **Render**.
 *   **Base de Datos:** PostgreSQL alojada en **Neon DB**.
 
