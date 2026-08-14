@@ -96,7 +96,7 @@ export default function FilterSidebar({
         ${
           isMobileFilterOpen
             ? "fixed inset-0 z-[100] bg-white p-5 overflow-y-auto block"
-            : "hidden md:block sticky top-20 w-full max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 text-left"
+            : "hidden md:block sticky top-20 w-full max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 text-left"
         }
       `}
     >
@@ -114,7 +114,7 @@ export default function FilterSidebar({
       </div>
 
       {/* Panel Estilizado Ultra-Compacto */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col gap-3.5">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-3.5">
         
         {/* 1. CATEGORÍA PRINCIPAL */}
         <div className="flex flex-col gap-1.5">
@@ -176,7 +176,7 @@ export default function FilterSidebar({
           </button>
 
           {openSections.subfilters !== false && (
-            <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-2.5 mt-0.5">
+            <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2.5 mt-0.5">
               {/* Formato */}
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
@@ -332,7 +332,7 @@ export default function FilterSidebar({
               </div>
 
               {/* Checkbox Vegano */}
-              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200/90 hover:bg-slate-100/60 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
                 <input
                   type="checkbox"
                   checked={isVegan === true}
@@ -462,7 +462,7 @@ export default function FilterSidebar({
               </div>
 
               {/* Lista de Checkboxes de Marcas (115px fijo) */}
-              <div className="h-[115px] max-h-[115px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar border border-slate-100 rounded-lg p-1 bg-slate-50/50">
+              <div className="h-[115px] max-h-[115px] overflow-y-auto pr-1 flex flex-col gap-0.5 custom-scrollbar border border-slate-100 rounded-lg p-1 bg-slate-50">
                 {brands
                   .filter((b) => b !== "Todas" && b.toLowerCase().includes(brandSearch.toLowerCase()))
                   .map((brand) => {
@@ -474,7 +474,7 @@ export default function FilterSidebar({
                         className={`flex items-center justify-between px-1.5 py-0.5 rounded text-[11px] font-medium cursor-pointer transition-colors select-none ${
                           isChecked
                             ? "bg-blue-50 text-blue-700 font-bold"
-                            : "hover:bg-slate-100/70 text-slate-700"
+                            : "hover:bg-slate-100 text-slate-700"
                         }`}
                       >
                         <div className="flex items-center gap-1.5 min-w-0">

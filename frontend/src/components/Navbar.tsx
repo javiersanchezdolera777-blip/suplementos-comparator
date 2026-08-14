@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import SearchOmnibox from './SearchOmnibox';
-
 export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
   const searchParams = useSearchParams();

@@ -5,7 +5,7 @@ Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 ## Sprint 1 (Quick Wins & UI)
 - [ ] Implementar un logo visible y optimizado para móvil.
 - [ ] Fix de la barra de búsqueda y optimización del menú responsive.
-- [ ] Implementar Modo Oscuro global usando `next-themes`.
+- [x] Estandarización de interfaz en Modo Claro Oficial de Alto Contraste (Descartado modo oscuro para optimizar visualización de producto y conversión).
 - [ ] Añadir filtros de alérgenos (Sin Gluten, Sin Lactosa) en el frontend y backend.
 
 ## Sprint 2 (Buscador & Automatización)

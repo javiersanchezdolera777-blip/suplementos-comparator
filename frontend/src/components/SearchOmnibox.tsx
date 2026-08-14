@@ -170,7 +170,7 @@ export default function SearchOmnibox() {
               setResults([]);
               setIsOpen(false);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 rounded-full cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded-full cursor-pointer"
             title="Limpiar búsqueda"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,12 +188,12 @@ export default function SearchOmnibox() {
             <div className="p-2 space-y-2">
               {[1, 2, 3].map((idx) => (
                 <div key={idx} className="flex items-center gap-3 animate-pulse p-1.5">
-                  <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex-shrink-0" />
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex-shrink-0" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded w-16" />
-                    <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-3/4" />
+                    <div className="h-2.5 bg-slate-100 rounded w-16" />
+                    <div className="h-3 bg-slate-100 rounded w-3/4" />
                   </div>
-                  <div className="w-12 h-5 bg-slate-100 dark:bg-slate-800 rounded-md" />
+                  <div className="w-12 h-5 bg-slate-100 rounded-md" />
                 </div>
               ))}
             </div>
@@ -209,10 +209,10 @@ export default function SearchOmnibox() {
                     key={product.id}
                     href={product.slug ? `/producto/${product.slug}` : `/#catalogo`}
                     onClick={handleSelectProduct}
-                    className="group flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl transition-colors cursor-pointer"
+                    className="group flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                   >
                     {/* Thumbnail 40x40px */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-slate-100 dark:border-slate-700/80 flex items-center justify-center overflow-hidden">
+                    <div className="w-10 h-10 flex-shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden">
                       {product.image_url && !failedImages[product.id] ? (
                         <img
                           src={product.image_url}
@@ -229,16 +229,16 @@ export default function SearchOmnibox() {
 
                     {/* Bloque Central (Marca + Título) */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase truncate">
+                      <div className="text-[10px] font-black tracking-wider text-slate-400 uppercase truncate">
                         {product.brand?.name || "Sin marca"}
                       </div>
-                      <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      <h4 className="text-xs font-semibold text-slate-800 line-clamp-1 group-hover:text-blue-600 transition-colors">
                         {formattedName}
                       </h4>
                     </div>
 
                     {/* Precio (Derecha) */}
-                    <div className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md ml-auto flex-shrink-0">
+                    <div className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-md ml-auto flex-shrink-0">
                       {priceToDisplay?.toFixed(2)} €
                     </div>
                   </Link>
@@ -248,7 +248,7 @@ export default function SearchOmnibox() {
               {/* Pie del Desplegable ("Ver todos") */}
               <button
                 onClick={handleGlobalSearch}
-                className="w-full text-left p-2.5 mt-1 text-xs font-bold text-blue-600 dark:text-blue-400 bg-slate-50/80 dark:bg-slate-800/40 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                className="w-full text-left p-2.5 mt-1 text-xs font-bold text-blue-600 bg-slate-50/80 hover:bg-blue-50 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
               >
                 <span>Ver todos los resultados para &quot;{query.trim()}&quot;</span>
                 <span className="text-sm font-extrabold ml-1">→</span>
