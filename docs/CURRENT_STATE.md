@@ -27,6 +27,7 @@
 - [x] SearchOmnibox reactivo con temporizador debounced de 200ms y conexión Fetch/XHR fluida.
 - [x] Rediseño UI del SearchOmnibox a 4 resultados premium con tipografía elegante y mayor legibilidad.
 - [x] Búsqueda predictiva y catálogo sincronizados con expansión de sinónimos multilingüe y soporte nativo de tildes.
+- [x] Pipeline maestro de actualización de precios (Python) y automatización programada diaria vía GitHub Actions (CRON 05:00 UTC).
 
 ## Tareas Pendientes Inmediatas (Next Steps)
 - [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.

@@ -12,7 +12,7 @@ Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 - [x] Motor Fuzzy Search (pg_trgm + unaccent) en PostgreSQL para tolerancia a erratas y tildes.
 - [x] Endpoint ligero `/api/productos/live-search` con ranking de relevancia.
 - [x] SearchOmnibox interactivo en vivo con miniaturas, precios y debouncing.
-- [ ] Pipeline de ejecución programada (CRON Scrapers) para actualización diaria de precios.
+- [x] Pipeline de ejecución programada (CRON Scrapers / GitHub Actions) para actualización diaria de precios.
 - [ ] Bot de Chollos de Telegram con alertas en tiempo real.
 
 ## Sprint 3 (Retención & Comunidad)

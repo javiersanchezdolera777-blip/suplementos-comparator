@@ -1,0 +1,30 @@
+name: CRON Diario de Actualización de Precios
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Todos los días a las 05:00 UTC
+  workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions de GitHub
+
+jobs:
+  actualizar-catalogo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias backend
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Ejecutar Pipeline de Actualización de Precios
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python backend/actualizador_precios.py --dry-run
