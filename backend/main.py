@@ -112,8 +112,8 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
 
         resultados = query.order_by(
             models.Producto.clics_count.desc(),
-            models.Producto.precio.asc()
-        ).limit(6).all()
+            models.Producto.id.asc()
+        ).limit(4).all()
 
         items = [
             {
