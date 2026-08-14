@@ -55,6 +55,8 @@ class Producto(Base):
     sabor = Column(JSON, default=list)
     formato = Column(String, nullable=True)                     # NUEVO: Polvo, Cápsulas, Líquido...
     es_vegano = Column(Boolean, default=False)   # NUEVO: True/False
+    sin_gluten = Column(Boolean, default=False, nullable=True, index=True)
+    sin_lactosa = Column(Boolean, default=False, nullable=True, index=True)
     sello_calidad = Column(String)               # NUEVO: Creapure, Lacprodan, Kyowa...
 
     # ==========================================

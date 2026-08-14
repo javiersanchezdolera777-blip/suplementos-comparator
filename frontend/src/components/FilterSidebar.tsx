@@ -41,6 +41,10 @@ interface FilterSidebarProps {
   aminoProfiles: string[];
   isVegan: boolean | null;
   setIsVegan: (vegan: boolean | null) => void;
+  sinGluten: boolean | null;
+  setSinGluten: (gluten: boolean | null) => void;
+  sinLactosa: boolean | null;
+  setSinLactosa: (lactosa: boolean | null) => void;
   limpiarFiltros: () => void;
   hasActiveFilters: boolean;
   productosCount: number;
@@ -85,6 +89,10 @@ export default function FilterSidebar({
   aminoProfiles,
   isVegan,
   setIsVegan,
+  sinGluten,
+  setSinGluten,
+  sinLactosa,
+  setSinLactosa,
   limpiarFiltros,
   hasActiveFilters,
   productosCount,
@@ -330,6 +338,28 @@ export default function FilterSidebar({
                   ))}
                 </select>
               </div>
+
+              {/* Checkbox Sin Gluten */}
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={sinGluten === true}
+                  onChange={(e) => setSinGluten(e.target.checked ? true : null)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-orange-500 focus:ring-orange-500 cursor-pointer"
+                />
+                <span className="text-[11px] font-bold text-slate-700">Sin Gluten</span>
+              </label>
+
+              {/* Checkbox Sin Lactosa */}
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={sinLactosa === true}
+                  onChange={(e) => setSinLactosa(e.target.checked ? true : null)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-blue-500 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-[11px] font-bold text-slate-700">Sin Lactosa</span>
+              </label>
 
               {/* Checkbox Vegano */}
               <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 transition-colors">

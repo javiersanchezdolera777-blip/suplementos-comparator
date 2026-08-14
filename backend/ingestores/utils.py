@@ -234,6 +234,12 @@ def clasificar_producto(
     # Subfiltros y Sabores
     texto_completo = n + " " + str(desc_limpia or "").lower()
     c["es_vegano"] = True if any(p in texto_completo for p in ["apto para veganos", "proteína vegana", "vegan protein", "vegana", "vegetal", "100% vegano"]) else False
+    c["sin_gluten"] = any(p in texto_completo for p in [
+        "sin gluten", "gluten free", "gluten-free", "libre de gluten", "no gluten", "0% gluten"
+    ])
+    c["sin_lactosa"] = any(p in texto_completo for p in [
+        "sin lactosa", "lactose free", "lactose-free", "libre de lactosa", "no lactosa", "0% lactosa", "zero lactose"
+    ])
 
     sabores = []
     if "vainilla" in texto_completo: sabores.append(SaborEnum.vainilla.value)

@@ -2,11 +2,11 @@
 
 Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 
-## Sprint 1 (Quick Wins & UI)
-- [ ] Implementar un logo visible y optimizado para móvil.
-- [ ] Fix de la barra de búsqueda y optimización del menú responsive.
-- [x] Estandarización de interfaz en Modo Claro Oficial de Alto Contraste (Descartado modo oscuro para optimizar visualización de producto y conversión).
-- [ ] Añadir filtros de alérgenos (Sin Gluten, Sin Lactosa) en el frontend y backend.
+## Sprint 1 (Quick Wins & UI) - [COMPLETADO ✅]
+- [x] Implementar un logo visible y optimizado para móvil (isotipo responsive y favicon oficial).
+- [x] Fix de la barra de búsqueda y optimización del menú responsive con bloqueo de scroll.
+- [x] Estandarización de interfaz en Modo Claro Oficial de Alto Contraste.
+- [x] Añadir filtros de alérgenos (Sin Gluten, Sin Lactosa) en el frontend y backend.
 
 ## Sprint 2 (Buscador & Automatización)
 - [ ] Integrar Fuzzy Search en PostgreSQL mediante la extensión `pg_trgm`.

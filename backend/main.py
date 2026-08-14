@@ -101,6 +101,8 @@ def obtener_productos(
     formatos: Optional[str] = Query(None),
     
     es_vegano: Optional[bool] = None,
+    sin_gluten: Optional[bool] = Query(None),
+    sin_lactosa: Optional[bool] = Query(None),
     sello_calidad: Optional[str] = None,
     tipo_proteina: Optional[str] = None,
     tipo_creatina: Optional[str] = None,
@@ -145,6 +147,10 @@ def obtener_productos(
 
     if es_vegano is not None:
         query = query.filter(models.Producto.es_vegano == es_vegano)
+    if sin_gluten is True:
+        query = query.filter(models.Producto.sin_gluten.is_(True))
+    if sin_lactosa is True:
+        query = query.filter(models.Producto.sin_lactosa.is_(True))
     if solo_ofertas:
         query = query.filter(
             models.Producto.precio_anterior.isnot(None),

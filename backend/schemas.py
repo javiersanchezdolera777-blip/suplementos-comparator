@@ -146,6 +146,8 @@ class ProductResponse(BaseModel):
     format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
     goals: Optional[List[str]] = Field(validation_alias="objetivos", default=None)
     is_vegan: bool = Field(validation_alias="es_vegano", default=False)
+    sin_gluten: bool = False
+    sin_lactosa: bool = False
     quality_seal: Optional[SelloCalidadEnum] = Field(validation_alias="sello_calidad", default=None)
 
     @field_validator("flavor", mode="before")
