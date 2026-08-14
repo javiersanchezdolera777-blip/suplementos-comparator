@@ -15,6 +15,7 @@ import models
 import schemas
 from database import engine, SessionLocal
 import security
+from busqueda import normalizar_texto, expandir_terminos_busqueda
 
 # Orden de construcción
 models.Base.metadata.create_all(bind=engine)
@@ -92,16 +93,11 @@ def obtener_filtros(db: Session = Depends(get_db)):
 
 @app.get("/api/productos/live-search")
 def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    termino = q.strip()
-    if not termino:
+    grupos_tokens = expandir_terminos_busqueda(q)
+    if not grupos_tokens:
         return {"productos": []}
 
     try:
-        term_norm = func.unaccent(func.lower(termino))
-        nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
-        marca_norm = func.unaccent(func.lower(models.Marca.nombre))
-        term_pattern = func.concat("%", term_norm, "%")
-
         query = db.query(
             models.Producto.id,
             models.Producto.nombre,
@@ -110,25 +106,26 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             models.Producto.imagen_url,
             models.Producto.precio.label("precio_minimo"),
             models.Producto.formato
-        ).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
-            or_(
-                nombre_norm.ilike(term_pattern),
-                marca_norm.ilike(term_pattern),
-                func.word_similarity(term_norm, nombre_norm) > 0.25,
-                func.similarity(term_norm, nombre_norm) > 0.15
-            )
-        ).order_by(
-            func.word_similarity(term_norm, nombre_norm).desc(),
-            models.Producto.precio.asc()
-        ).limit(6)
+        ).outerjoin(models.Marca).outerjoin(models.Categoria)
 
-        resultados = query.all()
+        # Cada grupo de tokens debe cumplirse (AND de los tokens, OR de sus sinónimos)
+        for grupo in grupos_tokens:
+            condiciones_token = []
+            for term in grupo:
+                patron = f"%{term}%"
+                condiciones_token.append(models.Producto.nombre.ilike(patron))
+                condiciones_token.append(models.Marca.nombre.ilike(patron))
+                condiciones_token.append(models.Categoria.nombre.ilike(patron))
+            query = query.filter(or_(*condiciones_token))
+
+        resultados = query.order_by(models.Producto.clics_count.desc(), models.Producto.precio.asc()).limit(6).all()
+
         items = [
             {
                 "id": r.id,
                 "nombre": r.nombre,
-                "marca": r.marca,
-                "categoria": r.categoria,
+                "marca": r.marca or "Genérico",
+                "categoria": r.categoria or "Suplementos",
                 "imagen_url": r.imagen_url,
                 "precio_minimo": float(r.precio_minimo) if r.precio_minimo is not None else None,
                 "formato": r.formato
@@ -136,28 +133,10 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             for r in resultados
         ]
         return {"productos": items}
+
     except Exception as e:
         print(f"[Error Live Search]: {e}")
-        # Fallback ILIKE
-        res = db.query(models.Producto).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
-            or_(
-                models.Producto.nombre.ilike(f"%{termino}%"),
-                models.Marca.nombre.ilike(f"%{termino}%")
-            )
-        ).limit(6).all()
-        items = [
-            {
-                "id": r.id,
-                "nombre": r.nombre,
-                "marca": r.marca.nombre if r.marca else None,
-                "categoria": r.categoria.nombre if r.categoria else None,
-                "imagen_url": r.imagen_url,
-                "precio_minimo": float(r.precio) if r.precio is not None else None,
-                "formato": r.formato
-            }
-            for r in res
-        ]
-        return {"productos": items}
+        return {"productos": []}
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
@@ -241,20 +220,18 @@ def obtener_productos(
     if perfil_aminoacidos: query = query.filter(models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%"))
     if tipo_vitamina: query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
         
-    # 6. Buscador de texto libre
+    # 6. Buscador de texto libre con Expansión Semántica
     busqueda_final = busqueda or q
     if busqueda_final:
-        term_norm = func.unaccent(func.lower(busqueda_final.strip()))
-        nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
-        marca_norm = func.unaccent(func.lower(models.Marca.nombre))
-        term_pattern = func.concat("%", term_norm, "%")
-        query = query.filter(
-            or_(
-                nombre_norm.ilike(term_pattern),
-                marca_norm.ilike(term_pattern),
-                func.word_similarity(term_norm, nombre_norm) > 0.25
-            )
-        )
+        grupos_tokens = expandir_terminos_busqueda(busqueda_final)
+        for grupo in grupos_tokens:
+            condiciones_token = []
+            for term in grupo:
+                patron = f"%{term}%"
+                condiciones_token.append(models.Producto.nombre.ilike(patron))
+                condiciones_token.append(models.Marca.nombre.ilike(patron))
+                condiciones_token.append(models.Categoria.nombre.ilike(patron))
+            query = query.filter(or_(*condiciones_token))
         
     # 7. ORDENACIÓN
     if orden == "precio_asc":

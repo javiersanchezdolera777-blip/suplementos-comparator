@@ -25,6 +25,7 @@
 - [x] Soporte de búsqueda insensible a acentos/tildes con extensión PostgreSQL unaccent.
 - [x] Algoritmo de ranking por word_similarity para términos cortos en títulos largos.
 - [x] SearchOmnibox reactivo con temporizador debounced de 200ms y conexión Fetch/XHR fluida.
+- [x] Motor de búsqueda semántica con expansión automática de sinónimos (ES/EN), normalización de tildes y prefix-matching en live-search y catálogo.
 
 ## Tareas Pendientes Inmediatas (Next Steps)
 - [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.
