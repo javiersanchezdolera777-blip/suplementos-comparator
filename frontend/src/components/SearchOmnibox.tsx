@@ -79,7 +79,8 @@ export default function SearchOmnibox() {
         return res.json();
       })
       .then((data) => {
-        setResults(data || []);
+        const lista = Array.isArray(data) ? data : (data.productos || []);
+        setResults(lista);
         setLoading(false);
       })
       .catch((err) => {

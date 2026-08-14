@@ -24,6 +24,7 @@
 - [x] Búsqueda predictiva tolerante a erratas (pg_trgm trigrams + Live Search dropdown en tiempo real).
 - [x] Soporte de búsqueda insensible a acentos/tildes con extensión PostgreSQL unaccent.
 - [x] Algoritmo de ranking por word_similarity para términos cortos en títulos largos.
+- [x] SearchOmnibox estabilizado con parseo defensivo (tolerante a arrays y objetos) y ranking unaccent + word_similarity.
 
 ## Tareas Pendientes Inmediatas (Next Steps)
 - [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.

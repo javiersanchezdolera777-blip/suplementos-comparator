@@ -94,15 +94,12 @@ def obtener_filtros(db: Session = Depends(get_db)):
 def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
     termino = q.strip()
     if not termino:
-        return []
+        return {"productos": []}
 
     try:
-        term_clean = f"%{termino}%"
-        
-        # Búsqueda insensible a mayúsculas y acentos con unaccent
+        term_norm = func.unaccent(func.lower(termino))
         nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
         marca_norm = func.unaccent(func.lower(models.Marca.nombre))
-        term_norm = func.unaccent(func.lower(termino))
         term_pattern = func.concat("%", term_norm, "%")
 
         query = db.query(
@@ -121,13 +118,12 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 func.similarity(term_norm, nombre_norm) > 0.15
             )
         ).order_by(
-            # Prioridad a coincidencia por palabra y luego mejor precio
             func.word_similarity(term_norm, nombre_norm).desc(),
             models.Producto.precio.asc()
         ).limit(6)
 
         resultados = query.all()
-        return [
+        items = [
             {
                 "id": r.id,
                 "nombre": r.nombre,
@@ -139,16 +135,17 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             }
             for r in resultados
         ]
+        return {"productos": items}
     except Exception as e:
         print(f"[Error Live Search]: {e}")
-        # Fallback de rescate estándar
+        # Fallback ILIKE
         res = db.query(models.Producto).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
             or_(
                 models.Producto.nombre.ilike(f"%{termino}%"),
                 models.Marca.nombre.ilike(f"%{termino}%")
             )
         ).limit(6).all()
-        return [
+        items = [
             {
                 "id": r.id,
                 "nombre": r.nombre,
@@ -160,6 +157,7 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             }
             for r in res
         ]
+        return {"productos": items}
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
