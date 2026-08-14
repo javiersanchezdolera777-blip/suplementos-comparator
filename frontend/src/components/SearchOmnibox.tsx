@@ -158,7 +158,7 @@ export default function SearchOmnibox() {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Buscar suplementos, marcas..."
-          className="w-full pl-10 pr-8 py-1.5 sm:py-2 bg-transparent text-slate-900 caret-slate-900 font-medium text-sm placeholder:text-slate-400 focus:outline-none"
+          className="w-full pl-10 pr-8 py-1.5 sm:py-2 bg-transparent text-slate-900 caret-slate-900 font-medium text-sm placeholder:text-slate-500 focus:outline-none"
           style={{ color: '#0f172a', caretColor: '#0f172a' }}
         />
 

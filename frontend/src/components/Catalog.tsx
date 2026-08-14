@@ -18,6 +18,17 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  useEffect(() => {
+    if (isMobileFilterOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isMobileFilterOpen]);
+
   const [totalResultados, setTotalResultados] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const BATCH_SIZE = 36;
@@ -335,7 +346,7 @@ export default function Catalog() {
           setIsVegan={setIsVegan}
           limpiarFiltros={limpiarFiltros}
           hasActiveFilters={hasActiveFilters}
-          productosCount={productosFiltrados.length}
+          productosCount={totalResultados}
         />
 
         {/* ESCAPARATE DE PRODUCTOS */}

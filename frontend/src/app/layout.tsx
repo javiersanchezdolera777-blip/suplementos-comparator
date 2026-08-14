@@ -40,6 +40,10 @@ export const metadata: Metadata = {
     title: "Tus Suplementos | Comparador de Precios de Nutrición Deportiva",
     description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
   },
+  icons: {
+    icon: '/Logo_icon2.png',
+    apple: '/Logo_icon2.png',
+  },
 };
 
 export default function RootLayout({
@@ -52,6 +56,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
       data-scroll-behavior="smooth"
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col max-w-full overflow-x-hidden" suppressHydrationWarning>
         <Providers>

@@ -25,7 +25,7 @@ export default function Navbar() {
           className="w-10 h-10 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform duration-200"
           priority
         />
-        <div className="flex items-baseline text-lg sm:text-xl md:text-2xl tracking-tight">
+        <div className="hidden sm:flex items-baseline text-lg sm:text-xl md:text-2xl tracking-tight">
           <span className="font-semibold text-slate-700">Tus</span>
           <span className="font-black text-slate-900 ml-1">Suplementos</span>
           <span className="text-blue-600 font-extrabold text-2xl leading-none ml-0.5">.</span>
