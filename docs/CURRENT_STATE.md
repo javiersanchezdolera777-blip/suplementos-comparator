@@ -20,6 +20,7 @@
 - [x] Purgado de marcas huérfanas y filtro en `GET /api/marcas` para no mostrar marcas con stock nulo.
 - [x] Despliegue de los cambios críticos a la rama `main` en GitHub (Pull Request #59).
 - [x] Soporte Full-Stack para filtrado de alérgenos (Sin Gluten, Sin Lactosa y Vegano).
+- [x] Branding y Favicon: Reemplazado favicon por defecto de Vercel por icon.png, apple-icon.png y versionado ?v=2 contra caché móvil.
 
 ## Tareas Pendientes Inmediatas (Next Steps)
 - [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.

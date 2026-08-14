@@ -41,8 +41,14 @@ export const metadata: Metadata = {
     description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
   },
   icons: {
-    icon: '/Logo_icon2.png',
-    apple: '/Logo_icon2.png',
+    icon: [
+      { url: '/Logo_icon2.png?v=2', sizes: 'any' },
+      { url: '/icon.png?v=2', type: 'image/png' },
+    ],
+    shortcut: '/Logo_icon2.png?v=2',
+    apple: [
+      { url: '/apple-icon.png?v=2', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
