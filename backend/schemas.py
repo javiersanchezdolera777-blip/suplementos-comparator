@@ -81,8 +81,21 @@ def normalizar_marca(nombre: str) -> str:
     n_limpio = " ".join(str(nombre).split()).title()
     n_lower = n_limpio.lower()
     
-    if n_lower in ["hsn", "hsn store", "hsnstore", "hsn-store", "hsn packs"]:
+    # 1. Gamas y submarcas propias de HSN -> Todas son marca "HSN"
+    lineas_hsn = [
+        "hsn", "hsn store", "hsnstore", "hsn-store", "hsn packs",
+        "sport series", "sportseries", 
+        "essential series", "essentialseries",
+        "raw series", "rawseries",
+        "food series", "foodseries",
+        "keto series", "ketoseries",
+        "flavour series", "flavourseries",
+        "myco nutrition", "myconutrition"
+    ]
+    if any(linea in n_lower for linea in lineas_hsn):
         return "HSN"
+        
+    # 2. Marcas externas reales vendidas en HSN
     if "now" in n_lower:
         return "NOW Foods"
     if "swanson" in n_lower:

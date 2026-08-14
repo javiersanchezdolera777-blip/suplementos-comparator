@@ -157,8 +157,10 @@ def inyectar_en_bd():
                     raise
 
         print("🧹 Limpiando catálogo antiguo de HSN...")
-        db.query(models.Producto).filter(models.Producto.marca_id == marca_hsn.id).delete()
+        # Borrado completo y directo por tienda para no dejar huérfanos
+        db.query(models.Producto).filter(models.Producto.tienda == "HSN").delete(synchronize_session=False)
         db.commit()
+        print("✨ Base de datos limpia de productos de HSN. Iniciando ingesta...")
 
         mapa_categorias = {}
         for cat in CategoriaEnum:
