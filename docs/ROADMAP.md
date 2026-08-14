@@ -9,7 +9,7 @@ Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 - [x] Añadir filtros de alérgenos (Sin Gluten, Sin Lactosa) en el frontend y backend.
 
 ## Sprint 2 (Buscador Inteligente & Automatización) - [EN PROGRESO 🟡]
-- [x] Motor Fuzzy Search con extensión pg_trgm en PostgreSQL para tolerancia a erratas.
+- [x] Motor Fuzzy Search (pg_trgm + unaccent) en PostgreSQL para tolerancia a erratas y tildes.
 - [x] Endpoint ligero `/api/productos/live-search` con ranking de relevancia.
 - [x] SearchOmnibox interactivo en vivo con miniaturas, precios y debouncing.
 - [ ] Pipeline de ejecución programada (CRON Scrapers) para actualización diaria de precios.

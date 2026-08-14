@@ -22,6 +22,8 @@
 - [x] Soporte Full-Stack para filtrado de alérgenos (Sin Gluten, Sin Lactosa y Vegano).
 - [x] Branding y Favicon: Reemplazado favicon por defecto de Vercel por icon.png, apple-icon.png y versionado ?v=2 contra caché móvil.
 - [x] Búsqueda predictiva tolerante a erratas (pg_trgm trigrams + Live Search dropdown en tiempo real).
+- [x] Soporte de búsqueda insensible a acentos/tildes con extensión PostgreSQL unaccent.
+- [x] Algoritmo de ranking por word_similarity para términos cortos en títulos largos.
 
 ## Tareas Pendientes Inmediatas (Next Steps)
 - [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.

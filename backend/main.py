@@ -91,50 +91,75 @@ def obtener_filtros(db: Session = Depends(get_db)):
     }
 
 @app.get("/api/productos/live-search")
-def live_search(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
-    """
-    Búsqueda predictiva optimizada para el Omnibox:
-    Combina coincidencia directa ILIKE con similitud trigram (pg_trgm) tolerante a erratas.
-    """
+def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
     termino = q.strip()
-    
-    # 1. Búsqueda por similitud de trigramas (tolerante a fallos) + coincidencia parcial
-    # Calculamos similitud para ordenar por relevancia
-    query = db.query(
-        models.Producto.id,
-        models.Producto.nombre,
-        models.Marca.nombre.label("marca"),
-        models.Categoria.nombre.label("categoria"),
-        models.Producto.imagen_url,
-        models.Producto.precio.label("precio_minimo"),
-        models.Producto.formato,
-        func.similarity(models.Producto.nombre, termino).label("similitud")
-    ).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
-        or_(
-            models.Producto.nombre.ilike(f"%{termino}%"),
-            models.Marca.nombre.ilike(f"%{termino}%"),
-            func.similarity(models.Producto.nombre, termino) > 0.15,
-            func.similarity(models.Marca.nombre, termino) > 0.3
-        )
-    ).order_by(
-        func.similarity(models.Producto.nombre, termino).desc(),
-        models.Producto.precio.asc()
-    ).limit(6)
+    if not termino:
+        return []
 
-    resultados = query.all()
-    
-    return [
-        {
-            "id": r.id,
-            "nombre": r.nombre,
-            "marca": r.marca,
-            "categoria": r.categoria,
-            "imagen_url": r.imagen_url,
-            "precio_minimo": float(r.precio_minimo) if r.precio_minimo else None,
-            "formato": r.formato
-        }
-        for r in resultados
-    ]
+    try:
+        term_clean = f"%{termino}%"
+        
+        # Búsqueda insensible a mayúsculas y acentos con unaccent
+        nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
+        marca_norm = func.unaccent(func.lower(models.Marca.nombre))
+        term_norm = func.unaccent(func.lower(termino))
+        term_pattern = func.concat("%", term_norm, "%")
+
+        query = db.query(
+            models.Producto.id,
+            models.Producto.nombre,
+            models.Marca.nombre.label("marca"),
+            models.Categoria.nombre.label("categoria"),
+            models.Producto.imagen_url,
+            models.Producto.precio.label("precio_minimo"),
+            models.Producto.formato
+        ).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
+            or_(
+                nombre_norm.ilike(term_pattern),
+                marca_norm.ilike(term_pattern),
+                func.word_similarity(term_norm, nombre_norm) > 0.25,
+                func.similarity(term_norm, nombre_norm) > 0.15
+            )
+        ).order_by(
+            # Prioridad a coincidencia por palabra y luego mejor precio
+            func.word_similarity(term_norm, nombre_norm).desc(),
+            models.Producto.precio.asc()
+        ).limit(6)
+
+        resultados = query.all()
+        return [
+            {
+                "id": r.id,
+                "nombre": r.nombre,
+                "marca": r.marca,
+                "categoria": r.categoria,
+                "imagen_url": r.imagen_url,
+                "precio_minimo": float(r.precio_minimo) if r.precio_minimo is not None else None,
+                "formato": r.formato
+            }
+            for r in resultados
+        ]
+    except Exception as e:
+        print(f"[Error Live Search]: {e}")
+        # Fallback de rescate estándar
+        res = db.query(models.Producto).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
+            or_(
+                models.Producto.nombre.ilike(f"%{termino}%"),
+                models.Marca.nombre.ilike(f"%{termino}%")
+            )
+        ).limit(6).all()
+        return [
+            {
+                "id": r.id,
+                "nombre": r.nombre,
+                "marca": r.marca.nombre if r.marca else None,
+                "categoria": r.categoria.nombre if r.categoria else None,
+                "imagen_url": r.imagen_url,
+                "precio_minimo": float(r.precio) if r.precio is not None else None,
+                "formato": r.formato
+            }
+            for r in res
+        ]
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
@@ -221,11 +246,14 @@ def obtener_productos(
     # 6. Buscador de texto libre
     busqueda_final = busqueda or q
     if busqueda_final:
-        termino = f"%{busqueda_final}%"
+        term_norm = func.unaccent(func.lower(busqueda_final.strip()))
+        nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
+        marca_norm = func.unaccent(func.lower(models.Marca.nombre))
         query = query.filter(
             or_(
-                models.Producto.nombre.ilike(termino),
-                models.Producto.descripcion.ilike(termino)
+                nombre_norm.ilike(func.concat("%", term_norm, "%")),
+                marca_norm.ilike(func.concat("%", term_norm, "%")),
+                func.word_similarity(term_norm, nombre_norm) > 0.25
             )
         )
         

@@ -212,7 +212,7 @@ export default function SearchOmnibox() {
                     <div className="w-10 h-10 flex-shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden relative">
                       {product.imagen_url && !failedImages[product.id] ? (
                         <img
-                          src={product.imagen_url}
+                          src={product.imagen_url || '/Logo_icon2.png'}
                           alt={formattedName}
                           onError={() => handleImageError(product.id)}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform"
