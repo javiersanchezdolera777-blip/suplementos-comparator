@@ -27,4 +27,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python backend/actualizador_precios.py --dry-run
+          python backend/actualizador_precios.py
