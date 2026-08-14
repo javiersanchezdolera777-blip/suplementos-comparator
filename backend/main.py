@@ -90,6 +90,52 @@ def obtener_filtros(db: Session = Depends(get_db)):
         "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum]
     }
 
+@app.get("/api/productos/live-search")
+def live_search(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
+    """
+    Búsqueda predictiva optimizada para el Omnibox:
+    Combina coincidencia directa ILIKE con similitud trigram (pg_trgm) tolerante a erratas.
+    """
+    termino = q.strip()
+    
+    # 1. Búsqueda por similitud de trigramas (tolerante a fallos) + coincidencia parcial
+    # Calculamos similitud para ordenar por relevancia
+    query = db.query(
+        models.Producto.id,
+        models.Producto.nombre,
+        models.Marca.nombre.label("marca"),
+        models.Categoria.nombre.label("categoria"),
+        models.Producto.imagen_url,
+        models.Producto.precio.label("precio_minimo"),
+        models.Producto.formato,
+        func.similarity(models.Producto.nombre, termino).label("similitud")
+    ).outerjoin(models.Marca).outerjoin(models.Categoria).filter(
+        or_(
+            models.Producto.nombre.ilike(f"%{termino}%"),
+            models.Marca.nombre.ilike(f"%{termino}%"),
+            func.similarity(models.Producto.nombre, termino) > 0.15,
+            func.similarity(models.Marca.nombre, termino) > 0.3
+        )
+    ).order_by(
+        func.similarity(models.Producto.nombre, termino).desc(),
+        models.Producto.precio.asc()
+    ).limit(6)
+
+    resultados = query.all()
+    
+    return [
+        {
+            "id": r.id,
+            "nombre": r.nombre,
+            "marca": r.marca,
+            "categoria": r.categoria,
+            "imagen_url": r.imagen_url,
+            "precio_minimo": float(r.precio_minimo) if r.precio_minimo else None,
+            "formato": r.formato
+        }
+        for r in resultados
+    ]
+
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(

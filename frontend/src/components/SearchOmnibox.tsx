@@ -6,15 +6,13 @@ import { useRouter } from "next/navigation";
 
 interface ProductSuggestion {
   id: number;
-  name: string;
+  nombre: string;
   slug?: string;
-  image_url: string;
-  price: number;
-  precio_actual?: number | null;
-  brand?: {
-    name: string;
-  };
-  tienda?: string | { name: string } | null;
+  imagen_url: string;
+  precio_minimo?: number | null;
+  marca?: string;
+  categoria?: string;
+  formato?: string;
 }
 
 const decodeHTML = (str: string) => {
@@ -73,7 +71,7 @@ export default function SearchOmnibox() {
 
     const controller = new AbortController();
 
-    fetch(`${apiUrl}/api/productos?busqueda=${encodeURIComponent(debouncedQuery)}&limit=4`, {
+    fetch(`${apiUrl}/api/productos/live-search?q=${encodeURIComponent(debouncedQuery)}`, {
       signal: controller.signal,
     })
       .then((res) => {
@@ -81,8 +79,7 @@ export default function SearchOmnibox() {
         return res.json();
       })
       .then((data) => {
-        const productosList = Array.isArray(data) ? data : data.productos || [];
-        setResults(productosList.slice(0, 4));
+        setResults(data || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -201,8 +198,8 @@ export default function SearchOmnibox() {
             /* Resultados de Coincidencias (Máximo 4) */
             <div className="space-y-1">
               {results.map((product) => {
-                const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name);
-                const priceToDisplay = product.precio_actual ?? product.price;
+                const formattedName = formatTitle(decodeHTML(product.nombre), product.marca);
+                const priceToDisplay = product.precio_minimo;
 
                 return (
                   <Link
@@ -212,25 +209,32 @@ export default function SearchOmnibox() {
                     className="group flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                   >
                     {/* Thumbnail 40x40px */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden">
-                      {product.image_url && !failedImages[product.id] ? (
+                    <div className="w-10 h-10 flex-shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden relative">
+                      {product.imagen_url && !failedImages[product.id] ? (
                         <img
-                          src={product.image_url}
+                          src={product.imagen_url}
                           alt={formattedName}
                           onError={() => handleImageError(product.id)}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                         />
                       ) : (
                         <div className="text-[9px] font-black text-slate-400 text-center uppercase">
-                          {product.brand?.name || "TS"}
+                          {product.marca || "TS"}
                         </div>
                       )}
                     </div>
 
-                    {/* Bloque Central (Marca + Título) */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-black tracking-wider text-slate-400 uppercase truncate">
-                        {product.brand?.name || "Sin marca"}
+                    {/* Bloque Central (Marca + Título + Categoría) */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase truncate">
+                          {product.marca || "Sin marca"}
+                        </span>
+                        {product.categoria && (
+                          <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            {product.categoria}
+                          </span>
+                        )}
                       </div>
                       <h4 className="text-xs font-semibold text-slate-800 line-clamp-1 group-hover:text-blue-600 transition-colors">
                         {formattedName}
@@ -238,8 +242,8 @@ export default function SearchOmnibox() {
                     </div>
 
                     {/* Precio (Derecha) */}
-                    <div className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-md ml-auto flex-shrink-0">
-                      {priceToDisplay?.toFixed(2)} €
+                    <div className="text-sm font-bold text-emerald-600 px-2 py-1 flex-shrink-0">
+                      {priceToDisplay ? `${priceToDisplay.toFixed(2)} €` : "-"}
                     </div>
                   </Link>
                 );
