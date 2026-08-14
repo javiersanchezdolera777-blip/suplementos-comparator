@@ -98,17 +98,9 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
         return {"productos": []}
 
     try:
-        query = db.query(
-            models.Producto.id,
-            models.Producto.nombre,
-            models.Marca.nombre.label("marca"),
-            models.Categoria.nombre.label("categoria"),
-            models.Producto.imagen_url,
-            models.Producto.precio.label("precio_minimo"),
-            models.Producto.formato
-        ).outerjoin(models.Marca).outerjoin(models.Categoria)
+        # Usamos la misma estructura de consulta que el catálogo principal
+        query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)
 
-        # Cada grupo de tokens debe cumplirse (AND de los tokens, OR de sus sinónimos)
         for grupo in grupos_tokens:
             condiciones_token = []
             for term in grupo:
@@ -118,24 +110,29 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-        resultados = query.order_by(models.Producto.clics_count.desc(), models.Producto.precio.asc()).limit(6).all()
+        resultados = query.order_by(
+            models.Producto.clics_count.desc(),
+            models.Producto.precio.asc()
+        ).limit(6).all()
 
         items = [
             {
-                "id": r.id,
-                "nombre": r.nombre,
-                "marca": r.marca or "Genérico",
-                "categoria": r.categoria or "Suplementos",
-                "imagen_url": r.imagen_url,
-                "precio_minimo": float(r.precio_minimo) if r.precio_minimo is not None else None,
-                "formato": r.formato
+                "id": p.id,
+                "nombre": p.nombre,
+                "marca": p.marca.nombre if p.marca else "HSN",
+                "categoria": p.categoria.nombre if p.categoria else "Suplementos",
+                "imagen_url": p.imagen_url,
+                "precio_minimo": float(p.precio) if p.precio is not None else None,
+                "formato": p.formato
             }
-            for r in resultados
+            for p in resultados
         ]
         return {"productos": items}
 
     except Exception as e:
+        import traceback
         print(f"[Error Live Search]: {e}")
+        traceback.print_exc()
         return {"productos": []}
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
