@@ -64,6 +64,11 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href="/Logo_icon2.png?v=3" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/Logo_icon2.png?v=3" type="image/png" />
+        <link rel="apple-touch-icon" href="/Logo_icon2.png?v=3" />
+      </head>
       <body className="min-h-full flex flex-col max-w-full overflow-x-hidden bg-slate-50 text-slate-900" suppressHydrationWarning>
         <Providers>
           {children}
