@@ -247,10 +247,11 @@ def obtener_productos(
         term_norm = func.unaccent(func.lower(busqueda_final.strip()))
         nombre_norm = func.unaccent(func.lower(models.Producto.nombre))
         marca_norm = func.unaccent(func.lower(models.Marca.nombre))
+        term_pattern = func.concat("%", term_norm, "%")
         query = query.filter(
             or_(
-                nombre_norm.ilike(func.concat("%", term_norm, "%")),
-                marca_norm.ilike(func.concat("%", term_norm, "%")),
+                nombre_norm.ilike(term_pattern),
+                marca_norm.ilike(term_pattern),
                 func.word_similarity(term_norm, nombre_norm) > 0.25
             )
         )
