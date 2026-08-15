@@ -22,6 +22,7 @@ Este documento sirve como la fuente de verdad absoluta sobre lo que está implem
 
 ### 3. DevOps y Automatización (Core)
 - **Pipelines en Producción:** El orquestador de precios (`actualizador_precios.py`) está funcional en GitHub Actions (`cron_precios.yml`) a las 05:00 UTC operando de forma desatendida sobre la base de datos real.
+- **Migraciones de Base de Datos (Alembic):** Control de versiones de esquema implementado en el backend, conectado dinámicamente vía variables de entorno sin exponer credenciales.
 
 ---
 
@@ -33,7 +34,6 @@ Este documento sirve como la fuente de verdad absoluta sobre lo que está implem
 
 ## 🔴 Deuda Técnica y Bugs Conocidos
 
-- **Vulnerabilidad de Migraciones:** No hay un sistema de control de versiones de la base de datos (como Alembic). Actualmente se usa `Base.metadata.create_all(bind=engine)`, lo que puede ser peligroso para futuras modificaciones estructurales en un entorno de producción con miles de usuarios.
 - **Dependencia de Scripts Bloqueantes:** La orquestación del backend asume que el scraping o la conexión a BD no excederán tiempos límites. Faltan *timeouts* consistentes en los scrapers de origen (`hsn.py`, etc.).
 - **Scraping Incompleto:** La base de datos tiene marcas como HSN preparadas, pero la ingesta de MyProtein y Prozis (requeridas en el Roadmap original) aún no está conectada al CRON principal.
 
