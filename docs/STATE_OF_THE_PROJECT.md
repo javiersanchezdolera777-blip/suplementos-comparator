@@ -12,6 +12,7 @@ Este documento sirve como la fuente de verdad absoluta sobre lo que está implem
 - **Autenticación (Google Auth / JWT):** Implementación sólida en `main.py` (`POST /api/auth/google`). Valida tokens de Google, crea/recupera usuarios en BD y emite un JWT firmado (`access_token`) con el framework de seguridad propietario (`security.py`).
 - **Sistema de Favoritos (Wishlist):** CRUD completo y protegido por JWT. Rutas `POST`, `GET` y `DELETE` funcionales bajo `/api/favoritos`. Utiliza eliminación en cascada (`ON DELETE CASCADE`) para mantener la integridad referencial.
 - **Buscador Inteligente (Fuzzy Search & NLP):** Motor semántico (`busqueda.py`) con diccionario bidireccional multilingüe y soporte de tildes. Totalmente integrado en el endpoint predictivo `/api/productos/live-search`, **que ahora incorpora un Sistema de Relevancia por similitud de texto (usando `func.similarity()` de `pg_trgm`) para ordenar los resultados.**
+- **Saneamiento de Catálogo:** Descripciones normalizadas (Scrubber v2.0 implementado), con capitalización corregida y CTAs agresivos eliminados mediante borrado por límite de oración.
 - **Arquitectura de Modelos:** `models.py` robusto con control de clics (`clics_count`), control de notificaciones (`publicado_telegram`), control de historial de precio (`precio_anterior`) y metadatos nutricionales en JSON (objetivos, sabores, sellos de calidad).
 
 ### 2. Frontend (Next.js 14 App Router + Tailwind CSS)
@@ -35,7 +36,7 @@ Este documento sirve como la fuente de verdad absoluta sobre lo que está implem
 
 ## 🔴 Deuda Técnica y Bugs Conocidos
 
-- **El Scrubber de Descripciones (v1):** El script `clean_descriptions.py` limpia parte del texto, pero la Regex falla al capitalizar tras signos de apertura (¿, ¡) y sigue dejando CTAs intrusivos ("compra", "Garantía HSN"). Requiere refactorización.
+- **Límites del Scrubber (NLP):** Las expresiones regulares no pueden detectar frases promocionales complejas o ambiguas (ej. "al mejor precio", "envíos 24h"). Queda pendiente para un futuro Sprint refactorizar este proceso usando una API de IA generativa para reescribir los textos garantizando un 100% de neutralidad.
 - **Dependencia de Scripts Bloqueantes:** La orquestación del backend asume que el scraping o la conexión a BD no excederán tiempos límites. Faltan *timeouts* consistentes en los scrapers de origen (`hsn.py`, etc.).
 - **Scraping Incompleto:** La base de datos tiene marcas como HSN preparadas, pero la ingesta de MyProtein y Prozis (requeridas en el Roadmap original) aún no está conectada al CRON principal.
 

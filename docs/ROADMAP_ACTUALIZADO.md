@@ -26,18 +26,19 @@ Este Roadmap refleja el progreso real de la plataforma "Tus Suplementos" y defin
 ## Sprint 3 (Expansión de Catálogo y Retención) - [NUEVO SPRINT ACTIVO 🔵]
 Este Sprint se centra en aportar el verdadero valor del comparador: múltiples tiendas y alertas directas al usuario.
 
-- **[ ] 3.1 Integración de Nuevas Tiendas:**
+- **[ ] 3.1 Captación y Comunidad (Frontend):**
+  - Diseño Frontend (React/Tailwind): Banner promocional del canal de Telegram.
+  - Diseño Frontend (React/Tailwind): Formulario UI para captación de leads (Newsletter).
+- **[ ] 3.2 Lógica Backend (Captación):**
+  - Crear endpoint en FastAPI para registrar emails de la Newsletter de forma segura.
+- **[ ] 3.3 Motor de Alertas por Email (Backend):**
+  - Integración con Resend/SendGrid.
+  - Lógica de cruce: Notificar a los usuarios cuando un producto de sus `/favoritos` baje de precio.
+- **[ ] 3.4 Integración de Nuevas Tiendas:**
   - Conectar y estabilizar los ingestores de **MyProtein** y **Prozis** al CRON diario de actualizaciones.
-- **[ ] 3.2 Alertas de Favoritos por Email (Backend):**
-  - Lógica de cruce entre Favoritos y bajadas de precio para Alertas por Email.
-  - Configurar un proveedor de Email (SendGrid o Resend) para notificar al usuario cuando su suplemento favorito baja de precio.
-- **[ ] 3.3 Captación y Comunidad (Frontend):**
-  - Crear componente UI para captación de Newsletter.
-  - Añadir banner o botón visible del canal de Telegram ("Únete al canal de Chollos en Telegram") para monetizar/fidelizar el tráfico.
-- **[ ] 3.4 Refactorización de Datos:**
-  - Refactorizar la Regex del Scrubber (`clean_descriptions.py`) para dejar los textos 100% neutrales y reparar errores de capitalización.
-- **[x] 3.5 Deuda Técnica (Migraciones):**
-  - Implementar **Alembic** para el control de versiones de la estructura de PostgreSQL (Baseline completada).
+- **[x] 3.5 Deuda Técnica (Migraciones y Saneamiento):**
+  - Implementar **Alembic** para el control de versiones de PostgreSQL (Baseline completada).
+  - Scrubber v2.0 implementado para descripciones, aunque pendiente de futura refactorización con IA.
 
 ## Sprint 4 (SEO y Comunidad) - [PLANIFICADO ⚪]
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
