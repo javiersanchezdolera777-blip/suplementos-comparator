@@ -111,7 +111,7 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             query = query.filter(or_(*condiciones_token))
 
         # Añadimos puntuación semántica para ordenación
-        text_score = func.similarity(models.Producto.nombre, termino).label('text_score')
+        text_score = func.similarity(models.Producto.nombre, q).label('text_score')
         resultados = query.order_by(
             text_score.desc(),
             models.Producto.clics_count.desc(),
