@@ -110,7 +110,10 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
+        # Añadimos puntuación semántica para ordenación
+        text_score = func.similarity(models.Producto.nombre, termino).label('text_score')
         resultados = query.order_by(
+            text_score.desc(),
             models.Producto.clics_count.desc(),
             models.Producto.id.asc()
         ).limit(4).all()
@@ -240,12 +243,21 @@ def obtener_productos(
         query = query.order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
-        # 1º Productos con más clics reales de usuarios
-        # 2º Orden natural de inyección (Página 1 de la tienda)
-        query = query.order_by(
-            models.Producto.clics_count.desc(),
-            models.Producto.id.asc()
-        )
+        if busqueda_final:
+            # 1º Similitud de texto (pg_trgm)
+            # 2º Clics reales de usuarios
+            # 3º Orden natural de inyección
+            text_score = func.similarity(models.Producto.nombre, busqueda_final).label('text_score')
+            query = query.order_by(
+                text_score.desc(),
+                models.Producto.clics_count.desc(),
+                models.Producto.id.asc()
+            )
+        else:
+            query = query.order_by(
+                models.Producto.clics_count.desc(),
+                models.Producto.id.asc()
+            )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
     # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON!

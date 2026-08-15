@@ -21,22 +21,12 @@ def sanitize_text(text: str) -> str:
     if not text:
         return text
     
-    # 1. Eliminar CTAs intrusivos (Ignorando mayúsculas/minúsculas)
-    cta_patterns = [
-        r"¡?cómpralo en hsn!?\s*",
-        r"¡?haz tu pedido hoy!?\s*",
-        r"¡?compra ahora!?\s*",
-        r"encuentra esto en hsn\s*",
-        r"garantía hsn\s*",
-        r"¡?compra( aquí)?!?\s*",
-        r"visita nuestra tienda\s*",
-        r"haz click aquí\s*"
-    ]
-    for pattern in cta_patterns:
-        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+    # 1. BORRADO NUCLEAR DE ORACIONES: Elimina cualquier oración completa que contenga palabras prohibidas
+    # Busca desde el inicio de la frase hasta el punto/exclamación final.
+    nuclear_pattern = re.compile(r'(?i)[¡¿]?[^.!?]*(?:compra|cómpralo|pedido|garantía|hsn|myprotein|prozis|envío gratis|descuento)[^.!?]*[.!?]*')
+    text = nuclear_pattern.sub('', text)
     
-    # 2. Corregir formato: asegurar mayúscula después de punto, interrogación, exclamación (cierre y apertura)
-    # Busca . ! ? ¡ ¿ seguido de espacios y una minúscula
+    # 2. Corregir formato: asegurar mayúscula después de punto, interrogación, exclamación
     def capitalize_match(match):
         symbol = match.group(1)
         letter = match.group(2).upper()
@@ -50,9 +40,8 @@ def sanitize_text(text: str) -> str:
     # 3. Limpiar espacios extra creados por las eliminaciones
     text = re.sub(r"\s{2,}", " ", text).strip()
 
-    # 4. Capitalizar la primera letra del string completo (si es minúscula o símbolo)
+    # 4. Capitalizar la primera letra del string completo
     if text:
-        # Encontrar el primer caracter alfanumérico
         match = re.search(r"[a-zñáéíóú]", text, re.IGNORECASE)
         if match and match.group(0).islower():
             idx = match.start()
