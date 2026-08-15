@@ -13,10 +13,10 @@ Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 - [x] Endpoint ligero `/api/productos/live-search` con ranking de relevancia.
 - [x] SearchOmnibox interactivo en vivo con miniaturas, precios y debouncing.
 - [x] Pipeline de ejecución programada (CRON Scrapers / GitHub Actions) para actualización diaria de precios.
-- [ ] Bot de Chollos de Telegram con alertas en tiempo real.
+- [ ] Bot de Chollos de Telegram con alertas en tiempo real (botón en web para unirse al canal)
 
 ## Sprint 3 (Retención & Comunidad)
-- [ ] Sistema de alertas de bajada de precio notificadas por email.
+- [ ] Sistema de alertas de bajada de precio notificadas por email (newsletter)
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
 - [ ] Inyección dinámica de Schema.org JSON-LD para productos y categorías.
 - [ ] Estrategia de SEO programático.
