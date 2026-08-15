@@ -18,7 +18,8 @@ Este Roadmap refleja el progreso real de la plataforma "Tus Suplementos" y defin
 - [x] Endpoint ligero `/api/productos/live-search` con ranking de relevancia y normalización bidireccional de sinónimos.
 - [x] SearchOmnibox interactivo en vivo con diseño premium de 4 resultados.
 - [x] Pipeline de ejecución programada (CRON Scrapers / GitHub Actions) para actualización diaria de precios desatendida.
-- [x] Bot de Chollos de Telegram desplegado con Strict CI/CD (Pendiente de verificación en el próximo CRON).
+- [x] Bot de Chollos de Telegram desplegado con Strict CI/CD (Verificado funcionamiento autónomo en GitHub Actions).
+- [x] Sistema de Relevancia (Ordenación por similitud de texto `pg_trgm` en el buscador).
 
 ---
 
@@ -27,13 +28,16 @@ Este Sprint se centra en aportar el verdadero valor del comparador: múltiples t
 
 - **[ ] 3.1 Integración de Nuevas Tiendas:**
   - Conectar y estabilizar los ingestores de **MyProtein** y **Prozis** al CRON diario de actualizaciones.
-- **[ ] 3.2 Alertas de Favoritos por Email:**
-  - Modificar el orquestador de precios para cruzar bajadas de precio con la tabla de `Favoritos`.
+- **[ ] 3.2 Alertas de Favoritos por Email (Backend):**
+  - Lógica de cruce entre Favoritos y bajadas de precio para Alertas por Email.
   - Configurar un proveedor de Email (SendGrid o Resend) para notificar al usuario cuando su suplemento favorito baja de precio.
-- **[ ] 3.3 UI de Telegram en la Web:**
-  - Añadir un banner o botón visible en el Frontend ("Únete al canal de Chollos en Telegram") para monetizar/fidelizar el tráfico.
-- **[ ] 3.4 Deuda Técnica (Migraciones):**
-  - Implementar **Alembic** para el control de versiones de la estructura de PostgreSQL (fundamental antes de que la base de usuarios crezca).
+- **[ ] 3.3 Captación y Comunidad (Frontend):**
+  - Crear componente UI para captación de Newsletter.
+  - Añadir banner o botón visible del canal de Telegram ("Únete al canal de Chollos en Telegram") para monetizar/fidelizar el tráfico.
+- **[ ] 3.4 Refactorización de Datos:**
+  - Refactorizar la Regex del Scrubber (`clean_descriptions.py`) para dejar los textos 100% neutrales y reparar errores de capitalización.
+- **[x] 3.5 Deuda Técnica (Migraciones):**
+  - Implementar **Alembic** para el control de versiones de la estructura de PostgreSQL (Baseline completada).
 
 ## Sprint 4 (SEO y Comunidad) - [PLANIFICADO ⚪]
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
