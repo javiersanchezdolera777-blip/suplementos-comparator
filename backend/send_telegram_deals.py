@@ -131,8 +131,8 @@ if __name__ == "__main__":
     print(f"🔒 AUDITORÍA DE ENTORNO: Token inyectado inicia por '{TELEGRAM_BOT_TOKEN[:4] if TELEGRAM_BOT_TOKEN else 'NULL'}'")
     print("🔍 Buscando chollos pendientes en la base de datos...")
     
-    # ⚠️ Ajustamos temporalmente a 1% para asegurar que encuentre algo en el test
-    chollos = fetch_best_deals(limit=1, min_discount=1)
+    # Valores de producción restaurados
+    chollos = fetch_best_deals(limit=3, min_discount=15)
 
     if not chollos:
         print("ℹ️ Todo al día. No hay nuevos chollos pendientes.")
@@ -141,3 +141,4 @@ if __name__ == "__main__":
             print(f"🎯 Evaluando: {chollo['name']} (-{chollo['discount']}%)")
             if send_telegram_deal(chollo['image_url'], format_deal_message(chollo)):
                 mark_as_published(chollo['id'])
+                print(f"✅ DB actualizada.")
