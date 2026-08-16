@@ -308,6 +308,7 @@ def inyectar_en_bd():
                     cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
                     if not cat_db:
                         raise
+            mapa_categorias[cat.value] = cat_db.id
     productos_nuevos = []
     cache_marcas = {}
     print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")

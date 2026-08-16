@@ -190,7 +190,7 @@ def inyectar_en_bd():
     db = SessionLocal()
     try:
         print("🔄 Vaciando datos antiguos de Sportlive...")
-        nombre_marca = normalizar_marca("Sportlive")
+        nombre_marca = normalizar_marca("Drasanvi")
         marca_oficial = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
         if not marca_oficial:
             try:
@@ -259,7 +259,7 @@ def inyectar_en_bd():
                         precio = float(historial[0]["price"].get("value", 0))
 
             img = item.get("productImage", {}).get("url", "")
-            imagen_url = f"{DOMINIO_TIENDA}{img}" if img else ""
+            imagen_url = img if img.startswith("http") else f"{DOMINIO_TIENDA}{img}" if img else ""
 
             metricas = calcular_metricas_precio(item, precio)
             
