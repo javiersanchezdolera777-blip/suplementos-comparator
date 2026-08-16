@@ -298,17 +298,17 @@ def inyectar_en_bd():
     for cat in CategoriaEnum:
         cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
         if not cat_db:
-                try:
-                    cat_db = models.Categoria(nombre=cat.value)
-                    db.add(cat_db)
-                    db.commit()
-                    db.refresh(cat_db)
-                except Exception:
-                    db.rollback()
-                    cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
-                    if not cat_db:
-                        raise
-            mapa_categorias[cat.value] = cat_db.id
+            try:
+                cat_db = models.Categoria(nombre=cat.value)
+                db.add(cat_db)
+                db.commit()
+                db.refresh(cat_db)
+            except Exception:
+                db.rollback()
+                cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+                if not cat_db:
+                    raise
+        mapa_categorias[cat.value] = cat_db.id
     productos_nuevos = []
     cache_marcas = {}
     print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")
