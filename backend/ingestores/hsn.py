@@ -156,11 +156,9 @@ def inyectar_en_bd():
                 if not marca_hsn:
                     raise
 
-        print("🧹 Limpiando catálogo antiguo de HSN...")
-        # Borrado completo y directo por tienda para no dejar huérfanos
-        db.query(models.Producto).filter(models.Producto.tienda == "HSN").delete(synchronize_session=False)
-        db.commit()
-        print("✨ Base de datos limpia de productos de HSN. Iniciando ingesta...")
+        print("🧹 Cargando catálogo antiguo de HSN en memoria (Upsert)...")
+        productos_bd = {p.slug: p for p in db.query(models.Producto).filter_by(tienda="HSN").all()}
+        print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
         mapa_categorias = {}
         for cat in CategoriaEnum:
@@ -409,35 +407,71 @@ def inyectar_en_bd():
                             if not categoria_id:
                                 continue
 
-                            nuevo_prod = models.Producto(
-                                nombre=nombre_norm,
-                                descripcion=descripcion_norm,
-                                precio=precio_norm,
-                                precio_anterior=precio_ant_norm,
-                                imagen_url=str(imagen) if imagen else None,
-                                afiliado_url=url_afiliado,
-                                tienda="HSN",
-                                marca_id=marca_actual.id,
-                                categoria_id=categoria_id,
-                                sabor=sabor_norm,
-                                formato=etiquetas.get("formato"),
-                                objetivo=objetivo_norm,
-                                es_vegano=bool(etiquetas.get("es_vegano")),
-                                sello_calidad=etiquetas.get("sello_calidad"),
-                                tipo_proteina=etiquetas.get("tipo_proteina"),
-                                porcentaje_proteina=porcentaje_proteina,
-                                tipo_creatina=etiquetas.get("tipo_creatina"),
-                                perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
-                                tipo_vitamina=etiquetas.get("tipo_vitamina"),
-                                peso_gramos=peso_norm,
-                                precio_por_kg=preciokg_norm,
-                                slug=slug_norm,
-                            )
+                            if slug_norm in productos_bd:
+                                p_existente = productos_bd[slug_norm]
+                                p_existente.nombre = nombre_norm
+                                p_existente.descripcion = descripcion_norm
+                                p_existente.imagen_url = str(imagen) if imagen else None
+                                p_existente.afiliado_url = url_afiliado
+                                p_existente.marca_id = marca_actual.id
+                                p_existente.categoria_id = categoria_id
+                                p_existente.sabor = sabor_norm
+                                p_existente.formato = etiquetas.get("formato")
+                                p_existente.objetivo = objetivo_norm
+                                p_existente.es_vegano = bool(etiquetas.get("es_vegano"))
+                                p_existente.sello_calidad = etiquetas.get("sello_calidad")
+                                p_existente.tipo_proteina = etiquetas.get("tipo_proteina")
+                                p_existente.porcentaje_proteina = porcentaje_proteina
+                                p_existente.tipo_creatina = etiquetas.get("tipo_creatina")
+                                p_existente.perfil_aminoacidos = etiquetas.get("perfil_aminoacidos")
+                                p_existente.tipo_vitamina = etiquetas.get("tipo_vitamina")
+                                p_existente.peso_gramos = peso_norm
+                                p_existente.precio_por_kg = preciokg_norm
+
+                                if precio_ant_norm is not None:
+                                    p_existente.precio_anterior = precio_ant_norm
+                                    p_existente.precio = precio_norm
+                                else:
+                                    if precio_norm < p_existente.precio:
+                                        p_existente.precio_anterior = float(p_existente.precio)
+                                        p_existente.precio = precio_norm
+                                    elif precio_norm > p_existente.precio:
+                                        p_existente.precio_anterior = None
+                                        p_existente.precio = precio_norm
+                            else:
+                                nuevo_prod = models.Producto(
+                                    nombre=nombre_norm,
+                                    descripcion=descripcion_norm,
+                                    precio=precio_norm,
+                                    precio_anterior=precio_ant_norm,
+                                    imagen_url=str(imagen) if imagen else None,
+                                    afiliado_url=url_afiliado,
+                                    tienda="HSN",
+                                    marca_id=marca_actual.id,
+                                    categoria_id=categoria_id,
+                                    sabor=sabor_norm,
+                                    formato=etiquetas.get("formato"),
+                                    objetivo=objetivo_norm,
+                                    es_vegano=bool(etiquetas.get("es_vegano")),
+                                    sello_calidad=etiquetas.get("sello_calidad"),
+                                    tipo_proteina=etiquetas.get("tipo_proteina"),
+                                    porcentaje_proteina=porcentaje_proteina,
+                                    tipo_creatina=etiquetas.get("tipo_creatina"),
+                                    perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
+                                    tipo_vitamina=etiquetas.get("tipo_vitamina"),
+                                    peso_gramos=peso_norm,
+                                    precio_por_kg=preciokg_norm,
+                                    slug=slug_norm,
+                                )
+                                productos_nuevos.append(nuevo_prod)
+                                productos_bd[slug_norm] = nuevo_prod
+                            # Ya lo hemos gestionado arriba
+                            pass
                         except Exception as e_prod:
                             print(f"      ⚠️ Error al normalizar/crear producto {url_prod}: {e_prod}")
                             traceback.print_exc()
                             continue
-                        productos_nuevos.append(nuevo_prod)
+                        
                         cat_count += 1
                         total_general += 1
                         

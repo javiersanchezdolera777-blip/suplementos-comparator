@@ -204,8 +204,7 @@ def inyectar_en_bd():
                 if not marca_oficial:
                     raise
         else:
-            db.query(models.Producto).filter(models.Producto.marca_id == marca_oficial.id).delete()
-            db.commit()
+            pass
 
         # CATEGORÍAS
         mapa_categorias = {}
@@ -224,6 +223,10 @@ def inyectar_en_bd():
                         raise
             mapa_categorias[cat.value] = cat_db.id
 
+        print("🧹 Cargando catálogo antiguo de Sportlive en memoria (Upsert)...")
+        productos_bd = {p.slug: p for p in db.query(models.Producto).filter_by(tienda="Sportlive").all()}
+        print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
+        
         datos = descargar_datos()
         productos_nuevos = []
         
@@ -264,31 +267,65 @@ def inyectar_en_bd():
             if not categoria_id:
                 categoria_id = next(iter(mapa_categorias.values()))
 
-            nuevo_producto = models.Producto(
-                nombre=nombre,
-                descripcion=desc_limpia[:900], 
-                precio=precio,
-                precio_anterior=precio_anterior, 
-                imagen_url=imagen_url,
-                afiliado_url=afiliado_url,
-                tienda="Sportlive",
-                marca_id=marca_oficial.id,
-                categoria_id=categoria_id,
-                sabor=etiquetas["sabor"],
-                formato=etiquetas["formato"],
-                objetivo=etiquetas["objetivo"],
-                es_vegano=etiquetas["es_vegano"],
-                sello_calidad=etiquetas["sello_calidad"],
-                tipo_proteina=etiquetas["tipo_proteina"],
-                porcentaje_proteina=etiquetas["porcentaje_proteina"],
-                tipo_creatina=etiquetas["tipo_creatina"],
-                perfil_aminoacidos=etiquetas["perfil_aminoacidos"],
-                tipo_vitamina=etiquetas["tipo_vitamina"],
-                peso_gramos=metricas["peso_gramos"],
-                precio_por_kg=metricas["precio_por_kg"],
-                slug=generar_slug(nombre)
-            )
-            productos_nuevos.append(nuevo_producto)
+            slug_norm = generar_slug(nombre)
+            if slug_norm in productos_bd:
+                p_existente = productos_bd[slug_norm]
+                p_existente.nombre = nombre
+                p_existente.descripcion = desc_limpia[:900]
+                p_existente.imagen_url = imagen_url
+                p_existente.afiliado_url = afiliado_url
+                p_existente.marca_id = marca_oficial.id
+                p_existente.categoria_id = categoria_id
+                p_existente.sabor = etiquetas["sabor"]
+                p_existente.formato = etiquetas["formato"]
+                p_existente.objetivo = etiquetas["objetivo"]
+                p_existente.es_vegano = etiquetas["es_vegano"]
+                p_existente.sello_calidad = etiquetas["sello_calidad"]
+                p_existente.tipo_proteina = etiquetas["tipo_proteina"]
+                p_existente.porcentaje_proteina = etiquetas["porcentaje_proteina"]
+                p_existente.tipo_creatina = etiquetas["tipo_creatina"]
+                p_existente.perfil_aminoacidos = etiquetas["perfil_aminoacidos"]
+                p_existente.tipo_vitamina = etiquetas["tipo_vitamina"]
+                p_existente.peso_gramos = metricas["peso_gramos"]
+                p_existente.precio_por_kg = metricas["precio_por_kg"]
+
+                if precio_anterior is not None:
+                    p_existente.precio_anterior = precio_anterior
+                    p_existente.precio = precio
+                else:
+                    if precio < p_existente.precio:
+                        p_existente.precio_anterior = float(p_existente.precio)
+                        p_existente.precio = precio
+                    elif precio > p_existente.precio:
+                        p_existente.precio_anterior = None
+                        p_existente.precio = precio
+            else:
+                nuevo_producto = models.Producto(
+                    nombre=nombre,
+                    descripcion=desc_limpia[:900], 
+                    precio=precio,
+                    precio_anterior=precio_anterior, 
+                    imagen_url=imagen_url,
+                    afiliado_url=afiliado_url,
+                    tienda="Sportlive",
+                    marca_id=marca_oficial.id,
+                    categoria_id=categoria_id,
+                    sabor=etiquetas["sabor"],
+                    formato=etiquetas["formato"],
+                    objetivo=etiquetas["objetivo"],
+                    es_vegano=etiquetas["es_vegano"],
+                    sello_calidad=etiquetas["sello_calidad"],
+                    tipo_proteina=etiquetas["tipo_proteina"],
+                    porcentaje_proteina=etiquetas["porcentaje_proteina"],
+                    tipo_creatina=etiquetas["tipo_creatina"],
+                    perfil_aminoacidos=etiquetas["perfil_aminoacidos"],
+                    tipo_vitamina=etiquetas["tipo_vitamina"],
+                    peso_gramos=metricas["peso_gramos"],
+                    precio_por_kg=metricas["precio_por_kg"],
+                    slug=slug_norm
+                )
+                productos_nuevos.append(nuevo_producto)
+                productos_bd[slug_norm] = nuevo_producto
 
         db.add_all(productos_nuevos)
         db.commit()
