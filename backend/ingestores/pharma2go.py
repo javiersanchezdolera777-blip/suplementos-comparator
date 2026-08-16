@@ -159,7 +159,8 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         "spray", "nasal", "ocular", "gotas", "colirio", "crema hidratante",
         "loción", "pomada", "bálsamo", "gel de", "íntimo", "bebé", "infantil",
         "chupete", "biberón", "ortopedia", "muñequera", "rodillera", "termómetro",
-        "tiritas", "apósito", "venda", "alcohol", "agua micelar", "desmaquillante"
+        "tiritas", "apósito", "venda", "alcohol", "agua micelar", "desmaquillante",
+        "mascota", "veterinaria", "perro", "gato", "ave", "pájaro", "canario", "roedor", "peces"
     ]
     if any(p in n for p in basura):
         return None

@@ -90,7 +90,7 @@ def normalizar_marca(nombre: str) -> str:
         "food series", "foodseries",
         "keto series", "ketoseries",
         "flavour series", "flavourseries",
-        "myco nutrition", "myconutrition"
+        "myco nutrition", "myconutrition",
         "bio series", "bioseries",
         
     ]

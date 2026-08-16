@@ -74,6 +74,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
         .group_by(models.Marca.id)
         .having(func.count(models.Producto.id) > 0)
         .filter(models.Marca.nombre != "Desconocida")
+        .order_by(models.Marca.nombre.asc())
         .all()
     )
     categorias_db = db.query(models.Categoria).all()
