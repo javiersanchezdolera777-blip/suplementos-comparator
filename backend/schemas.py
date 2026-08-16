@@ -207,3 +207,9 @@ class FavoriteResponse(BaseModel):
     product: ProductResponse = Field(validation_alias="producto")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+# ==========================================
+# --- ESQUEMAS DE NEWSLETTER ---
+# ==========================================
+class NewsletterCreate(BaseModel):
+    email: str = Field(..., pattern=r'^\S+@\S+\.\S+$', description="Dirección de correo electrónico")

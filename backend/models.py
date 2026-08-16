@@ -1,6 +1,7 @@
-from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 # ... El resto de tu código se queda exactamente igual ...
 class Marca(Base):
@@ -99,4 +100,13 @@ class Favorito(Base):
     # Relaciones para que Python pueda navegar entre las tablas fácilmente
     usuario = relationship("Usuario", back_populates="favoritos")
     producto = relationship("Producto")
+
+class SuscripcionNewsletter(Base):
+    __tablename__ = "suscripciones_newsletter"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    activo = Column(Boolean, default=True)
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
+
 

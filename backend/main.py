@@ -456,3 +456,25 @@ def eliminar_favorito(
     db.delete(favorito)
     db.commit()
     return {"mensaje": "Producto eliminado de favoritos"}
+
+# ==========================================
+# --- RUTAS DE NEWSLETTER ---
+# ==========================================
+
+@app.post("/api/newsletter/subscribe")
+def suscribir_newsletter(suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)):
+    email_limpio = suscripcion.email.lower().strip()
+    registro = db.query(models.SuscripcionNewsletter).filter(models.SuscripcionNewsletter.email == email_limpio).first()
+    
+    if registro:
+        if registro.activo:
+            raise HTTPException(status_code=400, detail="Este email ya está suscrito a la newsletter")
+        else:
+            registro.activo = True
+            db.commit()
+            return {"message": "¡Suscripción reactivada con éxito!"}
+            
+    nueva_suscripcion = models.SuscripcionNewsletter(email=email_limpio)
+    db.add(nueva_suscripcion)
+    db.commit()
+    return {"message": "¡Suscripción completada con éxito!"}
