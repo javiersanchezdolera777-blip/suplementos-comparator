@@ -334,7 +334,8 @@ def inyectar_en_bd():
                             if precio <= 0:
                                 continue # Omitir si sigue siendo 0.0€
 
-                            html_precio_viejo = soup_prod.find(class_=re.compile(r'old-price'))
+                            contenedor_principal = soup_prod.find(class_='product-info-main') or soup_prod
+                            html_precio_viejo = contenedor_principal.find(class_=re.compile(r'old-price'))
                             if html_precio_viejo:
                                 html_span = html_precio_viejo.find('span', class_=re.compile(r'price'))
                                 if html_span:

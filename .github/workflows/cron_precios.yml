@@ -2,7 +2,7 @@ name: CRON Diario de Actualización de Precios
 
 on:
   schedule:
-    - cron: '0 5 * * *' # Todos los días a las 05:00 UTC
+    - cron: '0 */6 * * *' # Cada 6 horas (4 veces al día)
   workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions de GitHub
 
 jobs:
