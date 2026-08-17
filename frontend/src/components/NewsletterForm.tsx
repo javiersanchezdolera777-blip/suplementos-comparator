@@ -12,7 +12,8 @@ export default function NewsletterForm() {
         setStatus("loading");
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/newsletter/subscribe`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${apiUrl}/api/newsletter/subscribe`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
