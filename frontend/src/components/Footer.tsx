@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Logo from './Logo';
+import NewsletterForm from './NewsletterForm';
 
 export default function Footer() {
   return (
     <footer className="w-full border-t border-white/10 bg-[#0a0f1d] pt-16 pb-8 mt-auto relative z-10">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 mb-12">
 
           {/* Col 1: Marca y Transparencia */}
-          <div className="md:col-span-2 flex flex-col items-start gap-4">
+          <div className="md:col-span-5 flex flex-col items-start gap-4">
             <Link href="/" className="flex items-center gap-3 group focus:outline-none">
               <Image 
                 src="/Logo_icon2.png" 
@@ -42,18 +43,23 @@ export default function Footer() {
           </div>
 
           {/* Col 2: Corporativo */}
-          <div className="flex flex-col gap-4">
+          <div className="md:col-span-2 flex flex-col gap-4">
             <h4 className="text-white font-bold tracking-wide uppercase text-sm mb-2">Proyecto</h4>
             <Link href="/about" className="text-sm text-slate-400 hover:text-white transition-colors">Quiénes Somos</Link>
             <Link href="/contact" className="text-sm text-slate-400 hover:text-white transition-colors">Contacto</Link>
           </div>
 
           {/* Col 3: Legal */}
-          <div className="flex flex-col gap-4">
+          <div className="md:col-span-2 flex flex-col gap-4">
             <h4 className="text-white font-bold tracking-wide uppercase text-sm mb-2">Legal</h4>
             <Link href="/legal" className="text-sm text-slate-400 hover:text-white transition-colors">Aviso Legal</Link>
             <Link href="/privacy" className="text-sm text-slate-400 hover:text-white transition-colors">Política de Privacidad</Link>
             <Link href="/cookies" className="text-sm text-slate-400 hover:text-white transition-colors">Política de Cookies</Link>
+          </div>
+
+          {/* Col 4: Newsletter */}
+          <div className="md:col-span-3 flex flex-col">
+            <NewsletterForm compact={true} />
           </div>
 
         </div>
