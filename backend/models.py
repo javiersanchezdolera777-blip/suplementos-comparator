@@ -85,7 +85,9 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)  # ¡Nunca guardamos contraseñas reales!
+    fecha_ultimo_retargeting = Column(DateTime, nullable=True) # Control anti-spam de retargeting
     favoritos = relationship("Favorito", back_populates="usuario")
+    historial_vistas = relationship("HistorialVistas", back_populates="usuario")
 
 
 class Favorito(Base):
@@ -108,5 +110,16 @@ class SuscripcionNewsletter(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     activo = Column(Boolean, default=True)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
+
+class HistorialVistas(Base):
+    __tablename__ = "historial_vistas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
+    ultima_vista = Column(DateTime, default=datetime.utcnow)
+
+    usuario = relationship("Usuario", back_populates="historial_vistas")
+    producto = relationship("Producto")
 
 

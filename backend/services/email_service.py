@@ -61,3 +61,46 @@ def enviar_alerta_bajada_precio(email: str, nombre_producto: str, precio_viejo: 
         print(f"📧 Alerta de precio enviada a {email} para {nombre_producto}")
     except Exception as e:
         print(f"❌ Error enviando alerta de precio a {email}: {e}")
+
+def enviar_resumen_alertas_favoritos(email: str, productos: list):
+    if not resend.api_key:
+        print(f"⚠️ No hay RESEND_API_KEY. Resumen de alertas omitido para {email}")
+        return
+        
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
+    html_productos = ""
+    for prod in productos:
+        producto_url = f"{frontend_url}/producto/{prod['slug']}"
+        html_productos += f"""
+        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #3b82f6;">
+            <h3 style="margin-top: 0; color: #1e293b;">{prod['nombre']}</h3>
+            <p style="margin: 0; font-size: 14px;">Precio anterior: <del style="color: #94a3b8;">{prod['precio_viejo']}€</del></p>
+            <p style="margin: 4px 0 12px 0; font-size: 18px; font-weight: bold; color: #10b981;">Nuevo precio: {prod['precio_nuevo']}€</p>
+            <a href="{producto_url}" style="display: inline-block; background-color: #1e293b; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+                Ver oferta
+            </a>
+        </div>
+        """
+        
+    try:
+        r = resend.Emails.send({
+            "from": "Alertas Tus Suplementos <chollos@tussuplementos.com>",
+            "to": email,
+            "subject": f"🔥 ¡Han bajado de precio {len(productos)} de tus favoritos!",
+            "html": f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2 style="color: #ef4444;">¡Tenemos buenas noticias!</h2>
+                <p>Algunos productos que tienes guardados en tus favoritos acaban de recibir un descuento.</p>
+                <div style="margin: 20px 0;">
+                    {html_productos}
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-top: 30px;">
+                    Has recibido este correo porque tienes estos productos en tu lista de favoritos.
+                </p>
+            </div>
+            """
+        })
+        print(f"📧 Resumen de {len(productos)} alertas enviado a {email}")
+    except Exception as e:
+        print(f"❌ Error enviando resumen de alertas a {email}: {e}")

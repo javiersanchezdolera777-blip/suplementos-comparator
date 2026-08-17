@@ -8,6 +8,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from database import SessionLocal
 import models
 
+alertas_pendientes = {}
+
 def registrar_actualizacion_precio(db, producto_id: int, nuevo_precio: float):
     """
     Actualiza el precio de un producto. Si el nuevo precio es menor, 
@@ -26,7 +28,6 @@ def registrar_actualizacion_precio(db, producto_id: int, nuevo_precio: float):
         prod.publicado_telegram = False  # Listo para avisar al bot de Telegram
         
         try:
-            from services.email_service import enviar_alerta_bajada_precio
             usuarios_notificar = (
                 db.query(models.Usuario.email)
                 .join(models.Favorito, models.Usuario.id == models.Favorito.usuario_id)
@@ -34,24 +35,36 @@ def registrar_actualizacion_precio(db, producto_id: int, nuevo_precio: float):
                 .all()
             )
             for (email_usuario,) in usuarios_notificar:
-                try:
-                    enviar_alerta_bajada_precio(
-                        email=email_usuario,
-                        nombre_producto=prod.nombre,
-                        precio_viejo=precio_actual,
-                        precio_nuevo=nuevo_precio,
-                        slug=prod.slug
-                    )
-                except Exception as ex_mail:
-                    print(f"❌ Fallo al notificar a {email_usuario}: {ex_mail}")
+                if email_usuario not in alertas_pendientes:
+                    alertas_pendientes[email_usuario] = []
+                alertas_pendientes[email_usuario].append({
+                    "nombre": prod.nombre,
+                    "precio_viejo": precio_actual,
+                    "precio_nuevo": nuevo_precio,
+                    "slug": prod.slug
+                })
         except Exception as e:
-            print(f"⚠️ Error general procesando alertas de email: {e}")
+            print(f"⚠️ Error general agrupando alertas de email: {e}")
     elif nuevo_precio > precio_actual:
         # El precio subió: actualizamos base sin oferta falsa
         prod.precio = nuevo_precio
         prod.precio_anterior = None
     
     return True
+
+def disparar_alertas_agrupadas():
+    if not alertas_pendientes:
+        return
+        
+    print(f"✉️ Disparando resumen de alertas para {len(alertas_pendientes)} usuarios...")
+    from services.email_service import enviar_resumen_alertas_favoritos
+    for email, productos in alertas_pendientes.items():
+        try:
+            enviar_resumen_alertas_favoritos(email, productos)
+        except Exception as e:
+            print(f"❌ Error al disparar resumen para {email}: {e}")
+            
+    alertas_pendientes.clear()
 
 def ejecutar_pipeline_actualizacion(dry_run: bool = False):
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Iniciando Pipeline de Actualización...")
@@ -69,6 +82,12 @@ def ejecutar_pipeline_actualizacion(dry_run: bool = False):
     except Exception as e:
         db.rollback()
         print(f"❌ Error durante el pipeline: {e}")
+        
+    try:
+        disparar_alertas_agrupadas()
+    except Exception as e:
+        print(f"❌ Error al disparar alertas agrupadas: {e}")
+        
     finally:
         db.close()
 

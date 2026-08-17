@@ -486,3 +486,36 @@ def suscribir_newsletter(suscripcion: schemas.NewsletterCreate, db: Session = De
     enviar_email_bienvenida(email_limpio)
     
     return {"message": "¡Suscripción completada con éxito!"}
+
+# ==========================================
+# --- RUTAS DE HISTORIAL (VISTOS RECIENTEMENTE) ---
+# ==========================================
+
+@app.post("/api/historial/{producto_id}")
+def registrar_vista_producto(
+    producto_id: int, 
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    from datetime import datetime
+    
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    historial = db.query(models.HistorialVistas).filter(
+        models.HistorialVistas.usuario_id == usuario_actual.id,
+        models.HistorialVistas.producto_id == producto_id
+    ).first()
+    
+    if historial:
+        historial.ultima_vista = datetime.utcnow()
+    else:
+        nuevo_historial = models.HistorialVistas(
+            usuario_id=usuario_actual.id,
+            producto_id=producto_id
+        )
+        db.add(nuevo_historial)
+        
+    db.commit()
+    return {"status": "ok"}

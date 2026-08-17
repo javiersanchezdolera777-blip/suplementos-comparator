@@ -1,0 +1,34 @@
+name: 🎯 Retargeting Email Diario
+
+on:
+  schedule:
+    # Se ejecuta todos los días a las 17:00 UTC (19:00 hora de España)
+    - cron: '0 17 * * *'
+  workflow_dispatch: # Te permite darle al botón "Run workflow" manualmente en GitHub
+
+jobs:
+  ejecutar-retargeting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' # Asegúrate de que coincida con la tuya
+
+      - name: Instalar dependencias
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Ejecutar script de Retargeting
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          cd backend
+          python retargeting_vistas.py

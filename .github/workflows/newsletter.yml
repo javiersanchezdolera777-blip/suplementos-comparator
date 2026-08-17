@@ -1,0 +1,36 @@
+name: 📬 Newsletter y Telegram Top 5
+
+on:
+  schedule:
+    # Se ejecuta a las 08:00 UTC (10:00 hora de España) solo los domingos (día 0)
+    - cron: '0 8 * * 0'
+  workflow_dispatch:
+
+jobs:
+  ejecutar-newsletter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Ejecutar script del Top 5
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          cd backend
+          python newsletter_semanal.py
