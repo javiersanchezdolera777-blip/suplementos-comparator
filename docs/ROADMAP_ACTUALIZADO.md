@@ -1,8 +1,8 @@
 # Roadmap Actualizado del Proyecto
 
-*Fecha de Revisión: 15 de Agosto de 2026*
+*Fecha de Revisión: 17 de Agosto de 2026*
 
-Este Roadmap refleja el progreso real de la plataforma "Tus Suplementos" y define los próximos pasos estratégicos basados en la auditoría de Deuda Técnica y "Mejoras Futuras".
+Este Roadmap refleja el progreso real de la plataforma "Tus Suplementos" y define los próximos pasos estratégicos hacia la consolidación tecnológica del proyecto como un comparador multi-tienda avanzado.
 
 ---
 
@@ -23,26 +23,43 @@ Este Roadmap refleja el progreso real de la plataforma "Tus Suplementos" y defin
 
 ---
 
-## Sprint 3 (Expansión de Catálogo y Retención) - [NUEVO SPRINT ACTIVO 🔵]
-Este Sprint se centra en aportar el verdadero valor del comparador: múltiples tiendas y alertas directas al usuario.
+## Sprint 3 (Notificaciones y Retención) - [COMPLETADO ✅]
+Este Sprint se centró en la creación de un ecosistema de retención y alertas transaccionales, estableciendo el canal de comunicación directa con el usuario.
 
-- **[ ] 3.1 Captación y Comunidad (Frontend):**
-  - Diseño Frontend (React/Tailwind): Banner promocional del canal de Telegram.
-  - Diseño Frontend (React/Tailwind): Formulario UI para captación de leads (Newsletter).
-- **[ ] 3.2 Lógica Backend (Captación):**
-  - Crear endpoint en FastAPI para registrar emails de la Newsletter de forma segura.
-- **[ ] 3.3 Motor de Alertas por Email (Backend):**
-  - Integración con Resend/SendGrid.
-  - Lógica de cruce: Notificar a los usuarios cuando un producto de sus `/favoritos` baje de precio.
-- **[ ] 3.4 Integración de Nuevas Tiendas:**
-  - Conectar y estabilizar los ingestores de **MyProtein** y **Prozis** al CRON diario de actualizaciones.
-- **[x] 3.5 Deuda Técnica (Migraciones y Saneamiento):**
-  - Implementar **Alembic** para el control de versiones de PostgreSQL (Baseline completada).
-  - Scrubber v2.0 implementado para descripciones, aunque pendiente de futura refactorización con IA.
+- [x] **Integración de Captación:** Diseño minimalista del Newsletter en el Footer UI y desarrollo del Endpoint en Base de Datos (Upsert).
+- [x] **Configuración de Email Transaccional:** Integración de la API de Resend y configuración de DNS en Vercel para correos fiables y seguros.
+- [x] **Motor de Alertas Agrupadas:** Sistema inteligente para notificar bajadas de precio de Productos Favoritos agrupando las ofertas en un solo correo para evitar el spam.
+- [x] **Sistema de Tracking y Retargeting Anti-Spam:** Historial de Vistas silencioso con retargeting automático de los últimos productos visitados, protegido por una regla estricta de 7 días entre correos.
+- [x] **Newsletter Semanal Híbrida:** Lógica algorítmica de "Top 5 Chollos" (priorizando suplementos core como Proteínas y Creatinas por descuento absoluto), difundido simultáneamente vía Email y Telegram.
+- [x] **Orquestación Centralizada:** Delegación de todos los CRON jobs (Actualizador de Precios, Newsletter y Retargeting) en GitHub Actions de forma desatendida.
 
-## Sprint 4 (SEO y Comunidad) - [PLANIFICADO ⚪]
+---
+
+## Sprint 4 (El Comparador Multi-Tienda y Tablas de Análisis) - [NUEVO SPRINT ACTIVO 🔵]
+El siguiente gran hito evolutivo transforma la plataforma de un catálogo unificado a un **comparador multi-tienda real**, permitiendo a los usuarios enfrentar productos idénticos vendidos por diferentes proveedores y comparar suplementos a nivel técnico y nutricional.
+
+- **[ ] 4.1 Arquitectura Multi-Tienda (Gestión de Vendedores):**
+  - Refactorizar el modelo de datos en PostgreSQL para implementar una jerarquía Padre-Hijo. Separar el "Producto Base" (ej. 100% Whey Gold Standard 2kg) de sus "Ofertas por Tienda" (relacionando las ofertas de HSN, Amazon, Miravia, Prozis, etc., al mismo producto core).
+  - Migración de datos estructurada usando Alembic para preservar la integridad del catálogo actual.
+
+- **[ ] 4.2 Lógica de Precios Inteligente:**
+  - **Backend:** Desarrollar consultas agregadas que devuelvan el "Precio más barato" (Lowest Price) de entre todas las tiendas vinculadas a un producto.
+  - **Frontend (Catálogo):** Mostrar dinámicamente el precio mínimo disponible en el grid.
+  - **Frontend (Ficha de Producto):** Rediseñar la vista de detalle (`/producto/[slug]`) para renderizar un módulo comparativo con la lista de todas las tiendas, sus precios respectivos (ordenados de menor a mayor) y los enlaces de compra hacia cada plataforma de afiliación.
+
+- **[ ] 4.3 UI/UX - Tablas de Análisis y Comparativa Técnica:**
+  - **Mecanismo de Selección:** Implementar un botón "Añadir a comparativa" (estado global en React o localStorage) accesible desde las tarjetas del catálogo y la ficha técnica.
+  - **Vista Comparador (Head-to-Head):** Crear una nueva página o modal expandible (`/comparar`) que despliegue una tabla técnica comparando de 2 a 4 suplementos frente a frente.
+  - **Métricas a Comparar:**
+    - Ratio económico: Precio por Kg / Precio por Dosis.
+    - Perfil Nutricional (Macros): Proteínas, Kcal, Grasas, Hidratos de Carbono por 100g.
+    - Aminograma y Sellos de Calidad: Destacar certificaciones premium (Creapure®, Lacprodan®, Kyowa®, AlzChem®).
+
+---
+
+## Sprint 5 (Expansión de Catálogo y SEO) - [PLANIFICADO ⚪]
+- [ ] Conectar y estabilizar los ingestores de **MyProtein**, **Prozis** y **Miravia** al CRON diario de actualizaciones para alimentar el comparador multi-tienda.
+- [ ] Inyección dinámica de Schema.org JSON-LD (Product, AggregateOffer) para optimización técnica.
+- [ ] Estrategia de SEO programático (Landing pages automáticas por marca, categoría y objetivo).
+- [ ] Caché de servidor (Redis/Memcached) para el endpoint principal de catálogo garantizando latencias <100ms.
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
-- [ ] Inyección dinámica de Schema.org JSON-LD para productos y categorías.
-- [ ] Estrategia de SEO programático (Landing pages automáticas por marca/categoría).
-- [ ] Algoritmo agregador multi-tienda avanzado (para fusionar productos idénticos vendidos en distintos e-commerces bajo un comparador "Cara a Cara").
-- [ ] Caché de servidor (Redis) para el endpoint principal de catálogo.
