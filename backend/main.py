@@ -472,9 +472,17 @@ def suscribir_newsletter(suscripcion: schemas.NewsletterCreate, db: Session = De
         else:
             registro.activo = True
             db.commit()
+            
+            from services.email_service import enviar_email_bienvenida
+            enviar_email_bienvenida(email_limpio)
+            
             return {"message": "¡Suscripción reactivada con éxito!"}
             
     nueva_suscripcion = models.SuscripcionNewsletter(email=email_limpio)
     db.add(nueva_suscripcion)
     db.commit()
+    
+    from services.email_service import enviar_email_bienvenida
+    enviar_email_bienvenida(email_limpio)
+    
     return {"message": "¡Suscripción completada con éxito!"}

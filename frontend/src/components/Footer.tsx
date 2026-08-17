@@ -59,7 +59,7 @@ export default function Footer() {
 
           {/* Col 4: Newsletter */}
           <div className="md:col-span-3 flex flex-col">
-            <NewsletterForm compact={true} />
+            <NewsletterForm />
           </div>
 
         </div>
