@@ -13,27 +13,29 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 def format_deal_message(product):
     name = product['name']
     brand = product['brand'] or 'Oficial'
-    store = product['store'] or 'Tienda oficial'
+    store = product['store'] or brand
+    category = product.get('category') or ''
     current_price = product['current_price']
     previous_price = product['previous_price']
     discount = product['discount']
     price_per_kg = product['price_per_kg']
     affiliate_url = product['affiliate_url']
 
-    caption = f"🔥 <b>¡CHOLLO DESTACADO!</b> 🔥\n\n"
-    caption += f"💊 <b>{name}</b>\n"
-    caption += f"🏷️ <b>Marca:</b> {brand}\n"
-    caption += f"🛒 <b>Vendido por:</b> {store}\n\n"
-    
-    caption += f"💥 <b>Precio:</b> <code>{current_price:.2f} €</code> "
-    if previous_price:
-        caption += f"<s>{previous_price:.2f} €</s> "
-    caption += f"(<b>-{discount}%</b>)\n"
+    caption = f"🚨 <b>¡NUEVO CHOLLO DESTACADO!</b> 🚨\n\n"
+    caption += f"💪 <b><a href='{affiliate_url}'>{name}</a></b>\n"
+    caption += f"🏪 Tienda: {store}\n"
+    caption += f"❌ Antes: <s>{previous_price:.2f}€</s>\n"
+    caption += f"✅ Ahora: <b>{current_price:.2f}€</b> (-{discount}%)\n"
 
     if price_per_kg and price_per_kg > 0:
-        caption += f"📊 <b>Ratio:</b> <code>{price_per_kg:.2f} € / kg</code>\n"
+        palabras_clave = ["proteina", "creatina", "carbohidrato", "ganador", "mass", "gainer"]
+        name_lower = name.lower()
+        cat_lower = category.lower()
+        es_core = any(p in name_lower for p in palabras_clave) or any(p in cat_lower for p in palabras_clave)
+        
+        if es_core and 2 <= price_per_kg <= 100:
+            caption += f"📊 <b>Ratio:</b> <code>{price_per_kg:.2f} € / kg</code>\n"
 
-    caption += f"\n🔗 <a href='{affiliate_url}'>👉 VER OFERTA EN LA TIENDA</a>"
     return caption
 
 def send_telegram_deal(photo_url, caption):
@@ -86,9 +88,10 @@ def fetch_best_deals(limit=3, min_discount=15):
         cursor = conn.cursor()
         query = """
             SELECT p.id, p.nombre, p.imagen_url, p.afiliado_url, p.precio, 
-                   p.precio_anterior, p.precio_por_kg, m.nombre AS marca, p.tienda
+                   p.precio_anterior, p.precio_por_kg, m.nombre AS marca, p.tienda, c.nombre AS categoria
             FROM productos p
             LEFT JOIN marcas m ON p.marca_id = m.id
+            LEFT JOIN categorias c ON p.categoria_id = c.id
             WHERE p.precio_anterior IS NOT NULL 
               AND p.precio_anterior > p.precio
               AND p.publicado_telegram = FALSE
@@ -105,7 +108,7 @@ def fetch_best_deals(limit=3, min_discount=15):
                 "id": r[0], "name": r[1], "image_url": r[2], "affiliate_url": r[3],
                 "current_price": float(r[4]), "previous_price": float(r[5]),
                 "price_per_kg": float(r[6]) if r[6] else None,
-                "brand": r[7], "store": r[8], 
+                "brand": r[7], "store": r[8], "category": r[9],
                 "discount": int(round(((float(r[5]) - float(r[4])) / float(r[5])) * 100))
             })
         cursor.close()

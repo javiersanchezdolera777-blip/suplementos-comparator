@@ -117,26 +117,24 @@ def enviar_newsletter_telegram(chollos):
         print("⚠️ Faltan credenciales de Telegram. Envío al canal omitido.")
         return
         
-    mensaje = "🔥 *TOP 5 CHOLLOS DE LA SEMANA* 🔥\n\n"
+    mensaje = "🔥 <b>TOP 5 CHOLLOS DE LA SEMANA</b> 🔥\n\n"
     
-    for idx, prod in enumerate(chollos, 1):
+    medallas = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    
+    for idx, prod in enumerate(chollos):
         descuento = round(prod.precio_anterior - prod.precio, 2)
         url = f"{frontend_url}/producto/{prod.slug}"
-        mensaje += f"{idx}\\. *{prod.nombre}*\n"
-        mensaje += f"❌ Antes: ~{prod.precio_anterior}€~\n"
-        mensaje += f"✅ Ahora: *{prod.precio}€* \\(Ahorras {descuento}€\\)\n"
-        mensaje += f"🛒 [Ver Oferta Aquí]({url})\n\n"
+        medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
         
-    # Limpiar caracteres conflictivos de markdown v2 si es necesario, 
-    # pero para enlaces simples y negritas basicas el parse_mode Markdown sirve.
-    # En este caso usamos Markdown sencillo.
-    mensaje = mensaje.replace("\\.", ".") # Restaurar puntos simples
-    
+        mensaje += f"{medalla} <b><a href='{url}'>{prod.nombre}</a></b>\n"
+        mensaje += f"❌ Antes: <s>{prod.precio_anterior}€</s>\n"
+        mensaje += f"✅ Ahora: <b>{prod.precio}€</b> (Ahorras {descuento}€)\n\n"
+        
     url_api = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": mensaje,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
         "disable_web_page_preview": True
     }
     
