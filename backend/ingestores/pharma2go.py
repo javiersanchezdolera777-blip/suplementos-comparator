@@ -150,19 +150,28 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     texto_completo = n + " " + desc_limpia.lower()
     c = {}
     
-    # 1. FILTRO DE BASURA EXTREMO (A prueba de Farmacias)
-    basura = [
+    # 1. FILTRO DE BASURA (Solo en título para evitar falsos positivos)
+    basura_titulo = [
         "shaker", "mezclador", "toalla", "facial", "corporal", "champú", "champu",
         "dientes", "dental", "serum", "cosmética", "cosmetica", "higiene", "pañal", 
-        "solar", "maquillaje", "mascarilla", "pelo", "cabello", "limpiador", "kit", "gel de", "gel", "crema de", "crema", "loción", "locion", "bálsamo", "balsamo",
-        "ducha", "baño", "hidratante", "antiarrugas", "antiedad", "colutorio", "vial","viales", "ampolla", "ampollas", "spray", "nasal", "ocular", "gotas", "colirio", "crema hidratante",
-        "spray", "nasal", "ocular", "gotas", "colirio", "crema hidratante",
-        "loción", "pomada", "bálsamo", "gel de", "íntimo", "bebé", "infantil",
-        "chupete", "biberón", "ortopedia", "muñequera", "rodillera", "termómetro",
-        "tiritas", "apósito", "venda", "alcohol", "agua micelar", "desmaquillante",
-        "mascota", "veterinaria", "perro", "gato", "ave", "pájaro", "canario", "roedor", "peces"
+        "solar", "maquillaje", "mascarilla", "pelo", "cabello", "limpiador", "kit", 
+        "gel de ducha", "crema reductora", "crema hidratante", "loción", "locion", 
+        "bálsamo", "balsamo", "ducha", "baño", "antiarrugas", "antiedad", "colutorio", 
+        "spray nasal", "spray ocular", "gotas oculares", "colirio", "pomada", "íntimo", 
+        "bebé", "infantil", "chupete", "biberón", "ortopedia", "muñequera", "rodillera", 
+        "termómetro", "tiritas", "apósito", "venda", "alcohol", "agua micelar", 
+        "desmaquillante", "neceser", "regalo", "botiquín", "óptica", "sexual", 
+        "perfumería", "camiseta", "mochila", "pastillero"
     ]
-    if any(p in n for p in basura):
+    if any(p in n for p in basura_titulo):
+        return None
+
+    # 1.2 FILTRO VETERINARIO (Búsqueda estricta en Título + Descripción)
+    basura_veterinaria = [
+        "mascota", "veterinaria", "perro", "gato", "ave", "pájaro", "canario", 
+        "roedor", "peces", "cachorro", "felino", "canino"
+    ]
+    if any(p in texto_completo for p in basura_veterinaria):
         return None
 
     # 2. CATEGORÍA ESTRICTA
@@ -401,6 +410,8 @@ def inyectar_en_bd():
             p_existente.formato = etiquetas["formato"]
             p_existente.objetivo = etiquetas["objetivo"]
             p_existente.es_vegano = etiquetas["es_vegano"]
+            p_existente.sin_gluten = bool(etiquetas.get("sin_gluten"))
+            p_existente.sin_lactosa = bool(etiquetas.get("sin_lactosa"))
             p_existente.sello_calidad = etiquetas["sello_calidad"]
             p_existente.tipo_proteina = etiquetas["tipo_proteina"]
             p_existente.porcentaje_proteina = etiquetas["porcentaje_proteina"]
@@ -435,6 +446,8 @@ def inyectar_en_bd():
                 formato=etiquetas["formato"],
                 objetivo=etiquetas["objetivo"],
                 es_vegano=etiquetas["es_vegano"],
+                sin_gluten=bool(etiquetas.get("sin_gluten")),
+                sin_lactosa=bool(etiquetas.get("sin_lactosa")),
                 sello_calidad=etiquetas["sello_calidad"],
                 tipo_proteina=etiquetas["tipo_proteina"],
                 porcentaje_proteina=etiquetas["porcentaje_proteina"],

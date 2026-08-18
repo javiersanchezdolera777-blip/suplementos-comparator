@@ -411,6 +411,8 @@ def inyectar_en_bd():
                                 p_existente.formato = etiquetas.get("formato")
                                 p_existente.objetivo = objetivo_norm
                                 p_existente.es_vegano = bool(etiquetas.get("es_vegano"))
+                                p_existente.sin_gluten = bool(etiquetas.get("sin_gluten"))
+                                p_existente.sin_lactosa = bool(etiquetas.get("sin_lactosa"))
                                 p_existente.sello_calidad = etiquetas.get("sello_calidad")
                                 p_existente.tipo_proteina = etiquetas.get("tipo_proteina")
                                 p_existente.porcentaje_proteina = porcentaje_proteina
@@ -445,6 +447,8 @@ def inyectar_en_bd():
                                     formato=etiquetas.get("formato"),
                                     objetivo=objetivo_norm,
                                     es_vegano=bool(etiquetas.get("es_vegano")),
+                                    sin_gluten=bool(etiquetas.get("sin_gluten")),
+                                    sin_lactosa=bool(etiquetas.get("sin_lactosa")),
                                     sello_calidad=etiquetas.get("sello_calidad"),
                                     tipo_proteina=etiquetas.get("tipo_proteina"),
                                     porcentaje_proteina=porcentaje_proteina,
