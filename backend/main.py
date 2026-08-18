@@ -125,7 +125,7 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
         text_score = func.similarity(models.Producto.nombre, q).label('text_score')
         resultados = query.order_by(
             text_score.desc(),
-            models.Producto.clics_count.desc(),
+            nulls_last(models.Producto.clics_count.desc()),
             models.Producto.id.asc()
         ).limit(4).all()
 
