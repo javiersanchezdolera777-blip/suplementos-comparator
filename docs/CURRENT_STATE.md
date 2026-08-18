@@ -30,5 +30,10 @@
 - [x] Pipeline maestro de actualización de precios (Python) y automatización programada diaria vía GitHub Actions (CRON 05:00 UTC).
 - [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido (verificación a la espera de la próxima ventana horaria).
 
-## Tareas Pendientes Inmediatas (Next Steps)
-- [ ] Ejecutar ingestores pendientes para MyProtein y Prozis.
+## Sprint 3: Monolito Estable
+- El catálogo funciona en una estructura plana (un Producto incluye su precio y url de afiliado directamente).
+- El sistema de Telegram (chollos) y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
+
+## Roadmap Futuro / Sprint 4 (Draft)
+- **Arquitectura Multi-Tienda (Comparador):** Se intentó migrar a un modelo relacional Padre-Hijo (1 Producto : N Ofertas) para unificar HSN, Farma2Go, Amazon, etc.
+- **Lección Aprendida:** La migración desestabilizó la base de datos local y la UI (Agotado masivo). Su futura implementación requerirá el uso estricto de herramientas de migración de esquemas (Alembic) para no romper la integridad relacional de la BD local/producción.

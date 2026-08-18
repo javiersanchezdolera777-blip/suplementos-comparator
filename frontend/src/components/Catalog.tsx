@@ -231,7 +231,7 @@ export default function Catalog() {
         </h1>
 
         {/* 2. Subtexto Claro */}
-        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">  
+        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 
@@ -284,8 +284,8 @@ export default function Catalog() {
                     document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
                   }}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
-                      ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
-                      : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
+                    ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
+                    : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
                     } ${brand.style}`}
                 >
                   {brand.displayName}
@@ -367,7 +367,7 @@ export default function Catalog() {
             <div className="text-slate-600 text-sm">
               Mostrando <span className="font-semibold text-slate-900">
                 {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
-              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> suplementos
+              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> productos
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">

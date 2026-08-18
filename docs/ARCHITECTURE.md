@@ -44,3 +44,7 @@ query = query.order_by(
     models.Producto.id.asc()
 )
 ```
+
+## Roadmap Futuro / Sprint 4 (Multi-Tienda)
+- **Draft Arquitectónico:** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. 
+- **Requisito Técnico Estricto:** Esta migración requerirá el uso de `alembic upgrade head` sobre las bases de datos para adaptar el esquema en caliente sin romper la ingesta de las pipelines CI/CD.
