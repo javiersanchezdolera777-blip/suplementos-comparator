@@ -29,6 +29,12 @@
 - [x] Rediseño UI del SearchOmnibox a 4 resultados premium con tipografía elegante y mayor legibilidad.
 - [x] Búsqueda predictiva y catálogo sincronizados con expansión de sinónimos multilingüe y soporte nativo de tildes.
 - [x] Pipeline maestro de actualización de precios (Python) y automatización programada diaria vía GitHub Actions (CRON 05:00 UTC).
+- [x] Corrección de la ordenación por precio (`orden_precio`) y unificación de criterios en nulos con `nulls_last`.
+- [x] Ocultación de las categorías "Accesorios" y "Otros" del endpoint `/api/config/filtros`.
+- [x] Corrección de mapeo NLP: Productos de Drasanvi movidos de "Otros" a "Salud y Bienestar".
+- [x] Extracción y soporte real de los flags `sin_gluten` y `sin_lactosa` tanto en HSN como Farma2Go (evaluación de arrays en memoria).
+- [x] Implementada la "Doble Barrera" NLP para excluir con precisión productos de mascotas/veterinaria en `utils.py` y `pharma2go.py` y purgada la BBDD (+30 items eliminados).
+- [x] Limpieza de la raíz del backend migrando herramientas de testing/cron a la subcarpeta `/scripts`.
 - [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido (verificación a la espera de la próxima ventana horaria).
 
 ## Sprint 3: Monolito Estable Restaurado
@@ -37,11 +43,6 @@
 - El sistema de Telegram (chollos) y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
 
 ## Bugs Críticos y UI (A corto plazo)
-- Discrepancia en el algoritmo de ordenación por relevancia (`live-search` / catálogo) entre Localhost y Producción (revisar caché de Vercel y desempates SQL).
-- El desplegable de ordenación por precio está roto.
-- Los filtros de 'Sin gluten' y 'Sin lactosa' han dejado de funcionar.
-- Ocultar la categoría 'Accesorios' del frontend (vacía/no deseada).
-- Corregir el mapeo del Cerebro NLP para evitar que vitaminas de Drasanvi (SportLive) caigan en la categoría 'Otros'.
 - Investigar error `failed to fetch` (posible CORS) en el formulario de la Newsletter al introducir un email.
 
 ## Backlog / Roadmap Técnico Pendiente
