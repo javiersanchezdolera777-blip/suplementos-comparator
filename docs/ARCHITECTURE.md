@@ -45,8 +45,16 @@ query = query.order_by(
 )
 ```
 
-## Backlog / Roadmap Técnico Pendiente
+## Estrategia DevOps y CRONs
+- **Aislamiento de BD:** Establecer obligatoriamente bases de datos separadas (Local vs Neon DB) para el desarrollo de la Multitienda.
+- **Ingesta No Destructiva (Upsert):** Prohibido el uso de `delete()` global. Los productos agotados/desaparecidos cambiarán a `activo=False` para ocultarlos sin vaciar la web (Gestión Avanzada de Stock).
+- **CRON de Precios:** Recuperar/verificar el CRON que actualiza precios 4 veces al día.
+- **CRON Monitor de Scrapers:** Crear un script centinela que avise si la estructura DOM de una tienda o el Datafeed cambia, para detectar roturas proactivamente.
+
+## Roadmap de Producto / Features
 - **Migración a Multi-Tienda (Sprint 4):** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. Esta migración requerirá el uso estricto de **Alembic** para gestionar las migraciones de base de datos de forma segura.
 - **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
-- **Gestión Avanzada de Stock:** Desarrollar a futuro un algoritmo que marque temporalmente como inactivos los productos agotados en lugar de borrarlos, reintroduciéndolos automáticamente cuando vuelvan a tener stock.
-- **Estrategia CRON Segura:** Establecer flujos de ingesta atómicos (upsert) para evitar que la web quede vacía durante las actualizaciones.
+- **Perfiles de Usuario (El "IG de Suplementos"):** Permitir a los usuarios fijar sus "stacks" habituales (ej. Creatina Amix, Proteína HSN) para hacerlos públicos.
+- **Tabla Comparativa Multitienda:** Interfaz para comparar 2+ productos/tiendas y resaltar el más barato.
+- **Optimizador de Afiliados:** Reducir la latencia de las redirecciones de Tradedoubler hacia SportLive/Farma2Go.
+- **Nuevas Tiendas:** Integrar Aminha Farmacia y Bulk (vía Awin, requerirá scraper sin datafeed).
