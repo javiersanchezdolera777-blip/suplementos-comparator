@@ -119,21 +119,30 @@ def clasificar_producto(
     """Clasificador central quirúrgico con resolución de colisiones y vocabulario hiper-enriquecido."""
     n = str(nombre or "").lower()
 
-    # 1. FILTRO DE BASURA EXTREMO (Solo merchandising, ropa, accesorios y cosmética/tópicos)
-    basura = [
+    texto_completo = n + " " + str(desc_limpia or "").lower()
+    
+    # 1. FILTRO DE BASURA (Solo en título para evitar falsos positivos)
+    basura_titulo = [
         "shaker", "mezclador", "toalla", "facial", "corporal", "champú", "champu",
         "dientes", "dental", "serum", "cosmética", "cosmetica", "higiene", "pañal", 
         "solar", "maquillaje", "mascarilla", "pelo", "cabello", "limpiador", "kit", 
-        "gel de ducha", "gel reductor", "crema reductora", "crema hidratante", "loción", "locion", 
+        "gel de ducha", "crema reductora", "crema hidratante", "loción", "locion", 
         "bálsamo", "balsamo", "ducha", "baño", "antiarrugas", "antiedad", "colutorio", 
         "spray nasal", "spray ocular", "gotas oculares", "colirio", "pomada", "íntimo", 
         "bebé", "infantil", "chupete", "biberón", "ortopedia", "muñequera", "rodillera", 
         "termómetro", "tiritas", "apósito", "venda", "alcohol", "agua micelar", 
-        "desmaquillante", "balón", "balon", "neceser", "regalo", "botiquín", "óptica", 
-        "sexual", "perfumería", "camiseta", "mochila", "pastillero"
+        "desmaquillante", "neceser", "regalo", "botiquín", "óptica", "sexual", 
+        "perfumería", "camiseta", "mochila", "pastillero"
     ]
+    if any(p in n for p in basura_titulo):
+        return None
 
-    if any(p in n for p in basura):
+    # 1.2 FILTRO VETERINARIO (Búsqueda estricta en Título + Descripción)
+    basura_veterinaria = [
+        "mascota", "veterinaria", "perro", "gato", "ave", "pájaro", "canario", 
+        "roedor", "peces", "cachorro", "felino", "canino"
+    ]
+    if any(p in texto_completo for p in basura_veterinaria):
         return None
 
     if categorias_raw:

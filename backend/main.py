@@ -2,10 +2,11 @@ from fastapi.security import OAuth2PasswordBearer
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import case, desc, or_, func
+from sqlalchemy import nulls_last
 from typing import List, Optional
 from datetime import datetime
 from fastapi import Query  # ✅ Correcto
@@ -67,7 +68,6 @@ def listar_marcas(db: Session = Depends(get_db)):
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
 def obtener_filtros(db: Session = Depends(get_db)):
-    from sqlalchemy import func
     marcas_activas = (
         db.query(models.Marca)
         .join(models.Producto)
@@ -77,11 +77,21 @@ def obtener_filtros(db: Session = Depends(get_db)):
         .order_by(models.Marca.nombre.asc())
         .all()
     )
-    categorias_db = db.query(models.Categoria).all()
+    
+    # NUEVO: Solo categorías con productos y ocultando las no deseadas
+    categorias_activas = (
+        db.query(models.Categoria)
+        .join(models.Producto)
+        .group_by(models.Categoria.id)
+        .having(func.count(models.Producto.id) > 0)
+        .filter(~models.Categoria.nombre.in_(["Accesorios", "Otros"]))
+        .order_by(models.Categoria.nombre.asc())
+        .all()
+    )
     
     return {
         "brands": [m.nombre for m in marcas_activas],
-        "categories": [c.nombre for c in categorias_db],
+        "categories": [c.nombre for c in categorias_activas],
         "flavors": [sabor.value for sabor in schemas.SaborEnum],
         "formats": [formato.value for formato in schemas.FormatoEnum],
         "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum],
@@ -142,6 +152,7 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
+    request: Request,
     skip: int = 0, 
     # Soportamos tanto el parámetro antiguo (singular) como el de multiselección (plural)
     categoria: Optional[str] = None,
@@ -234,29 +245,27 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
         
-    # 7. ORDENACIÓN
-    if orden == "precio_asc":
+    # 7. ORDENACIÓN (Con Alias y Nulls Last)
+    sort_final = request.query_params.get('orden_precio') or request.query_params.get('ordenar_por') or request.query_params.get('sort') or orden
+    
+    if sort_final in ["precio_asc", "price_asc", "asc"]:
         query = query.order_by(models.Producto.precio.asc())
-    elif orden == "precio_desc":
+    elif sort_final in ["precio_desc", "price_desc", "desc"]:
         query = query.order_by(models.Producto.precio.desc())
-    elif orden == "descuento":
-        # Ordenar por mayor importe descontado
+    elif sort_final == "descuento":
         query = query.order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
         if busqueda_final:
-            # 1º Similitud de texto (pg_trgm)
-            # 2º Clics reales de usuarios
-            # 3º Orden natural de inyección
             text_score = func.similarity(models.Producto.nombre, busqueda_final).label('text_score')
             query = query.order_by(
                 text_score.desc(),
-                models.Producto.clics_count.desc(),
+                nulls_last(models.Producto.clics_count.desc()), # <-- Obliga a que los Nulls vayan al final
                 models.Producto.id.asc()
             )
         else:
             query = query.order_by(
-                models.Producto.clics_count.desc(),
+                nulls_last(models.Producto.clics_count.desc()), # <-- Evita discrepancias Local vs Prod
                 models.Producto.id.asc()
             )
 
