@@ -258,93 +258,85 @@ def inyectar_en_bd():
                         except Exception:
                             datos_producto = None
 
-                        # Si no hay JSON-LD, caer back a BeautifulSoup (html.parser primero, lxml si falla)
+                        # Siempre crear BeautifulSoup para los fallbacks visuales
+                        try:
+                            soup_prod = BeautifulSoup(res_prod.text, 'html.parser')
+                        except Exception:
+                            try:
+                                soup_prod = BeautifulSoup(res_prod.text, 'lxml')
+                            except Exception:
+                                print(f"      ⚠️ Fallo al parsear HTML de {url_prod}. Saltando producto.")
+                                continue
+
                         if not datos_producto:
-                            try:
-                                soup_prod = BeautifulSoup(res_prod.text, 'html.parser')
-                            except Exception:
-                                try:
-                                    soup_prod = BeautifulSoup(res_prod.text, 'lxml')
-                                except Exception:
-                                    print(f"      ⚠️ Fallo al parsear HTML de {url_prod}. Saltando producto.")
-                                    continue
-                            stock = soup_prod.find('meta', {'itemprop': 'availability'})
-                        else:
-                            # No disponemos de 'stock' desde JSON-LD de forma fiable
-                            stock = None
-                        if stock and 'outofstock' in stock.get('content', '').lower():
-                            continue 
+                            datos_producto = {}
+
+                        # 1. Nombre (Ajuste para coger el og:title real)
+                        nombre = datos_producto.get('name') if datos_producto else None
+                        if not nombre:
+                            title_tags = soup_prod.find_all('meta', property='og:title')
+                            if title_tags:
+                                nombre = title_tags[-1].get('content', '').split('|')[0].strip()
+                            else:
+                                title_h1 = soup_prod.find('h1', class_='page-title')
+                                nombre = title_h1.get_text(strip=True) if title_h1 else None
+
+                        if not nombre:
+                            continue # Si no podemos sacar ni el título, descartamos
+
+                        # 2. Imagen y Descripción
+                        imagen = datos_producto.get('image')
+                        if not imagen:
+                            img_tag = soup_prod.find('meta', property='og:image')
+                            imagen = img_tag.get('content', '') if img_tag else ''
+
+                        desc_cruda = datos_producto.get('description')
+                        if not desc_cruda:
+                            desc_tag = soup_prod.find('meta', property='og:description')
+                            desc_cruda = desc_tag.get('content', '') if desc_tag else ''
+
+                        brand_raw = "HSN" # Marca forzada
                         
-                        # Si aún no tenemos datos_producto (extraído por regex), usar lo ya calculado
-                        if datos_producto:
-                            # Creamos un soup ligero para operaciones puntuales (title, swatches)
+                        marca_final = normalizar_marca(brand_raw)
+                        marca_actual = db.query(models.Marca).filter_by(nombre=marca_final).first()
+                        if not marca_actual:
                             try:
-                                soup_prod = BeautifulSoup(res_prod.text, 'html.parser')
+                                marca_actual = models.Marca(nombre=marca_final)
+                                db.add(marca_actual)
+                                db.commit()
+                                db.refresh(marca_actual)
                             except Exception:
-                                soup_prod = None
-                            nombre = datos_producto.get('name', 'Sin nombre')
-                            imagen = datos_producto.get('image', '')
-                            desc_cruda = datos_producto.get('description', '')
+                                db.rollback()
+                                marca_actual = marca_hsn
 
-                            brand_raw = "HSN"
-                            if datos_producto:
-                                brand_data = datos_producto.get("brand")
-                                if isinstance(brand_data, dict):
-                                    brand_raw = brand_data.get("name") or "HSN"
-                                elif isinstance(brand_data, str) and brand_data.strip():
-                                    brand_raw = brand_data.strip()
-                            marca_final = normalizar_marca(brand_raw)
+                        # HARD SKIP: Detección de Agotados vía meta tag estructurado
+                        disp_meta = soup_prod.find('meta', property='product:availability')
+                        if disp_meta and 'outofstock' in disp_meta.get('content', '').lower():
+                            continue # El producto está agotado, lo saltamos
 
-                            marca_actual = db.query(models.Marca).filter_by(nombre=marca_final).first()
-                            if not marca_actual:
-                                try:
-                                    marca_actual = models.Marca(nombre=marca_final)
-                                    db.add(marca_actual)
-                                    db.commit()
-                                    db.refresh(marca_actual)
-                                except Exception:
-                                    db.rollback()
-                                    marca_actual = marca_hsn
+                        precio = 0.0
+                        precio_anterior = None
 
-                            precio_anterior = None
-                            raw_precio = None
-                            if datos_producto:
-                                offers = datos_producto.get("offers")
-                                if isinstance(offers, dict):
-                                    raw_precio = offers.get("price") or offers.get("lowPrice") or offers.get("highPrice")
-                                elif isinstance(offers, list) and len(offers) > 0:
-                                    first_offer = offers[0]
-                                    if isinstance(first_offer, dict):
-                                        raw_precio = first_offer.get("price") or first_offer.get("lowPrice")
+                        # Extracción de precios limpia y directa desde el <head>
+                        sale_tag = soup_prod.find('meta', property='product:sale_price:amount')
+                        base_tag = soup_prod.find('meta', property='product:price:amount')
 
-                            if not raw_precio and soup_prod:
-                                elem = soup_prod.select_one('[data-price-amount], .price-wrapper .price, .price-final_price .price')
-                                if elem:
-                                    raw_precio = elem.get('data-price-amount') or elem.get_text()
-                                    m = re.search(r'(\d+[.,]\d{2})', str(raw_precio))
-                                    if m: raw_precio = m.group(1)
+                        try:
+                            p_sale = float(sale_tag['content']) if sale_tag and sale_tag.get('content') else 0.0
+                            p_base = float(base_tag['content']) if base_tag and base_tag.get('content') else 0.0
 
-                            try:
-                                precio = float(str(raw_precio).replace(',', '.'))
-                            except (ValueError, TypeError):
-                                precio = 0.0
+                            if p_sale > 0 and p_base > p_sale:
+                                precio = p_sale
+                                precio_anterior = p_base
+                            elif p_base > 0:
+                                precio = p_base
+                            elif p_sale > 0:
+                                precio = p_sale
+                        except (ValueError, TypeError):
+                            pass
 
-                            if precio <= 0:
-                                continue # Omitir si sigue siendo 0.0€
-
-                            contenedor_principal = soup_prod.find(class_='product-info-main') or soup_prod
-                            html_precio_viejo = contenedor_principal.find(class_=re.compile(r'old-price'))
-                            if html_precio_viejo:
-                                html_span = html_precio_viejo.find('span', class_=re.compile(r'price'))
-                                if html_span:
-                                    txt_viejo = html_span.text.replace('€', '').replace(',', '.').replace('\xa0', '').strip()
-                                    try:
-                                        match_viejo = re.search(r'(\d+\.\d+)', txt_viejo)
-                                        if match_viejo:
-                                            p_viejo = float(match_viejo.group(1))
-                                            if p_viejo > precio:
-                                                precio_anterior = p_viejo
-                                    except: pass
+                        if precio <= 0:
+                            continue # Descarte de seguridad si el producto no tiene un precio válido
 
                         # --- NUEVO: CAZADOR DE PESOS OCULTOS PARA HSN ---
                         # Campos adicionales desde HTML solo si tenemos soup_prod

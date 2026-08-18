@@ -45,6 +45,8 @@ query = query.order_by(
 )
 ```
 
-## Roadmap Futuro / Sprint 4 (Multi-Tienda)
-- **Draft Arquitectónico:** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. 
-- **Requisito Técnico Estricto:** Esta migración requerirá el uso de `alembic upgrade head` sobre las bases de datos para adaptar el esquema en caliente sin romper la ingesta de las pipelines CI/CD.
+## Backlog / Roadmap Técnico Pendiente
+- **Migración a Multi-Tienda (Sprint 4):** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. Esta migración requerirá el uso estricto de **Alembic** para gestionar las migraciones de base de datos de forma segura.
+- **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
+- **Gestión Avanzada de Stock:** Desarrollar a futuro un algoritmo que marque temporalmente como inactivos los productos agotados en lugar de borrarlos, reintroduciéndolos automáticamente cuando vuelvan a tener stock.
+- **Estrategia CRON Segura:** Establecer flujos de ingesta atómicos (upsert) para evitar que la web quede vacía durante las actualizaciones.
