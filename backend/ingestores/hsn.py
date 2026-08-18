@@ -295,7 +295,14 @@ def inyectar_en_bd():
                             desc_tag = soup_prod.find('meta', property='og:description')
                             desc_cruda = desc_tag.get('content', '') if desc_tag else ''
 
-                        brand_raw = "HSN" # Marca forzada
+                        # EXTRACCIÓN INTELIGENTE DE MARCA DESDE JSON-LD
+                        brand_raw = "HSN"
+                        if datos_producto:
+                            brand_info = datos_producto.get('brand')
+                            if isinstance(brand_info, dict):
+                                brand_raw = brand_info.get('name', 'HSN')
+                            elif isinstance(brand_info, str):
+                                brand_raw = brand_info
                         
                         marca_final = normalizar_marca(brand_raw)
                         marca_actual = db.query(models.Marca).filter_by(nombre=marca_final).first()
