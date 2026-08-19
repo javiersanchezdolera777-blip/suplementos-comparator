@@ -58,3 +58,29 @@ query = query.order_by(
 - **Tabla Comparativa Multitienda:** Interfaz para comparar 2+ productos/tiendas y resaltar el más barato.
 - **Optimizador de Afiliados:** Reducir la latencia de las redirecciones de Tradedoubler hacia SportLive/Farma2Go.
 - **Nuevas Tiendas:** Integrar Aminha Farmacia y Bulk (vía Awin, requerirá scraper sin datafeed).
+
+## Configuración de Entorno (Environment Variables)
+
+Para garantizar la seguridad y la correcta conexión entre servicios, el proyecto utiliza variables de entorno. 
+
+### Frontend (`frontend/.env.local` y Panel de Vercel)
+- `NEXT_PUBLIC_API_URL`: URL base del backend (ej: `http://localhost:8000` en local, o la URL de Render en producción).
+- `NEXT_PUBLIC_GA_ID`: ID de Google Analytics.
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: Identificador del cliente OAuth de Google para el Login.
+
+### Backend (`backend/.env` y Panel de Render)
+- `DATABASE_URL`: Cadena de conexión a la base de datos PostgreSQL (Neon DB).
+- `GOOGLE_CLIENT_ID`: Debe ser **idéntico** al `NEXT_PUBLIC_GOOGLE_CLIENT_ID` del frontend. Se usa para verificar la integridad del token recibido (Audience Match).
+- *Otras:* `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `RESEND_API_KEY`.
+
+> [!WARNING]  
+> **Guía de Despliegue Crítica:** Debes configurar todas estas variables de entorno en los paneles de control de tus respectivos hostings (Vercel para el Frontend y Render para el Backend) **ANTES** de realizar el primer despliegue. Si un despliegue se inicia sin las variables inyectadas, fallarán los builds o, peor aún, los endpoints de autenticación y base de datos rechazarán las conexiones.
+
+## Autenticación y Seguridad (OAuth Google)
+
+El proyecto utiliza una arquitectura de autenticación JWT híbrida. El frontend obtiene el token de Google y el backend lo valida e intercambia por un JWT propio.
+
+> [!IMPORTANT]  
+> **Añadir dominios a Google Cloud Console:** Si despliegas la aplicación en un nuevo dominio (o quieres probarla en un entorno distinto a localhost), es obligatorio ir a la [Google Cloud Console](https://console.cloud.google.com/), navegar a **API y Servicios > Credenciales**, seleccionar tu Cliente OAuth 2.0 y añadir el nuevo dominio a las listas de:
+> - **Orígenes autorizados de JavaScript** (ej: `https://www.tussuplementos.com`)
+> - **URI de redireccionamiento autorizados**

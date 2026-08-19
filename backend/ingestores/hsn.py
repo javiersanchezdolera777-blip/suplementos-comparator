@@ -295,13 +295,29 @@ def inyectar_en_bd():
                             desc_tag = soup_prod.find('meta', property='og:description')
                             desc_cruda = desc_tag.get('content', '') if desc_tag else ''
 
-                        # EXTRACCIÓN INTELIGENTE DE MARCA DESDE JSON-LD
+                       # 🎯 EXTRACCIÓN DE MARCA: EL FRANCOTIRADOR VISUAL (A prueba de fallos)
                         brand_raw = "HSN"
-                        if datos_producto:
+                        
+                        # 1. Búsqueda directa del enlace de la marca (Lo que se ve debajo del título)
+                        if 'soup_prod' in locals() and soup_prod:
+                            # El símbolo '$' en el regex es la clave: 
+                            # Busca enlaces que terminen en la marca (ej: /marcas/swanson)
+                            # e ignora los productos recomendados (ej: /marcas/hsn/creatina)
+                            enlaces_marca = soup_prod.find_all('a', href=re.compile(r'/marcas/([^/]+)/?$', re.I))
+                            for a in enlaces_marca:
+                                texto = a.get_text(strip=True)
+                                if texto and texto.upper() != "HSN" and len(texto) < 25:
+                                    brand_raw = texto
+                                    break
+                                    
+                        # 2. Red de seguridad (JSON-LD), comprobando que no se deje engañar por HSN
+                        if brand_raw.upper() == "HSN" and datos_producto:
                             brand_info = datos_producto.get('brand')
                             if isinstance(brand_info, dict):
-                                brand_raw = brand_info.get('name', 'HSN')
-                            elif isinstance(brand_info, str):
+                                brand_candidata = brand_info.get('name', 'HSN')
+                                if brand_candidata.upper() != "HSN":
+                                    brand_raw = brand_candidata
+                            elif isinstance(brand_info, str) and brand_info.upper() != "HSN":
                                 brand_raw = brand_info
                         
                         marca_final = normalizar_marca(brand_raw)
@@ -412,7 +428,13 @@ def inyectar_en_bd():
                                 p_existente.descripcion = descripcion_norm
                                 p_existente.imagen_url = str(imagen) if imagen else None
                                 p_existente.afiliado_url = url_afiliado
-                                p_existente.marca_id = marca_actual.id
+                                # 🛡️ ESCUDO UPSERT PARA MARCAS:
+                                # Si el producto ya tenía una marca externa y el scraper devuelve HSN, NO lo pisamos.
+                                if p_existente.marca_id != marca_hsn.id and marca_actual.id == marca_hsn.id:
+                                    pass # Respetamos la marca externa
+                                else:
+                                    p_existente.marca_id = marca_actual.id
+                                    
                                 p_existente.categoria_id = categoria_id
                                 p_existente.sabor = sabor_norm
                                 p_existente.formato = etiquetas.get("formato")

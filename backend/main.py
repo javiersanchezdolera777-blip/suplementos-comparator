@@ -1,3 +1,4 @@
+import os
 from fastapi.security import OAuth2PasswordBearer
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -392,10 +393,13 @@ class GoogleToken(BaseModel):
 @app.post("/api/auth/google")
 def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
     try:
+        # Obtenemos el Client ID desde la variable de entorno
+        client_id = os.getenv("GOOGLE_CLIENT_ID")
+        
         idinfo = id_token.verify_oauth2_token(
             google_data.token, 
             google_requests.Request(), 
-            "318282148406-908hoi15scu4vcc8v9lhqfkislin10cb.apps.googleusercontent.com"
+            client_id  # ✅ Ahora usas la variable dinámica
         )
         
         email = idinfo['email']
