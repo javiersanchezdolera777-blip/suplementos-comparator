@@ -52,7 +52,7 @@ def format_deal_message(product):
     return caption
 
 
-def send_telegram_deal(photo_url, caption):
+def send_telegram_deal(photo_url, caption, affiliate_url):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print(
             "❌ CRÍTICO: Variables de entorno de Telegram vacías. Revisa los Secrets del Repositorio."
@@ -66,35 +66,47 @@ def send_telegram_deal(photo_url, caption):
         sys.exit(1)
 
     base_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "parse_mode": "HTML"}
+
+    # Botón inline interactivo y visible
+    reply_markup = {
+        "inline_keyboard": [[{"text": "🛒 Ver oferta en la web", "url": affiliate_url}]]
+    }
 
     try:
         # Intentar con foto
         if photo_url:
-            payload["photo"] = photo_url
-            payload["caption"] = caption
+            payload = {
+                "chat_id": TELEGRAM_CHAT_ID,
+                "photo": photo_url,
+                "caption": caption,
+                "parse_mode": "HTML",
+                "reply_markup": reply_markup,
+            }
             res = requests.post(
                 f"{base_url}/sendPhoto", json=payload, timeout=15
             ).json()
             if res.get("ok"):
-                print("✅ Chollo publicado (Con foto).")
+                print("✅ Chollo publicado (Con foto y botón inline).")
                 return True
             print(
                 f"⚠️ Aviso: Falló la foto ({res.get('description')}). Intentando solo texto..."
             )
 
         # Fallback solo texto
-        payload.pop("photo", None)
-        payload.pop("caption", None)
-        payload["text"] = caption
-
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": caption,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+            "reply_markup": reply_markup,
+        }
         res = requests.post(f"{base_url}/sendMessage", json=payload, timeout=15).json()
         if res.get("ok"):
-            print("✅ Chollo publicado (Solo texto).")
+            print("✅ Chollo publicado (Solo texto con botón).")
             return True
         else:
             print(f"❌ ERROR TELEGRAM API: {res.get('description')}")
-            sys.exit(1)  # Forzamos el fallo rojo en GitHub Actions
+            sys.exit(1)
 
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR DE RED: Falló la conexión con Telegram -> {e}")

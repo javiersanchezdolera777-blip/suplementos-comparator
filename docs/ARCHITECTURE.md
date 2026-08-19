@@ -51,6 +51,18 @@ query = query.order_by(
 - **CRON de Precios:** Recuperar/verificar el CRON que actualiza precios 4 veces al día.
 - **CRON Monitor de Scrapers:** Crear un script centinela que avise si la estructura DOM de una tienda o el Datafeed cambia, para detectar roturas proactivamente.
 
+## Sistema de Notificaciones y Engagement
+
+El ecosistema de comunicaciones está diseñado bajo un modelo SaaS premium, enfocado en maximizar el CTR (Click-Through Rate) y mantener una alta entregabilidad (Deliverability).
+
+*   **Arquitectura de Notificaciones (Email):** Todo el tráfico saliente (Correos de Bienvenida, Alertas de Precio y Resumen de Favoritos) está centralizado de manera estricta en `services/email_service.py`. Se utilizan plantillas HTML/CSS inline con identidad corporativa, asegurando la inclusión dinámica de imágenes (inyectadas desde `actualizador_precios.py`) y jerarquías visuales orientadas a conversión.
+*   **Retargeting Automatizado:** El módulo `retargeting_vistas.py` emplea estructuras de datos unificadas (`Set()`) para garantizar que el usuario reciba recomendaciones únicas de su historial. Dispone de trazas de depuración de primer nivel (captura y volcado directo del *response* de la API de Resend) e implementa un riguroso *cooldown* anti-spam de 7 días.
+*   **Canal Telegram "VIP":** Transición hacia notificaciones altamente interactivas a través de Botones Inline nativos de Telegram (`reply_markup`). El formato del texto (`parse_mode="HTML"`) destaca los chollos y aplica estilos limpios adaptados a lectura rápida en móvil.
+*   **Seguridad, Estabilidad y Resiliencia:** 
+    *   **Patrón Fail-Fast:** Los scripts y servicios de notificación validan de forma agresiva sus tokens (ej: `RESEND_API_KEY`) al inicio del ciclo de vida; si faltan, interrumpen la ejecución explícitamente (`sys.exit(1)`) para evitar fallos silenciosos en producción.
+    *   **Filtros de Cordura Matemática:** El cálculo del "Ratio de Oro" (€/kg) se blinda validando rangos lógicos (entre 2€ y 100€), descartando errores de precio o gramaje arrastrados del scraping.
+    *   **Garantía Visual:** El pipeline `actualizador_precios.py` inyecta sistemáticamente `imagen_url` en la cola de alertas, previniendo el colapso visual de los correos automáticos.
+
 ## Roadmap de Producto / Features
 - **Migración a Multi-Tienda (Sprint 4):** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. Esta migración requerirá el uso estricto de **Alembic** para gestionar las migraciones de base de datos de forma segura.
 - **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.

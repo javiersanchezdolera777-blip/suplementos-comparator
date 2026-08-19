@@ -8,7 +8,9 @@ load_dotenv()
 
 # Fail-Fast: Validación de entorno crítico
 if not os.getenv("DATABASE_URL"):
-    print("❌ ERROR CRÍTICO: DATABASE_URL no está definida en el entorno. Interrumpiendo ejecución.")
+    print(
+        "❌ ERROR CRÍTICO: DATABASE_URL no está definida en el entorno. Interrumpiendo ejecución."
+    )
     sys.exit(1)
 
 # Asegurar path de importación
@@ -19,70 +21,97 @@ import models
 from sqlalchemy import or_
 from services.email_service import enviar_newsletter_suscripcion
 
+
 def obtener_top_5_chollos(db):
     # Productos en oferta
     base_query = db.query(models.Producto).filter(
         models.Producto.precio_anterior != None,
-        models.Producto.precio_anterior > models.Producto.precio
+        models.Producto.precio_anterior > models.Producto.precio,
     )
-    
+
     # 1. Buscar prioritarios: Proteínas o Creatina
-    prioritarios = base_query.join(models.Categoria).filter(
-        or_(
-            models.Categoria.nombre.ilike("%prote%"),
-            models.Categoria.nombre.ilike("%creatin%"),
-            models.Producto.nombre.ilike("%prote%"),
-            models.Producto.nombre.ilike("%creatin%")
+    prioritarios = (
+        base_query.join(models.Categoria)
+        .filter(
+            or_(
+                models.Categoria.nombre.ilike("%prote%"),
+                models.Categoria.nombre.ilike("%creatin%"),
+                models.Producto.nombre.ilike("%prote%"),
+                models.Producto.nombre.ilike("%creatin%"),
+            )
         )
-    ).order_by((models.Producto.precio_anterior - models.Producto.precio).desc()).limit(3).all()
-    
+        .order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+        .limit(3)
+        .all()
+    )
+
     # Extraer IDs para no repetir
     ids_prioritarios = [p.id for p in prioritarios]
-    
+
     # 2. Buscar el resto para completar los 5
     faltantes = 5 - len(prioritarios)
     resto = []
     if faltantes > 0:
-        query_resto = base_query.filter(
-            ~models.Producto.id.in_(ids_prioritarios) if ids_prioritarios else True
-        ).order_by((models.Producto.precio_anterior - models.Producto.precio).desc()).limit(faltantes)
+        query_resto = (
+            base_query.filter(
+                ~models.Producto.id.in_(ids_prioritarios) if ids_prioritarios else True
+            )
+            .order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+            .limit(faltantes)
+        )
         resto = query_resto.all()
-        
+
     return prioritarios + resto
 
+
 def enviar_newsletter_email(chollos):
-    # (El token de Resend ya es validado con fail-fast dentro de email_service.py al importar)
-        
     db = SessionLocal()
     try:
-        suscriptores = db.query(models.SuscripcionNewsletter).filter(models.SuscripcionNewsletter.activo == True).all()
+        suscriptores = (
+            db.query(models.SuscripcionNewsletter)
+            .filter(models.SuscripcionNewsletter.activo == True)
+            .all()
+        )
         if not suscriptores:
             print("ℹ️ No hay suscriptores activos para la newsletter.")
             return
 
         frontend_url = os.getenv("FRONTEND_URL", "https://www.tussuplementos.com")
-        
+
         html_productos = ""
-        medallas_html = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣']
+        medallas_html = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
         for idx, prod in enumerate(chollos):
             medalla = medallas_html[idx] if idx < 5 else f"{idx+1}️⃣"
             ahorro = round(prod.precio_anterior - prod.precio, 2)
-            porcentaje = int(round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100))
+            porcentaje = int(
+                round(
+                    ((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100
+                )
+            )
+
+            # Miniatura de la foto del producto (Estilo flexbox limpio)
+            img_thumb = (
+                f'<img src="{prod.imagen_url}" alt="" style="width: 60px; height: 60px; object-fit: contain; margin-right: 16px; border-radius: 6px; background-color: #ffffff;" />'
+                if prod.imagen_url
+                else ""
+            )
+
             html_productos += f"""
-            <div style="background-color: #ffffff; padding: 24px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative;">
-                <div style="position: absolute; top: -12px; left: -12px; font-size: 32px; background-color: #f8fafc; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; z-index: 10;">
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; align-items: center; position: relative;">
+                <div style="position: absolute; top: -10px; left: -10px; font-size: 24px; background-color: #f8fafc; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 10;">
                     {medalla}
                 </div>
-                <div style="margin-left: 20px;">
-                    <div style="display: inline-block; background-color: #fee2e2; color: #ef4444; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
+                {img_thumb}
+                <div style="flex-grow: 1; margin-left: 10px;">
+                    <div style="display: inline-block; background-color: #fee2e2; color: #ef4444; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">
                         -{porcentaje}% DTO
                     </div>
-                    <h3 style="margin-top: 0; color: #0f172a; font-size: 18px; font-weight: 800; line-height: 1.3; margin-bottom: 12px;">{prod.nombre}</h3>
-                    <div style="display: flex; align-items: baseline; margin-bottom: 16px;">
-                        <span style="font-size: 28px; font-weight: 900; color: #10b981; line-height: 1;">{prod.precio:.2f}€</span>
-                        <span style="font-size: 14px; color: #94a3b8; text-decoration: line-through; margin-left: 8px;">{prod.precio_anterior:.2f}€</span>
+                    <h3 style="margin-top: 0; color: #0f172a; font-size: 16px; font-weight: 700; line-height: 1.2; margin-bottom: 8px;">{prod.nombre}</h3>
+                    <div style="display: flex; align-items: baseline; margin-bottom: 12px;">
+                        <span style="font-size: 22px; font-weight: 900; color: #059669; line-height: 1;">{prod.precio:.2f}€</span>
+                        <span style="font-size: 13px; color: #94a3b8; text-decoration: line-through; margin-left: 8px;">{prod.precio_anterior:.2f}€</span>
                     </div>
-                    <a href="{frontend_url}/producto/{prod.slug}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; text-align: center; box-sizing: border-box;">
+                    <a href="{frontend_url}/producto/{prod.slug}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; text-transform: uppercase;">
                         Ver Oferta
                     </a>
                 </div>
@@ -92,18 +121,18 @@ def enviar_newsletter_email(chollos):
         html_body = f"""
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; background-color: #f8fafc; padding: 24px 24px 40px 24px;">
             <div style="text-align: center; margin-bottom: 32px;">
-                <span style="font-size: 40px;">🏆</span>
-                <h1 style="color: #0f172a; font-size: 28px; font-weight: 900; margin: 12px 0 8px 0; letter-spacing: -1px;">Top 5 Chollos Semanales</h1>
-                <p style="color: #64748b; font-size: 16px; margin: 0;">Hemos analizado todo el catálogo. Esta es la <strong>selección élite</strong> de la semana.</p>
+                <img src="https://www.tussuplementos.com/Logo_icon2.png" alt="Tus Suplementos" width="36" height="36" style="display: block; margin: 0 auto 6px auto; border-radius: 6px;" />
+                <h1 style="color: #0f172a; font-size: 26px; font-weight: 900; margin: 12px 0 8px 0; letter-spacing: -1px;">Top 5 Chollos Semanales</h1>
+                <p style="color: #64748b; font-size: 15px; margin: 0;">Selección élite de ofertas en nutrición deportiva para maximizar tu ahorro.</p>
             </div>
             
-            <div style="margin-top: 32px; padding-top: 16px;">
+            <div style="margin-top: 24px;">
                 {html_productos}
             </div>
             
             <div style="margin-top: 40px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                 <p style="font-size: 13px; color: #94a3b8; margin: 0;">
-                    Recibes este correo como parte de la comunidad de Tus Suplementos.<br/>
+                    Recibes este correo como suscriptor de Tus Suplementos.<br/>
                     <em>Entrena duro, compra inteligente.</em>
                 </p>
             </div>
@@ -114,45 +143,52 @@ def enviar_newsletter_email(chollos):
         for suscripcion in suscriptores:
             if enviar_newsletter_suscripcion(suscripcion.email, html_body):
                 enviados += 1
-                
-        print(f"✅ Newsletter enviada a {enviados}/{len(suscriptores)} suscriptores por email.")
+
+        print(
+            f"✅ Newsletter enviada a {enviados}/{len(suscriptores)} suscriptores por email."
+        )
     finally:
         db.close()
+
 
 def enviar_newsletter_telegram(chollos):
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
     frontend_url = os.getenv("FRONTEND_URL", "https://www.tussuplementos.com")
-    
+
     if not token or not chat_id:
         print("⚠️ Faltan credenciales de Telegram. Envío al canal omitido.")
         return
-        
+
     mensaje = "🏆 <b>TOP 5 CHOLLOS DE LA SEMANA</b> 🏆\n"
-    mensaje += "<i>Hemos analizado todo el catálogo y esta es la selección élite:</i>\n\n"
-    
+    mensaje += (
+        "<i>Hemos analizado todo el catálogo y esta es la selección élite:</i>\n\n"
+    )
+
     medallas = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-    
+
     for idx, prod in enumerate(chollos):
         descuento = round(prod.precio_anterior - prod.precio, 2)
-        porcentaje = int(round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100))
+        porcentaje = int(
+            round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100)
+        )
         url = f"{frontend_url}/producto/{prod.slug}"
         medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
-        
+
         mensaje += f"{medalla} <b><a href='{url}'>{prod.nombre}</a></b>\n"
         mensaje += f"❌ Antes: <s>{prod.precio_anterior:.2f}€</s>\n"
         mensaje += f"✅ Ahora: <b>{prod.precio:.2f}€</b> (-{porcentaje}%) <i>¡Ahorras {descuento:.2f}€!</i>\n\n"
-        
+
     mensaje += "⚡️ <i>Corre, las ofertas destacadas suelen agotarse en horas.</i>"
-        
+
     url_api = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": mensaje,
         "parse_mode": "HTML",
-        "disable_web_page_preview": True
+        "disable_web_page_preview": True,
     }
-    
+
     try:
         response = requests.post(url_api, json=payload)
         if response.status_code == 200:
@@ -162,6 +198,7 @@ def enviar_newsletter_telegram(chollos):
     except Exception as e:
         print(f"❌ Excepción al conectar con Telegram: {e}")
 
+
 def main():
     print("🚀 Iniciando generador del Top 5 Chollos Semanal...")
     db = SessionLocal()
@@ -170,22 +207,23 @@ def main():
         if not chollos:
             print("ℹ️ No hay productos en oferta actualmente. Cancelando newsletter.")
             return
-            
+
         print(f"📊 Encontrados {len(chollos)} productos para el Top.")
         for c in chollos:
             print(f"  - {c.nombre} (Ahorro: {round(c.precio_anterior - c.precio, 2)}€)")
-            
-        # 1. Enviar por Email
+
+        # 1. Enviar por Email[cite: 16]
         enviar_newsletter_email(chollos)
-        
-        # 2. Enviar por Telegram
+
+        # 2. Enviar por Telegram[cite: 16]
         enviar_newsletter_telegram(chollos)
-        
+
     except Exception as e:
         print(f"❌ Error crítico en el proceso principal: {e}")
     finally:
         db.close()
         print("🏁 Proceso finalizado. Conexión cerrada.")
+
 
 if __name__ == "__main__":
     main()
