@@ -353,48 +353,53 @@ def inyectar_en_bd():
                             desc_cruda = desc_tag.get(
                                 'content', '') if desc_tag else ''
 
-                        # 🎯 EXTRACCIÓN DE MARCA: URL DE PRODUCTO COMO FUERZA BRUTA (100% INFALIBLE)
+                        # 🎯 EXTRACCIÓN DE MARCA (4 FASES): A prueba de fallos
                         brand_raw = "HSN"
 
-                        # 1. LA FUENTE MÁS FIABLE: La estructura de la URL del producto
-                        # Ejemplo: https://www.hsnstore.com/marcas/swanson/gaba-250mg -> Extrae "swanson"
-                        # Ejemplo: https://www.hsnstore.com/marcas/essential-series/... -> Es gama HSN
-                        if "/marcas/" in url_prod:
+                        # 1. FASE 1: JSON-LD (Schema.org)
+                        if datos_producto:
+                            brand_info = datos_producto.get('brand')
+                            if isinstance(brand_info, dict):
+                                brand_candidata = brand_info.get('name', '')
+                                if brand_candidata and brand_candidata.strip().upper() != "HSN":
+                                    brand_raw = brand_candidata.strip().title()
+                            elif isinstance(brand_info, str) and brand_info.strip().upper() != "HSN":
+                                brand_raw = brand_info.strip().title()
+
+                        # 2. FASE 2: ESTRUCTURA DE LA URL (/marcas/)
+                        if brand_raw.upper() == "HSN" and "/marcas/" in url_prod:
                             try:
                                 partes_url = url_prod.split("/marcas/")
                                 if len(partes_url) > 1:
-                                    posible_marca = partes_url[1].split(
-                                        "/")[0].strip().lower()
-                                    gamas_hsn = [
-                                        "hsn", "hsn-accessories", "essential-series", "raw-series", "sport-series", "food-series"]
-
+                                    posible_marca = partes_url[1].split("/")[0].strip().lower()
+                                    gamas_hsn = ["hsn", "hsn-accessories", "essential-series", "raw-series", "sport-series", "food-series"]
                                     if posible_marca and posible_marca not in gamas_hsn:
-                                        # ¡Es una marca externa real detectada por la URL! (Ej: swanson)
-                                        brand_raw = posible_marca.replace(
-                                            "-", " ").title()
+                                        brand_raw = posible_marca.replace("-", " ").title()
                             except Exception:
                                 pass
 
-                        # 2. SEGUNDA CAPA (Fallback): JSON-LD si la URL no nos dio una marca externa clara
-                        if brand_raw.upper() == "HSN" and datos_producto:
-                            brand_info = datos_producto.get('brand')
-                            if isinstance(brand_info, dict):
-                                brand_candidata = brand_info.get('name')
-                                if brand_candidata and brand_candidata.strip():
-                                    brand_raw = brand_candidata.strip().title()
-                            elif isinstance(brand_info, str) and brand_info.strip():
-                                brand_raw = brand_info.strip().title()
-
-                        # 3. TERCERA CAPA (Fallback final): El Francotirador Visual en el HTML
+                        # 3. FASE 3: FRANCOTIRADOR VISUAL (HTML)
                         if brand_raw.upper() == "HSN" and 'soup_prod' in locals() and soup_prod:
-                            enlaces_marca = soup_prod.find_all(
-                                'a', href=re.compile(r'/marcas/([^/]+)/?$', re.I))
+                            enlaces_marca = soup_prod.find_all('a', href=re.compile(r'/marcas/([^/]+)/?$', re.I))
                             for a in enlaces_marca:
                                 texto = a.get_text(strip=True)
                                 if texto and texto.upper() != "HSN" and len(texto) < 25:
                                     brand_raw = texto
                                     break
 
+                        # 4. FASE 4: MOTOR REGEX (LISTA BLANCA EN NOMBRE)
+                        if brand_raw.upper() == "HSN" and nombre:
+                            marcas_blancas = [
+                                r"Swanson", r"Lamberts", r"Amix", r"NOW Foods", r"Vitaminalia",
+                                r"Optimum Nutrition", r"Scitec Nutrition", r"BiotechUSA", r"Cellucor",
+                                r"Dymatize", r"Muscletech", r"Quamtrax", r"Life Pro", r"Big Nutrition",
+                                r"Solgar", r"Soria Natural", r"Ana Maria Lajusticia", r"Solaray",
+                                r"Natrol", r"Jarrow Formulas", r"Life Extension", r"Weider"
+                            ]
+                            patron_regex = r"\b(" + "|".join(marcas_blancas) + r")\b"
+                            match = re.search(patron_regex, nombre, re.IGNORECASE)
+                            if match:
+                                brand_raw = match.group(1).title()
                         marca_final = normalizar_marca(brand_raw)
                         marca_actual = db.query(models.Marca).filter_by(
                             nombre=marca_final).first()
@@ -533,7 +538,6 @@ def inyectar_en_bd():
                                     pass  # Respetamos la marca externa
                                 else:
                                     p_existente.marca_id = marca_actual.id
-
                                 p_existente.categoria_id = categoria_id
                                 p_existente.sabor = sabor_norm
                                 p_existente.formato = etiquetas.get("formato")
