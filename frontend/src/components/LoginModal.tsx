@@ -80,7 +80,8 @@ export default function LoginModal() {
         login(data.access_token); 
         closeLoginModal(); 
       } else {
-        setErrorMsg("Fallo al conectar con Google");
+        const errData = await res.json();
+        setErrorMsg(errData.detail || "Fallo al conectar con Google");
       }
     } catch (error) {
       setErrorMsg("Error de conexión");
