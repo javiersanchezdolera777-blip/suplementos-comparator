@@ -62,33 +62,50 @@ def enviar_newsletter_email(chollos):
 
         frontend_url = os.getenv("FRONTEND_URL", "https://www.tussuplementos.com")
         
-        # Generar HTML
         html_productos = ""
-        for prod in chollos:
+        medallas_html = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣']
+        for idx, prod in enumerate(chollos):
+            medalla = medallas_html[idx] if idx < 5 else f"{idx+1}️⃣"
+            ahorro = round(prod.precio_anterior - prod.precio, 2)
+            porcentaje = int(round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100))
             html_productos += f"""
-            <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #ef4444;">
-                <h3 style="margin-top: 0; color: #1e293b; font-size: 16px;">{prod.nombre}</h3>
-                <p style="margin: 0; color: #64748b; font-size: 14px;">
-                    Precio anterior: <del>{prod.precio_anterior}€</del>
-                </p>
-                <p style="margin: 4px 0 12px 0; font-size: 18px; font-weight: bold; color: #10b981;">
-                    Solo {prod.precio}€
-                </p>
-                <a href="{frontend_url}/producto/{prod.slug}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
-                    Ver Oferta
-                </a>
+            <div style="background-color: #ffffff; padding: 24px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative;">
+                <div style="position: absolute; top: -12px; left: -12px; font-size: 32px; background-color: #f8fafc; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; z-index: 10;">
+                    {medalla}
+                </div>
+                <div style="margin-left: 20px;">
+                    <div style="display: inline-block; background-color: #fee2e2; color: #ef4444; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
+                        -{porcentaje}% DTO
+                    </div>
+                    <h3 style="margin-top: 0; color: #0f172a; font-size: 18px; font-weight: 800; line-height: 1.3; margin-bottom: 12px;">{prod.nombre}</h3>
+                    <div style="display: flex; align-items: baseline; margin-bottom: 16px;">
+                        <span style="font-size: 28px; font-weight: 900; color: #10b981; line-height: 1;">{prod.precio:.2f}€</span>
+                        <span style="font-size: 14px; color: #94a3b8; text-decoration: line-through; margin-left: 8px;">{prod.precio_anterior:.2f}€</span>
+                    </div>
+                    <a href="{frontend_url}/producto/{prod.slug}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; text-align: center; box-sizing: border-box;">
+                        Ver Oferta
+                    </a>
+                </div>
             </div>
             """
 
         html_body = f"""
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="color: #0f172a;">🔥 Top 5 Chollos de la Semana</h1>
-                <p style="color: #64748b;">La mejor selección de ofertas para que ahorres al máximo en tus suplementos.</p>
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; background-color: #f8fafc; padding: 24px 24px 40px 24px;">
+            <div style="text-align: center; margin-bottom: 32px;">
+                <span style="font-size: 40px;">🏆</span>
+                <h1 style="color: #0f172a; font-size: 28px; font-weight: 900; margin: 12px 0 8px 0; letter-spacing: -1px;">Top 5 Chollos Semanales</h1>
+                <p style="color: #64748b; font-size: 16px; margin: 0;">Hemos analizado todo el catálogo. Esta es la <strong>selección élite</strong> de la semana.</p>
             </div>
-            {html_productos}
-            <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8;">
-                <p>Recibes este correo porque te suscribiste a las alertas de Tus Suplementos.</p>
+            
+            <div style="margin-top: 32px; padding-top: 16px;">
+                {html_productos}
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+                    Recibes este correo como parte de la comunidad de Tus Suplementos.<br/>
+                    <em>Entrena duro, compra inteligente.</em>
+                </p>
             </div>
         </div>
         """
@@ -111,18 +128,22 @@ def enviar_newsletter_telegram(chollos):
         print("⚠️ Faltan credenciales de Telegram. Envío al canal omitido.")
         return
         
-    mensaje = "🔥 <b>TOP 5 CHOLLOS DE LA SEMANA</b> 🔥\n\n"
+    mensaje = "🏆 <b>TOP 5 CHOLLOS DE LA SEMANA</b> 🏆\n"
+    mensaje += "<i>Hemos analizado todo el catálogo y esta es la selección élite:</i>\n\n"
     
     medallas = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
     
     for idx, prod in enumerate(chollos):
         descuento = round(prod.precio_anterior - prod.precio, 2)
+        porcentaje = int(round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100))
         url = f"{frontend_url}/producto/{prod.slug}"
         medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
         
         mensaje += f"{medalla} <b><a href='{url}'>{prod.nombre}</a></b>\n"
-        mensaje += f"❌ Antes: <s>{prod.precio_anterior}€</s>\n"
-        mensaje += f"✅ Ahora: <b>{prod.precio}€</b> (Ahorras {descuento}€)\n\n"
+        mensaje += f"❌ Antes: <s>{prod.precio_anterior:.2f}€</s>\n"
+        mensaje += f"✅ Ahora: <b>{prod.precio:.2f}€</b> (-{porcentaje}%) <i>¡Ahorras {descuento:.2f}€!</i>\n\n"
+        
+    mensaje += "⚡️ <i>Corre, las ofertas destacadas suelen agotarse en horas.</i>"
         
     url_api = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
