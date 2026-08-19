@@ -1,2 +1,4 @@
-![Actualizador de Precios](https://github.com/TU_USUARIO/TU_REPO/actions/workflows/actualizador_precios.yml/badge.svg?branch=fix-bugs-ui)
-![Retargeting](https://github.com/TU_USUARIO/TU_REPO/actions/workflows/retargeting.yml/badge.svg?branch=fix-bugs-ui)
+[![Actualizador de Precios](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/cron_precios.yml/badge.svg?branch=fix-bugs-ui)](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/cron_precios.yml)
+[![Retargeting Email Diario](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/retargeting.yml/badge.svg?branch=fix-bugs-ui)](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/retargeting.yml)
+[![Newsletter Semanal](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/newsletter.yml/badge.svg?branch=fix-bugs-ui)](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/newsletter.yml)
+[![Alertas Telegram Diarias](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/telegram_deals.yml/badge.svg?branch=fix-bugs-ui)](https://github.com/javiersanchezdolera777-blip/suplementos-comparator/actions/workflows/telegram_deals.yml)
