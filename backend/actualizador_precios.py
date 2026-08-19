@@ -5,6 +5,10 @@ from datetime import datetime
 # Asegurar path de importación
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+if not os.getenv("DATABASE_URL"):
+    print("❌ ERROR CRÍTICO: DATABASE_URL no está definida en el entorno. Interrumpiendo ejecución.")
+    sys.exit(1)
+
 from database import SessionLocal
 import models
 

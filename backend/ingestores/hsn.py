@@ -295,14 +295,21 @@ def inyectar_en_bd():
                             desc_tag = soup_prod.find('meta', property='og:description')
                             desc_cruda = desc_tag.get('content', '') if desc_tag else ''
 
-                       # 🎯 EXTRACCIÓN DE MARCA: EL FRANCOTIRADOR VISUAL (A prueba de fallos)
+                        # 🎯 EXTRACCIÓN DE MARCA: JSON-LD PRIORITARIO + FRANCOTIRADOR VISUAL
                         brand_raw = "HSN"
                         
-                        # 1. Búsqueda directa del enlace de la marca (Lo que se ve debajo del título)
-                        if 'soup_prod' in locals() and soup_prod:
-                            # El símbolo '$' en el regex es la clave: 
-                            # Busca enlaces que terminen en la marca (ej: /marcas/swanson)
-                            # e ignora los productos recomendados (ej: /marcas/hsn/creatina)
+                        # 1. PRIORIDAD ABSOLUTA: JSON-LD (Schema.org nos da la marca limpia)
+                        if datos_producto:
+                            brand_info = datos_producto.get('brand')
+                            if isinstance(brand_info, dict):
+                                brand_candidata = brand_info.get('name')
+                                if brand_candidata and brand_candidata.strip():
+                                    brand_raw = brand_candidata.strip()
+                            elif isinstance(brand_info, str) and brand_info.strip():
+                                brand_raw = brand_info.strip()
+
+                        # 2. RED DE SEGURIDAD SECUNDARIA: El Francotirador Visual en el HTML
+                        if brand_raw.upper() == "HSN" and 'soup_prod' in locals() and soup_prod:
                             enlaces_marca = soup_prod.find_all('a', href=re.compile(r'/marcas/([^/]+)/?$', re.I))
                             for a in enlaces_marca:
                                 texto = a.get_text(strip=True)
@@ -310,16 +317,6 @@ def inyectar_en_bd():
                                     brand_raw = texto
                                     break
                                     
-                        # 2. Red de seguridad (JSON-LD), comprobando que no se deje engañar por HSN
-                        if brand_raw.upper() == "HSN" and datos_producto:
-                            brand_info = datos_producto.get('brand')
-                            if isinstance(brand_info, dict):
-                                brand_candidata = brand_info.get('name', 'HSN')
-                                if brand_candidata.upper() != "HSN":
-                                    brand_raw = brand_candidata
-                            elif isinstance(brand_info, str) and brand_info.upper() != "HSN":
-                                brand_raw = brand_info
-                        
                         marca_final = normalizar_marca(brand_raw)
                         marca_actual = db.query(models.Marca).filter_by(nombre=marca_final).first()
                         if not marca_actual:

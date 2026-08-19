@@ -2,7 +2,14 @@ import os
 import sys
 import requests
 from dotenv import load_dotenv
-import resend
+
+# Cargar variables de entorno
+load_dotenv()
+
+# Fail-Fast: Validación de entorno crítico
+if not os.getenv("DATABASE_URL"):
+    print("❌ ERROR CRÍTICO: DATABASE_URL no está definida en el entorno. Interrumpiendo ejecución.")
+    sys.exit(1)
 
 # Asegurar path de importación
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -10,10 +17,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from database import SessionLocal
 import models
 from sqlalchemy import or_
-
-# Cargar variables de entorno
-load_dotenv()
-resend.api_key = os.getenv("RESEND_API_KEY")
+from services.email_service import enviar_newsletter_suscripcion
 
 def obtener_top_5_chollos(db):
     # Productos en oferta
@@ -47,9 +51,7 @@ def obtener_top_5_chollos(db):
     return prioritarios + resto
 
 def enviar_newsletter_email(chollos):
-    if not resend.api_key:
-        print("⚠️ No hay RESEND_API_KEY. Envío de emails omitido.")
-        return
+    # (El token de Resend ya es validado con fail-fast dentro de email_service.py al importar)
         
     db = SessionLocal()
     try:
@@ -93,16 +95,8 @@ def enviar_newsletter_email(chollos):
 
         enviados = 0
         for suscripcion in suscriptores:
-            try:
-                resend.Emails.send({
-                    "from": "Tus Suplementos <chollos@tussuplementos.com>",
-                    "to": suscripcion.email,
-                    "subject": "🔥 Los 5 Mejores Chollos de la Semana",
-                    "html": html_body
-                })
+            if enviar_newsletter_suscripcion(suscripcion.email, html_body):
                 enviados += 1
-            except Exception as e:
-                print(f"❌ Error al enviar a {suscripcion.email}: {e}")
                 
         print(f"✅ Newsletter enviada a {enviados}/{len(suscriptores)} suscriptores por email.")
     finally:

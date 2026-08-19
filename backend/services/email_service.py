@@ -1,12 +1,14 @@
 import os
+import sys
 import resend
+
+if not os.getenv("RESEND_API_KEY"):
+    print("❌ ERROR CRÍTICO: RESEND_API_KEY no está definida en el entorno. Interrumpiendo ejecución.")
+    sys.exit(1)
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 def enviar_email_bienvenida(email: str):
-    if not resend.api_key:
-        print("⚠️ No hay RESEND_API_KEY. Correo de bienvenida omitido para:", email)
-        return
         
     try:
         r = resend.Emails.send({
@@ -30,16 +32,12 @@ def enviar_email_bienvenida(email: str):
         print(f"❌ Error enviando email de bienvenida a {email}: {e}")
 
 def enviar_alerta_bajada_precio(email: str, nombre_producto: str, precio_viejo: float, precio_nuevo: float, slug: str):
-    if not resend.api_key:
-        print(f"⚠️ No hay RESEND_API_KEY. Alerta de precio omitida para {email} sobre {nombre_producto}")
-        return
-        
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = os.getenv("FRONTEND_URL", "https://www.tussuplementos.com")
     producto_url = f"{frontend_url}/producto/{slug}"
     
     try:
         r = resend.Emails.send({
-            "from": "onboarding@resend.dev",
+            "from": "Alertas Tus Suplementos <chollos@tussuplementos.com>",
             "to": email,
             "subject": f"🔥 ¡Bajada de precio! {nombre_producto}",
             "html": f"""
@@ -63,11 +61,7 @@ def enviar_alerta_bajada_precio(email: str, nombre_producto: str, precio_viejo: 
         print(f"❌ Error enviando alerta de precio a {email}: {e}")
 
 def enviar_resumen_alertas_favoritos(email: str, productos: list):
-    if not resend.api_key:
-        print(f"⚠️ No hay RESEND_API_KEY. Resumen de alertas omitido para {email}")
-        return
-        
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = os.getenv("FRONTEND_URL", "https://www.tussuplementos.com")
     
     html_productos = ""
     for prod in productos:
@@ -104,3 +98,21 @@ def enviar_resumen_alertas_favoritos(email: str, productos: list):
         print(f"📧 Resumen de {len(productos)} alertas enviado a {email}")
     except Exception as e:
         print(f"❌ Error enviando resumen de alertas a {email}: {e}")
+
+def enviar_newsletter_suscripcion(email: str, html_body: str):
+    """
+    Envía el correo de newsletter a un único suscriptor.
+    La lógica de iteración de suscriptores y construcción del cuerpo
+    se mantiene en el cron script para separar responsabilidades.
+    """
+    try:
+        r = resend.Emails.send({
+            "from": "Tus Suplementos <chollos@tussuplementos.com>",
+            "to": email,
+            "subject": "🔥 Los 5 Mejores Chollos de la Semana",
+            "html": html_body
+        })
+        return True
+    except Exception as e:
+        print(f"❌ Error al enviar newsletter a {email}: {e}")
+        return False
