@@ -393,7 +393,7 @@ def inyectar_en_bd():
 
                         if nombre:
                             nombre = html.unescape(nombre)
-                            
+
                         if not nombre:
                             continue  # Si no podemos sacar ni el título, descartamos
 
@@ -595,8 +595,16 @@ def inyectar_en_bd():
                             )
 
                             if p_sale > 0 and p_base > p_sale:
-                                precio = p_sale
-                                precio_anterior = p_base
+                                # 🛡️ FILTRO ANTIMONOPOLIO HSN: Solo es chollo si el descuento es >= 50%
+                                porcentaje_descuento = (
+                                    (p_base - p_sale) / p_base
+                                ) * 100
+                                if porcentaje_descuento >= 50:
+                                    precio = p_sale
+                                    precio_anterior = p_base
+                                else:
+                                    precio = p_sale
+                                    precio_anterior = None  # Descuento engañoso: no lo marcamos como chollo
                             elif p_base > 0:
                                 precio = p_base
                             elif p_sale > 0:
