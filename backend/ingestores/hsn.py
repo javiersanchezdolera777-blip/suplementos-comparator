@@ -595,16 +595,46 @@ def inyectar_en_bd():
                             )
 
                             if p_sale > 0 and p_base > p_sale:
-                                # 🛡️ FILTRO ANTIMONOPOLIO HSN: Solo es chollo si el descuento es >= 50%
+                                # 🛡️ FILTRO DINÁMICO POR CATEGORÍA
                                 porcentaje_descuento = (
                                     (p_base - p_sale) / p_base
                                 ) * 100
-                                if porcentaje_descuento >= 50:
+                                nombre_lower = nombre.lower()
+
+                                # Proteínas y Creatinas (Poco margen, 30% es un gran chollo)
+                                if any(
+                                    kw in nombre_lower
+                                    for kw in [
+                                        "proteína",
+                                        "proteina",
+                                        "whey",
+                                        "isolate",
+                                        "creatin",
+                                    ]
+                                ):
+                                    umbral = 30
+                                # Aminoácidos y Pre-entrenos (Margen medio)
+                                elif any(
+                                    kw in nombre_lower
+                                    for kw in [
+                                        "amino",
+                                        "bcaa",
+                                        "pre-entreno",
+                                        "pre entreno",
+                                        "glutamina",
+                                    ]
+                                ):
+                                    umbral = 40
+                                # Resto del catálogo (Vitaminas, accesorios, alimentación deportiva)
+                                else:
+                                    umbral = 50
+
+                                if porcentaje_descuento >= umbral:
                                     precio = p_sale
                                     precio_anterior = p_base
                                 else:
                                     precio = p_sale
-                                    precio_anterior = None  # Descuento engañoso: no lo marcamos como chollo
+                                    precio_anterior = None
                             elif p_base > 0:
                                 precio = p_base
                             elif p_sale > 0:
