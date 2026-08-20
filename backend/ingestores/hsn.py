@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 2. AHORA SÍ, EMPIEZAN LAS IMPORTACIONES LOCALES
-from ingestores.utils import clasificar_producto
+from ingestores.utils import clasificar_producto, normalizar_descripcion_ui
 from schemas import (
     SaborEnum,
     FormatoEnum,
@@ -27,6 +27,7 @@ import traceback
 import requests
 from bs4 import BeautifulSoup
 import json
+import html
 import base64
 import re
 import unicodedata
@@ -390,6 +391,9 @@ def inyectar_en_bd():
                                     title_h1.get_text(strip=True) if title_h1 else None
                                 )
 
+                        if nombre:
+                            nombre = html.unescape(nombre)
+                            
                         if not nombre:
                             continue  # Si no podemos sacar ni el título, descartamos
 
@@ -666,7 +670,7 @@ def inyectar_en_bd():
                         # Normalizar tipos y proteger contra valores no serializables
                         try:
                             nombre_norm = str(nombre)[:255]
-                            descripcion_norm = str(desc_limpia)[:900]
+                            descripcion_norm = normalizar_descripcion_ui(desc_cruda)
                             precio_norm = float(precio or 0.0)
                             precio_ant_norm = (
                                 float(precio_anterior)

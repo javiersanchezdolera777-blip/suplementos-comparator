@@ -1,4 +1,5 @@
 import re
+import html
 import unicodedata
 from typing import Any, Dict, Optional, List, Union
 
@@ -19,11 +20,52 @@ def limpiar_texto(texto: str) -> str:
     if not texto:
         return ""
     texto_sin_html = re.sub(r"<[^>]+>", " ", str(texto))
-    if "una combinación ganadora" in texto_sin_html.lower():
-        texto_sin_html = texto_sin_html[
-            : texto_sin_html.lower().find("una combinación ganadora")
-        ]
     return texto_sin_html.strip().lower()
+
+
+def normalizar_descripcion_ui(texto: str) -> str:
+    if not texto:
+        return ""
+    
+    # 1. Eliminar HTML y decodificar entidades raras (ej: &#8211; se vuelve un guion)
+    t = re.sub(r"<[^>]+>", " ", str(texto))
+    t = html.unescape(t)
+    t = re.sub(r"\s+", " ", t).strip()
+    
+    # 2. Aniquilar preguntas iniciales. 
+    # Bucle por si hay varias seguidas ("¿Qué es X? ¿Para qué sirve?")
+    while re.match(r"^¿[^?]+\?\s*", t):
+        t = re.sub(r"^¿[^?]+\?\s*", "", t).strip()
+        
+    if not t:
+        return ""
+    
+    # 3. Tijera inteligente (solo si el rollo comercial está en medio o al final)
+    corte_tags = [
+        "¿para qué sirve", "¿a quién va dirigido", "¿qué beneficios",
+        "beneficios de", "funciones del", "ingredientes:", "una combinación ganadora"
+    ]
+    t_lower = t.lower()
+    idx_corte = len(t)
+    
+    for tag in corte_tags:
+        idx = t_lower.find(tag)
+        # Solo cortamos si encontramos el tag más adelante en el texto, no en la posición 0
+        if idx > 0 and idx < idx_corte:
+            idx_corte = idx
+            
+    t = t[:idx_corte].strip()
+    
+    if not t:
+        return ""
+        
+    # 4. Capitalizar primera letra y asegurar punto final
+    # NO CORTAMOS a 200 caracteres para permitir que el Frontend gestione el "Leer más"
+    t = t[0].upper() + t[1:]
+    if not t.endswith((".", "!", "?")):
+        t += "."
+        
+    return t
 
 
 def generar_slug(nombre: str) -> str:
