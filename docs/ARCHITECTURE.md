@@ -28,7 +28,7 @@ El backend se estructura bajo un modelo de API REST rápida y eficiente, conecta
 El sistema de ingestión se nutre de datos de múltiples tiendas, unificándolos bajo un sistema resiliente basado en un motor de extracción (Scraper/Feeds) y un Procesador NLP (Cerebro Central).
 
 *   **Arquitectura `BaseIngestor` (`ingestor_generico.py`):** Clase abstracta que unifica y estandariza los flujos de carga, borrado, parseo y persistencia para cualquier nueva tienda.
-*   **Extractor Resiliente HSN (`hsn.py`):** Scraper blindado con sistema de backoff (reintentos), extracción dual (JSON-LD prioritario, HTML secundario) y borrado hiper-estricto por tienda (`tienda == "HSN"`).
+*   **Extractor Resiliente HSN (`hsn.py`):** Scraper blindado con sistema de backoff (reintentos) y borrado hiper-estricto por tienda (`tienda == "HSN"`). Destaca por su algoritmo exhaustivo de validación de marcas en 4 Fases (JSON-LD, URL, HTML, Regex) diseñado para superar las limitaciones de temas dinámicos (como Hyvä Theme) y erradicar los falsos positivos por parámetros de rastreo (UTMs).
 *   **Cerebro Central NLP (`utils.py`):** Motor avanzado de clasificación que analiza nombres y descripciones para asignar categoría, formato, tipo de proteína, sabor y dietas (ej. vegano). Resuelve colisiones complejas (ej. "Colágeno Hidrolizado" -> Salud; "NAC" -> Aminoácidos).
 *   **Normalización de Marcas (`schemas.py`):** Embudo estricto que agrupa marcas dispersas (ej. *Sport Series*, *Raw Series* -> *HSN*) y mantiene la pureza de marcas internacionales (*NOW Foods*, *Swanson*).
 
@@ -48,6 +48,7 @@ query = query.order_by(
 ## Estrategia DevOps y CRONs
 - **Aislamiento de BD:** Establecer obligatoriamente bases de datos separadas (Local vs Neon DB) para el desarrollo de la Multitienda.
 - **Ingesta No Destructiva (Upsert):** Prohibido el uso de `delete()` global. Los productos agotados/desaparecidos cambiarán a `activo=False` para ocultarlos sin vaciar la web (Gestión Avanzada de Stock).
+- **Persistencia Resiliente:** El sistema obliga a realizar volcados forzosos (commits) por lotes y al final de cada ejecución, garantizando que ninguna actualización en memoria se pierda en cierres abruptos o fallos de red.
 - **CRON de Precios:** Recuperar/verificar el CRON que actualiza precios 4 veces al día.
 - **CRON Monitor de Scrapers:** Crear un script centinela que avise si la estructura DOM de una tienda o el Datafeed cambia, para detectar roturas proactivamente.
 

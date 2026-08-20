@@ -194,6 +194,11 @@ if __name__ == "__main__":
     else:
         for chollo in chollos:
             print(f"🎯 Evaluando: {chollo['name']} (-{chollo['discount']}%)")
-            if send_telegram_deal(chollo["image_url"], format_deal_message(chollo)):
+            # 👇 Aquí está el cambio: le pasamos el tercer parámetro (affiliate_url)
+            if send_telegram_deal(
+                chollo["image_url"],
+                format_deal_message(chollo),
+                chollo["affiliate_url"],
+            ):
                 mark_as_published(chollo["id"])
                 print(f"✅ DB actualizada.")
