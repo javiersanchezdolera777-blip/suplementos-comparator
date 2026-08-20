@@ -7,10 +7,10 @@
 
 ## Estado de la Base de Datos
 *   **Motor:** PostgreSQL (Neon DB).
-*   **Catálogo Actual:** HSN completamente integrado.
+*   **Catálogo Actual:** HSN 100% integrado y purgado. El gran logro reciente ha sido aislar con éxito y precisión las marcas externas que vende HSN (ej. 142 productos de Swanson, 90 de NOW Foods, 19 de Vitaminalia) gracias al nuevo motor de extracción, lo que diversifica enormemente el catálogo.
 *   **Volumen:** Más de 800 productos clasificados e ingestados correctamente.
 *   **NLP:** Catálogo de HSN 100% re-etiquetado con flags de alérgenos (Sin Gluten / Sin Lactosa) y categorías NLP en cascada.
-*   **Limpieza:** Las marcas huérfanas de pruebas anteriores han sido purgadas de la tabla maestra de `marcas`. La normalización agrupa todas las gamas de HSN bajo el paraguas de HSN y aísla las marcas externas reales (ej. *NOW Foods*, *Swanson*).
+*   **Limpieza:** Las marcas huérfanas de pruebas anteriores han sido purgadas de la tabla maestra de `marcas`. La normalización agrupa todas las gamas de HSN bajo el paraguas de HSN y aísla las marcas externas reales.
 
 ## Tareas Completadas (Checklist Reciente)
 - [x] Refactorización masiva del `utils.py` (Cerebro NLP de catalogación).
@@ -35,12 +35,17 @@
 - [x] Extracción y soporte real de los flags `sin_gluten` y `sin_lactosa` tanto en HSN como Farma2Go (evaluación de arrays en memoria).
 - [x] Implementada la "Doble Barrera" NLP para excluir con precisión productos de mascotas/veterinaria en `utils.py` y `pharma2go.py` y purgada la BBDD (+30 items eliminados).
 - [x] Limpieza de la raíz del backend migrando herramientas de testing/cron a la subcarpeta `/scripts`.
-- [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido (verificación a la espera de la próxima ventana horaria).
+- [x] Implementación de un embudo de 4 Fases (JSON-LD, URL, HTML, Regex en nombre/title) para la extracción infalible de marcas de terceros en el scraper de HSN.
+- [x] Corrección crítica de la lógica de guardado (Upsert / `db.commit()`) para garantizar que las actualizaciones y nuevos productos se persisten correctamente en Neon DB.
+- [x] Ampliación del diccionario del Cerebro Central NLP (`utils.py`) para rescatar productos atrapados en categorías fantasma (Otros/Accesorios), integrando nuevas reglas para "gainer", vitaminas (B-Complex, coenzimas) y depurativos.
+- [x] Arreglo del scraper de HSN (DOM Hyvä Theme), certificando que el Monolito Estable es totalmente robusto.
+- [x] Preparación y estabilización total de la rama `fix-bugs-ui`, dejándola lista para su paso a producción (`main`).
+- [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido.
 
 ## Sprint 3: Monolito Estable Restaurado
-- **Estado Actual:** El "Monolito Estable" se ha consolidado en producción con ~1736 productos tras arreglar el scraper de HSN (DOM Hyvä Theme).
+- **Estado Actual:** El "Monolito Estable" se ha consolidado en producción de manera impecable.
 - El catálogo funciona en una estructura plana (un Producto incluye su precio y url de afiliado directamente).
-- El sistema de Telegram (chollos) y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
+- El sistema de Telegram (chollos), el motor de retargeting y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
 
 ## Bugs Críticos y UI (A corto plazo)
 - Investigar error `failed to fetch` (posible CORS) en el formulario de la Newsletter al introducir un email.
