@@ -669,6 +669,77 @@ def quitar_producto_de_stack(
     return {"mensaje": "Producto eliminado del Stack."}
 
 # ==========================================
+# --- RUTAS DE COMUNIDAD: GAMIFICACIÓN (CHECK-IN) ---
+# ==========================================
+
+@app.post("/api/comunidad/checkin")
+def hacer_checkin_diario(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """El ritual diario. Gana puntos y mantén tu racha de suplementación."""
+    from datetime import date, timedelta
+    
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+
+    hoy = date.today()
+    ayer = hoy - timedelta(days=1)
+
+    # 1. Escudo anti-trampas: Comprobar si ya hizo el check-in hoy
+    check_hoy = db.query(models.CheckDiario).filter(
+        models.CheckDiario.perfil_id == mi_perfil.id,
+        models.CheckDiario.fecha == hoy
+    ).first()
+
+    if check_hoy:
+        raise HTTPException(status_code=400, detail="¡Ya has hecho tu check-in hoy! Vuelve mañana para no perder tu racha.")
+
+    # 2. Sistema de Rachas: Comprobar si hizo el check-in ayer
+    check_ayer = db.query(models.CheckDiario).filter(
+        models.CheckDiario.perfil_id == mi_perfil.id,
+        models.CheckDiario.fecha == ayer
+    ).first()
+
+    if check_ayer:
+        mi_perfil.racha_actual += 1
+    else:
+        # Castigo por fallar un día: se reinicia la racha
+        mi_perfil.racha_actual = 1  
+
+    # 3. Asignación de Puntos de Experiencia (XP)
+    puntos_base = 10
+    
+    # ¡BONUS! Si alcanza un múltiplo de 7 días seguidos (una semana entera), le damos un premio gordo
+    if mi_perfil.racha_actual > 0 and mi_perfil.racha_actual % 7 == 0:
+        puntos_base += 50
+        mensaje = f"¡INCREÍBLE! Has completado {mi_perfil.racha_actual} días seguidos. Toma 50 XP extra. 🔥"
+    else:
+        mensaje = "¡Check-in completado con éxito! Sigue así. 💪"
+
+    mi_perfil.puntos_totales += puntos_base
+
+    # 4. Registrar el check-in en el historial
+    nuevo_check = models.CheckDiario(
+        perfil_id=mi_perfil.id,
+        fecha=hoy,
+        puntos_ganados=puntos_base
+    )
+
+    db.add(nuevo_check)
+    db.commit()
+    db.refresh(mi_perfil)
+
+    # Devolvemos el estado actual para que el frontend pinte los numeritos actualizados al instante
+    return {
+        "mensaje": mensaje,
+        "puntos_ganados": puntos_base,
+        "puntos_totales_actualizados": mi_perfil.puntos_totales,
+        "racha_actualizada": mi_perfil.racha_actual
+    }
+
+# ==========================================
 # --- RUTAS DE FAVORITOS (PRIVADAS) ---
 # ==========================================
 
