@@ -30,7 +30,7 @@ class SaborEnum(str, Enum):
 class FormatoEnum(str, Enum):
     polvo = "Polvo"
     capsulas = "Cápsulas"
-    liquido = "Líquido"
+    gel = "Gel"
     barrita = "Barrita"
     gominolas = "Gominolas"
 
