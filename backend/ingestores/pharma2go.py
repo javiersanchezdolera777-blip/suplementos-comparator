@@ -362,7 +362,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             "no gluten",
             "0% gluten",
             "apto para celíacos",
-            "apto para celiacos", 
+            "apto para celiacos",
             "sin trigo",
         ]
     )
@@ -376,7 +376,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             "no lactosa",
             "0% lactosa",
             "zero lactose",
-            "lactasa",  
+            "lactasa",
             "digezyme",
             "tolarase",
         ]
@@ -391,12 +391,29 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         c["formato"] = FormatoEnum.capsulas.value
     elif any(
         p in texto_completo
-        for p in ["polvo", "harina", "copos", "soluble", "disolución", "batido", "cucharada", "scoop", "cacito", "dosificador", "mezclar", "ml de agua", "cucharadita", "cucharaditas"]
+        for p in [
+            "polvo",
+            "harina",
+            "copos",
+            "soluble",
+            "disolución",
+            "batido",
+            "cucharada",
+            "cucharadas",
+            "bebida",
+            "miligramos",
+            "mg",
+            "scoop",
+            "cacito",
+            "dosificador",
+            "mezclar",
+            "ml de agua",
+            "cucharadita",
+            "cucharaditas",
+        ]
     ):
         c["formato"] = FormatoEnum.polvo.value
-    elif any(
-        p in texto_completo for p in ["vial", "líquido", "liquid", "gel"]
-    ):
+    elif any(p in texto_completo for p in ["vial", "gel"]):
         c["formato"] = FormatoEnum.gel.value
     elif any(p in texto_completo for p in ["barrita", "barra", "snack"]):
         c["formato"] = FormatoEnum.barrita.value
