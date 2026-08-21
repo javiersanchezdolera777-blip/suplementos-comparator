@@ -315,6 +315,39 @@ def obtener_productos(
         "total_resultados": total_resultados,
         "productos": productos
     }
+
+# ==========================================
+# --- RUTA DE COMPARADOR MULTITIENDA ---
+# ==========================================
+@app.get("/api/productos/comparar", response_model=List[schemas.ProductResponse])
+def comparar_productos(
+    ids: str = Query(..., description="IDs de los productos a comparar, separados por comas (ej. 10,45,102)"),
+    db: Session = Depends(get_db)
+):
+    try:
+        # 1. Convertimos la cadena "10,45,102" en una lista de enteros únicos
+        lista_ids = list(set([int(id_str.strip()) for id_str in ids.split(",") if id_str.strip().isdigit()]))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de IDs inválido. Deben ser números.")
+    
+    # 2. Barrera de Seguridad (Máximo 4 productos para no saturar la UI ni la DB)
+    if not lista_ids:
+        raise HTTPException(status_code=400, detail="Debes proporcionar al menos un ID válido.")
+    if len(lista_ids) > 4:
+        raise HTTPException(status_code=400, detail="Solo puedes comparar un máximo de 4 productos a la vez.")
+        
+    # 3. Consulta súper optimizada usando el operador in_() de SQLAlchemy
+    productos = db.query(models.Producto).filter(models.Producto.id.in_(lista_ids)).all()
+    
+    if not productos:
+        raise HTTPException(status_code=404, detail="No se encontró ninguno de los productos solicitados.")
+        
+    # 4. Opcional pero recomendado: Ordenamos los resultados para que coincidan con el orden de los IDs solicitados
+    productos.sort(key=lambda p: lista_ids.index(p.id) if p.id in lista_ids else 99)
+        
+    return productos
+
+
 # --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
