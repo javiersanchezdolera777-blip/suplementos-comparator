@@ -352,6 +352,30 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         else False
     )
 
+    c["sin_gluten"] = any(
+        p in texto_completo
+        for p in [
+            "sin gluten",
+            "gluten free",
+            "gluten-free",
+            "libre de gluten",
+            "no gluten",
+            "0% gluten",
+        ]
+    )
+    c["sin_lactosa"] = any(
+        p in texto_completo
+        for p in [
+            "sin lactosa",
+            "lactose free",
+            "lactose-free",
+            "libre de lactosa",
+            "no lactosa",
+            "0% lactosa",
+            "zero lactose",
+        ]
+    )
+
     # FORMATO PRIMERO (Lo necesitamos para saber qué hacer con los sabores)
     c["formato"] = None
     if any(
