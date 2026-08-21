@@ -670,22 +670,26 @@ def inyectar_en_bd():
                         )
                         # ------------------------------------------------
 
-                        # --- NUEVO: CAZADOR DE SABORES OCULTOS PARA HSN ---
-                        opciones_sabor = soup_prod.find_all(
-                            attrs={"option-label": True}
+                        # --- NUEVO: CAZADOR DE SABORES JS (MAGENTO 2) DECODIFICADO ---
+                        etiquetas_js = re.findall(
+                            r'"label"\s*:\s*"([^"]+)"', res_prod.text, re.IGNORECASE
                         )
-                        textos_sabores = [
-                            op.get("option-label", "") for op in opciones_sabor
-                        ]
 
-                        # Plan B por si usan clases en lugar de option-label
-                        if not textos_sabores:
-                            swatches = soup_prod.find_all(
-                                class_=re.compile(r"swatch-option")
-                            )
-                            textos_sabores = [s.text for s in swatches]
+                        sabores_limpios = []
+                        for etiqueta in etiquetas_js:
+                            # 🛡️ ESCUDO ANTI-BASURA: Ignoramos etiquetas de sistema largas
+                            if len(etiqueta) < 35:
+                                try:
+                                    # Transforma \u00f3 en 'ó', \u00e1 en 'á', etc.
+                                    decodificado = etiqueta.encode("utf-8").decode(
+                                        "unicode_escape"
+                                    )
+                                    sabores_limpios.append(decodificado)
+                                except:
+                                    sabores_limpios.append(etiqueta)
 
-                        texto_sabores_extra = " ".join(textos_sabores).lower()
+                        texto_sabores_extra = " ".join(sabores_limpios).lower()
+
                         # ------------------------------------------------------------
 
                         desc_limpia = limpiar_texto(desc_cruda)

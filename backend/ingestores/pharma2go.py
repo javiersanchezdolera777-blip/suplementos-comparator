@@ -269,7 +269,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         "mochila",
         "pastillero",
     ]
-    if any(p in n for p in basura_titulo):
+    if any(re.search(r"\b" + p + r"\b", n) for p in basura_titulo):
         return None
 
     # 1.2 FILTRO VETERINARIO (Búsqueda estricta en Título + Descripción)
@@ -287,7 +287,7 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         "felino",
         "canino",
     ]
-    if any(p in texto_completo for p in basura_veterinaria):
+    if any(re.search(r"\b" + p + r"\b", texto_completo) for p in basura_veterinaria):
         return None
 
     # 2. CATEGORÍA ESTRICTA
@@ -382,11 +382,36 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         ]
     )
 
-    # FORMATO PRIMERO (Lo necesitamos para saber qué hacer con los sabores)
+    # ==========================================
+    # 1. FORMATO (Gominolas añadidas + Palabras seguras)
+    # ==========================================
+    # ==========================================
+    # 1. FORMATO (Diccionario Súper-Ampliado)
+    # ==========================================
     c["formato"] = None
     if any(
-        p in texto_completo
-        for p in ["cápsula", "capsula", "comprimido", "perla", "pastilla", "tableta"]
+        p in n
+        for p in [
+            "cápsula",
+            "capsula",
+            "caps",
+            "cápsulas",
+            "capsulas",
+            "comprimido",
+            "comprimidos",
+            "perla",
+            "perlas",
+            "tableta",
+            "tabletas",
+            "tablets",
+            "tabs",
+            "veg caps",
+            "vcap",
+            "vcaps",
+            "softgel",
+            "pastilla",
+            "pastillas",
+        ]
     ):
         c["formato"] = FormatoEnum.capsulas.value
     elif any(
@@ -394,34 +419,66 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         for p in [
             "polvo",
             "harina",
-            "copos",
-            "soluble",
-            "disolución",
-            "batido",
-            "cucharada",
-            "cucharadas",
-            "bebida",
-            "miligramos",
-            "mg",
-            "scoop",
             "cacito",
-            "dosificador",
-            "mezclar",
-            "ml de agua",
+            "scoop",
+            "cucharada",
             "cucharadita",
             "cucharaditas",
+            "dosificador",
+            "batido",
+            "soluble",
+            "disolución",
+            "copos",
+            "granulado",
         ]
     ):
         c["formato"] = FormatoEnum.polvo.value
-    elif any(p in texto_completo for p in ["vial", "gel"]):
-        c["formato"] = FormatoEnum.gel.value
-    elif any(p in texto_completo for p in ["barrita", "barra", "snack"]):
+    elif any(
+        p in texto_completo
+        for p in [
+            "vial",
+            "viales",
+            "gel",
+            "geles",
+            "líquido",
+            "liquido",
+            "gotas",
+            "liquid",
+            "ampolla",
+            "ampollas",
+            "bebida",
+            "ml",
+            "jarabe",
+            "spray",
+            "sirope",
+        ]
+    ):
+        c["formato"] = FormatoEnum.liquido_gel.value
+    elif any(
+        p in texto_completo
+        for p in [
+            "barrita",
+            "barritas",
+            "barra",
+            "snack",
+            "flapjack",
+            "galleta",
+            "galletas",
+            "cookie",
+            "cookies",
+            "brownie",
+            "bizcocho",
+        ]
+    ):
         c["formato"] = FormatoEnum.barrita.value
-    elif any(p in texto_completo for p in ["gominola", "gummy"]):
+    elif any(
+        p in texto_completo
+        for p in ["gominola", "gominolas", "gummy", "gummies", "caramelo", "caramelos"]
+    ):
         c["formato"] = FormatoEnum.gominolas.value
 
     if not c["formato"]:
-        if c["categoria"] in [
+        if c.get("categoria") in [
             CategoriaEnum.proteinas.value,
             CategoriaEnum.creatinas.value,
         ]:
@@ -432,31 +489,46 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         ):
             c["formato"] = FormatoEnum.polvo.value
 
-    # SABORES (Ahora dependientes del formato)
-    sabores_encontrados = []
+    # ==========================================
+    # 2. SABORES (Léxico simple + Gourmet)
+    # ==========================================
+    sabores = []
+
     if "vainilla" in texto_completo:
-        sabores_encontrados.append(SaborEnum.vainilla.value)
+        sabores.append(SaborEnum.vainilla.value)
     if any(p in texto_completo for p in ["chocolate", "cacao", "brownie"]):
-        sabores_encontrados.append(SaborEnum.chocolate.value)
+        sabores.append(SaborEnum.chocolate.value)
     if "fresa" in texto_completo:
-        sabores_encontrados.append(SaborEnum.fresa.value)
+        sabores.append(SaborEnum.fresa.value)
     if any(p in texto_completo for p in ["limon", "limón", "citric"]):
-        sabores_encontrados.append(SaborEnum.limon.value)
+        sabores.append(SaborEnum.limon.value)
     if "cookies" in texto_completo or "cream" in texto_completo:
-        sabores_encontrados.append(SaborEnum.cookies.value)
+        sabores.append(SaborEnum.cookies.value)
     if "plátano" in texto_completo or "banana" in texto_completo:
-        sabores_encontrados.append(SaborEnum.platano.value)
+        sabores.append(SaborEnum.platano.value)
     if "café" in texto_completo or "capuchino" in texto_completo:
-        sabores_encontrados.append(SaborEnum.cafe.value)
+        sabores.append(SaborEnum.cafe.value)
     if "frutas del bosque" in texto_completo or "berry" in texto_completo:
-        sabores_encontrados.append(SaborEnum.frutas.value)
+        sabores.append(SaborEnum.frutas.value)
+    if "coco" in texto_completo:
+        sabores.append(SaborEnum.coco.value)
+    if "caramelo" in texto_completo:
+        sabores.append(SaborEnum.caramelo.value)
+    if "avellana" in texto_completo:
+        sabores.append(SaborEnum.avellana.value)
+    if "cacahuete" in texto_completo or "peanut" in texto_completo:
+        sabores.append(SaborEnum.cacahuete.value)
+    if "almendra" in texto_completo:
+        sabores.append(SaborEnum.almendra.value)
+    if re.search(r"\bmenta\b", texto_completo):
+        sabores.append(SaborEnum.menta.value)
 
-    # Solo añadimos "Neutro" (Sin sabor) si no es una pastilla/cápsula y no hemos encontrado otro sabor
-    if not sabores_encontrados:
-        if c["formato"] not in [FormatoEnum.capsulas.value]:
-            sabores_encontrados.append(SaborEnum.neutro.value)
+    # Solo añadimos "Neutro" si no hemos encontrado sabor Y no es una cápsula
+    if not sabores:
+        if c.get("formato") != FormatoEnum.capsulas.value:
+            sabores.append(SaborEnum.neutro.value)
 
-    c["sabor"] = sabores_encontrados
+    c["sabor"] = sabores
 
     # 4. Objetivos y Sellos (AHORA ES MULTISELECCIÓN Y MÁS LISTO)
     objetivos = []

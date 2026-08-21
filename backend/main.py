@@ -43,6 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -50,13 +51,14 @@ def get_db():
     finally:
         db.close()
 
+
 # --- ENDPOINT ULTRALIGERO PARA KEEP-ALIVE ---
 @app.get("/api/health")
 def health_check():
     return {
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
-        "service": "suparator-api"
+        "service": "suparator-api",
     }
 
 
@@ -64,7 +66,13 @@ def health_check():
 @app.get("/api/marcas", response_model=List[schemas.BrandResponse])
 def listar_marcas(db: Session = Depends(get_db)):
     """Devuelve únicamente las marcas que tienen productos en catálogo."""
-    return db.query(models.Marca).filter(models.Marca.productos.any()).order_by(models.Marca.nombre.asc()).all()
+    return (
+        db.query(models.Marca)
+        .filter(models.Marca.productos.any())
+        .order_by(models.Marca.nombre.asc())
+        .all()
+    )
+
 
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
 @app.get("/api/config/filtros")
@@ -78,8 +86,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
         .order_by(models.Marca.nombre.asc())
         .all()
     )
-    
-    # NUEVO: Solo categorías con productos y ocultando las no deseadas
+
     categorias_activas = (
         db.query(models.Categoria)
         .join(models.Producto)
@@ -89,19 +96,34 @@ def obtener_filtros(db: Session = Depends(get_db)):
         .order_by(models.Categoria.nombre.asc())
         .all()
     )
-    
+
+    # NUEVO: Sabores dinámicos (Solo devuelve los que tienen > 0 productos)
+    sabores_db = (
+        db.query(models.Producto.sabor).filter(models.Producto.sabor.isnot(None)).all()
+    )
+    sabores_activos = set()
+    for s in sabores_db:
+        if s[0] and isinstance(s[0], list):
+            for sabor_individual in s[0]:
+                sabores_activos.add(sabor_individual)
+
+    flavors_dinamicos = [
+        sabor.value for sabor in schemas.SaborEnum if sabor.value in sabores_activos
+    ]
+
     return {
         "brands": [m.nombre for m in marcas_activas],
         "categories": [c.nombre for c in categorias_activas],
-        "flavors": [sabor.value for sabor in schemas.SaborEnum],
+        "flavors": flavors_dinamicos,  # <-- Filtro Mágico aplicado
         "formats": [formato.value for formato in schemas.FormatoEnum],
         "goals": [objetivo.value for objetivo in schemas.ObjetivoEnum],
         "quality_seals": [sello.value for sello in schemas.SelloCalidadEnum],
         "protein_types": [tipo.value for tipo in schemas.TipoProteinaEnum],
         "creatine_types": [tipo.value for tipo in schemas.TipoCreatinaEnum],
         "amino_profiles": [perfil.value for perfil in schemas.PerfilAminoacidosEnum],
-        "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum]
+        "vitamin_types": [tipo.value for tipo in schemas.TipoVitaminaEnum],
     }
+
 
 @app.get("/api/productos/live-search")
 def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
@@ -111,7 +133,11 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
 
     try:
         # Usamos la misma estructura de consulta que el catálogo principal
-        query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)
+        query = (
+            db.query(models.Producto)
+            .join(models.Categoria, isouter=True)
+            .join(models.Marca, isouter=True)
+        )
 
         for grupo in grupos_tokens:
             condiciones_token = []
@@ -123,12 +149,16 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             query = query.filter(or_(*condiciones_token))
 
         # Añadimos puntuación semántica para ordenación
-        text_score = func.similarity(models.Producto.nombre, q).label('text_score')
-        resultados = query.order_by(
-            text_score.desc(),
-            nulls_last(models.Producto.clics_count.desc()),
-            models.Producto.id.asc()
-        ).limit(4).all()
+        text_score = func.similarity(models.Producto.nombre, q).label("text_score")
+        resultados = (
+            query.order_by(
+                text_score.desc(),
+                nulls_last(models.Producto.clics_count.desc()),
+                models.Producto.id.asc(),
+            )
+            .limit(4)
+            .all()
+        )
 
         items = [
             {
@@ -138,7 +168,7 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 "categoria": p.categoria.nombre if p.categoria else "Suplementos",
                 "imagen_url": p.imagen_url,
                 "precio_minimo": float(p.precio) if p.precio is not None else None,
-                "formato": p.formato
+                "formato": p.formato,
             }
             for p in resultados
         ]
@@ -146,15 +176,17 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
 
     except Exception as e:
         import traceback
+
         print(f"[Error Live Search]: {e}")
         traceback.print_exc()
         return {"productos": []}
+
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
 @app.get("/api/productos", response_model=schemas.PaginatedProducts)
 def obtener_productos(
     request: Request,
-    skip: int = 0, 
+    skip: int = 0,
     # Soportamos tanto el parámetro antiguo (singular) como el de multiselección (plural)
     categoria: Optional[str] = None,
     categorias: Optional[str] = Query(None),
@@ -166,7 +198,6 @@ def obtener_productos(
     sabores: Optional[str] = Query(None),
     formato: Optional[str] = None,
     formatos: Optional[str] = Query(None),
-    
     es_vegano: Optional[bool] = None,
     sin_gluten: Optional[bool] = Query(None),
     sin_lactosa: Optional[bool] = Query(None),
@@ -178,15 +209,26 @@ def obtener_productos(
     busqueda: Optional[str] = None,
     q: Optional[str] = Query(None, description="Alias de búsqueda"),
     db: Session = Depends(get_db),
-    porcentaje_proteina: Optional[int] = Query(None, description="Filtra por porcentaje de proteína (ej. 80)"),
-    solo_ofertas: Optional[bool] = Query(False, description="Muestra solo productos con descuento real"), 
-    orden: str = Query("relevancia", description="Orden de resultados: relevancia, precio_asc, precio_desc, descuento"),
+    porcentaje_proteina: Optional[int] = Query(
+        None, description="Filtra por porcentaje de proteína (ej. 80)"
+    ),
+    solo_ofertas: Optional[bool] = Query(
+        False, description="Muestra solo productos con descuento real"
+    ),
+    orden: str = Query(
+        "relevancia",
+        description="Orden de resultados: relevancia, precio_asc, precio_desc, descuento",
+    ),
     page: int = Query(1, ge=1),
-    limit: int = Query(100, le=200)
+    limit: int = Query(100, le=200),
 ):
     # Join inicial maestro para evitar conflictos
-    query = db.query(models.Producto).join(models.Categoria, isouter=True).join(models.Marca, isouter=True)
-    
+    query = (
+        db.query(models.Producto)
+        .join(models.Categoria, isouter=True)
+        .join(models.Marca, isouter=True)
+    )
+
     # 1. Filtros de Categoría
     cat_str = categorias or categoria
     if cat_str and cat_str.lower() != "todos":
@@ -197,9 +239,13 @@ def obtener_productos(
     # 2. Filtros de Marca
     marca_str = marcas or marca
     if marca_str:
-        lista_marcas_lower = [m.strip().lower() for m in marca_str.split(",") if m.strip()]
+        lista_marcas_lower = [
+            m.strip().lower() for m in marca_str.split(",") if m.strip()
+        ]
         if lista_marcas_lower:
-            query = query.filter(func.lower(models.Marca.nombre).in_(lista_marcas_lower))
+            query = query.filter(
+                func.lower(models.Marca.nombre).in_(lista_marcas_lower)
+            )
 
     # 3. Filtro Porcentaje Proteína
     if porcentaje_proteina is not None:
@@ -221,18 +267,24 @@ def obtener_productos(
     if solo_ofertas:
         query = query.filter(
             models.Producto.precio_anterior.isnot(None),
-            models.Producto.precio_anterior > models.Producto.precio
+            models.Producto.precio_anterior > models.Producto.precio,
         )
 
     if sello_calidad:
         query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
-        
+
     # 5. Sub-filtros
-    if tipo_proteina: query = query.filter(models.Producto.tipo_proteina.ilike(f"%{tipo_proteina}%"))
-    if tipo_creatina: query = query.filter(models.Producto.tipo_creatina.ilike(f"%{tipo_creatina}%"))
-    if perfil_aminoacidos: query = query.filter(models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%"))
-    if tipo_vitamina: query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
-        
+    if tipo_proteina:
+        query = query.filter(models.Producto.tipo_proteina.ilike(f"%{tipo_proteina}%"))
+    if tipo_creatina:
+        query = query.filter(models.Producto.tipo_creatina.ilike(f"%{tipo_creatina}%"))
+    if perfil_aminoacidos:
+        query = query.filter(
+            models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%")
+        )
+    if tipo_vitamina:
+        query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
+
     # 6. Buscador de texto libre con Expansión Semántica
     busqueda_final = busqueda or q
     if busqueda_final:
@@ -245,29 +297,42 @@ def obtener_productos(
                 condiciones_token.append(models.Marca.nombre.ilike(patron))
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
-        
+
     # 7. ORDENACIÓN (Con Alias y Nulls Last)
-    sort_final = request.query_params.get('orden_precio') or request.query_params.get('ordenar_por') or request.query_params.get('sort') or orden
-    
+    sort_final = (
+        request.query_params.get("orden_precio")
+        or request.query_params.get("ordenar_por")
+        or request.query_params.get("sort")
+        or orden
+    )
+
     if sort_final in ["precio_asc", "price_asc", "asc"]:
         query = query.order_by(models.Producto.precio.asc())
     elif sort_final in ["precio_desc", "price_desc", "desc"]:
         query = query.order_by(models.Producto.precio.desc())
     elif sort_final == "descuento":
-        query = query.order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+        query = query.order_by(
+            (models.Producto.precio_anterior - models.Producto.precio).desc()
+        )
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
         if busqueda_final:
-            text_score = func.similarity(models.Producto.nombre, busqueda_final).label('text_score')
+            text_score = func.similarity(models.Producto.nombre, busqueda_final).label(
+                "text_score"
+            )
             query = query.order_by(
                 text_score.desc(),
-                nulls_last(models.Producto.clics_count.desc()), # <-- Obliga a que los Nulls vayan al final
-                models.Producto.id.asc()
+                nulls_last(
+                    models.Producto.clics_count.desc()
+                ),  # <-- Obliga a que los Nulls vayan al final
+                models.Producto.id.asc(),
             )
         else:
             query = query.order_by(
-                nulls_last(models.Producto.clics_count.desc()), # <-- Evita discrepancias Local vs Prod
-                models.Producto.id.asc()
+                nulls_last(
+                    models.Producto.clics_count.desc()
+                ),  # <-- Evita discrepancias Local vs Prod
+                models.Producto.id.asc(),
             )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
@@ -275,30 +340,44 @@ def obtener_productos(
     productos_raw = query.all()
 
     sabor_str = sabores or sabor
-    sabores_lista = [s.strip().lower() for s in sabor_str.split(",") if s.strip()] if sabor_str else []
+    sabores_lista = (
+        [s.strip().lower() for s in sabor_str.split(",") if s.strip()]
+        if sabor_str
+        else []
+    )
 
     objetivo_str = objetivos or objetivo
-    objetivos_lista = [o.strip().lower() for o in objetivo_str.split(",") if o.strip()] if objetivo_str else []
+    objetivos_lista = (
+        [o.strip().lower() for o in objetivo_str.split(",") if o.strip()]
+        if objetivo_str
+        else []
+    )
 
     def cumple_filtros_arrays(producto):
         # ¿Cumple el sabor?
         if sabores_lista:
             valor_sabor = getattr(producto, "sabor", None)
             if isinstance(valor_sabor, list):
-                if not any(str(item).lower() in sabores_lista for item in valor_sabor): return False
+                if not any(str(item).lower() in sabores_lista for item in valor_sabor):
+                    return False
             elif isinstance(valor_sabor, str):
-                if not any(s in valor_sabor.lower() for s in sabores_lista): return False
-            else: return False
-            
+                if not any(s in valor_sabor.lower() for s in sabores_lista):
+                    return False
+            else:
+                return False
+
         # ¿Cumple el objetivo?
         if objetivos_lista:
             valor_obj = getattr(producto, "objetivo", None)
             if isinstance(valor_obj, list):
-                if not any(str(item).lower() in objetivos_lista for item in valor_obj): return False
+                if not any(str(item).lower() in objetivos_lista for item in valor_obj):
+                    return False
             elif isinstance(valor_obj, str):
-                if not any(o in valor_obj.lower() for o in objetivos_lista): return False
-            else: return False
-            
+                if not any(o in valor_obj.lower() for o in objetivos_lista):
+                    return False
+            else:
+                return False
+
         return True
 
     if sabores_lista or objetivos_lista:
@@ -311,17 +390,19 @@ def obtener_productos(
     offset_real = skip if skip > 0 else (page - 1) * limit
     productos = productos_filtrados[offset_real : offset_real + limit]
 
-    return {
-        "total_resultados": total_resultados,
-        "productos": productos
-    }
+    return {"total_resultados": total_resultados, "productos": productos}
+
+
 # --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
 @app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
 def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
-    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    producto = (
+        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    )
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
+
 
 # --- RUTA DE PRODUCTO INDIVIDUAL POR SLUG ---
 @app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse)
@@ -331,204 +412,271 @@ def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
 
+
 # --- RUTA DE TRACKING DE CLICS DE AFILIADOS ---
 @app.post("/api/click/{product_id}")
 def track_click(product_id: int, db: Session = Depends(get_db)):
     # Incrementa el contador de clics del producto
-    producto = db.query(models.Producto).filter(models.Producto.id == product_id).first()
+    producto = (
+        db.query(models.Producto).filter(models.Producto.id == product_id).first()
+    )
     if producto:
         producto.clics_count = (producto.clics_count or 0) + 1
         db.commit()
         return {"status": "ok", "clics": producto.clics_count}
     raise HTTPException(status_code=404, detail="Producto no encontrado")
 
+
 # ==========================================
 # --- RUTAS DE AUTENTICACIÓN Y USUARIOS ---
 # ==========================================
 
+
 @app.post("/api/registro", response_model=schemas.UsuarioResponse)
 def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    usuario_existente = (
+        db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    )
     if usuario_existente:
         raise HTTPException(status_code=400, detail="Este email ya está registrado")
-        
+
     password_cifrada = security.obtener_password_hash(usuario.password)
-    nuevo_usuario = models.Usuario(email=usuario.email, hashed_password=password_cifrada)
+    nuevo_usuario = models.Usuario(
+        email=usuario.email, hashed_password=password_cifrada
+    )
     db.add(nuevo_usuario)
     db.commit()
     db.refresh(nuevo_usuario)
     return nuevo_usuario
 
+
 @app.post("/api/login", response_model=schemas.Token)
 def iniciar_sesion(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    user_db = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
-    if not user_db or not security.verificar_password(usuario.password, user_db.hashed_password):
+    user_db = (
+        db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    )
+    if not user_db or not security.verificar_password(
+        usuario.password, user_db.hashed_password
+    ):
         raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
-        
+
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
-def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+
+def obtener_usuario_actual(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     credenciales_exception = HTTPException(
-        status_code=401, detail="No se pudo validar las credenciales", headers={"WWW-Authenticate": "Bearer"}
+        status_code=401,
+        detail="No se pudo validar las credenciales",
+        headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = security.jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        payload = security.jwt.decode(
+            token, security.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
         email: str = payload.get("sub")
         if email is None:
             raise credenciales_exception
     except security.jwt.JWTError:
         raise credenciales_exception
-        
+
     usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
     if usuario is None:
         raise credenciales_exception
     return usuario
 
+
 class GoogleToken(BaseModel):
     token: str
+
 
 @app.post("/api/auth/google")
 def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
     try:
         # Obtenemos el Client ID desde la variable de entorno
         client_id = os.getenv("GOOGLE_CLIENT_ID")
-        
+
         idinfo = id_token.verify_oauth2_token(
-            google_data.token, 
-            google_requests.Request(), 
-            client_id  # ✅ Ahora usas la variable dinámica
+            google_data.token,
+            google_requests.Request(),
+            client_id,  # ✅ Ahora usas la variable dinámica
         )
-        
-        email = idinfo['email']
+
+        email = idinfo["email"]
         usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
-        
+
         if not usuario:
             usuario = models.Usuario(email=email, hashed_password="login_google")
             db.add(usuario)
             db.commit()
             db.refresh(usuario)
-            
+
         access_token = security.crear_token_acceso(data={"sub": usuario.email})
         return {"access_token": access_token, "token_type": "bearer"}
-        
+
     except ValueError as e:
         print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
         raise HTTPException(status_code=401, detail="Token de Google inválido")
+
 
 # ==========================================
 # --- RUTAS DE FAVORITOS (PRIVADAS) ---
 # ==========================================
 
+
 @app.post("/api/favoritos")
 def añadir_favorito(
-    favorito: schemas.FavoritoCreate, 
+    favorito: schemas.FavoritoCreate,
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual) 
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
 ):
-    producto = db.query(models.Producto).filter(models.Producto.id == favorito.producto_id).first()
+    producto = (
+        db.query(models.Producto)
+        .filter(models.Producto.id == favorito.producto_id)
+        .first()
+    )
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-        
-    favorito_existente = db.query(models.Favorito).filter(
-        models.Favorito.usuario_id == usuario_actual.id,
-        models.Favorito.producto_id == favorito.producto_id
-    ).first()
-    
+
+    favorito_existente = (
+        db.query(models.Favorito)
+        .filter(
+            models.Favorito.usuario_id == usuario_actual.id,
+            models.Favorito.producto_id == favorito.producto_id,
+        )
+        .first()
+    )
+
     if favorito_existente:
         return {"mensaje": "El producto ya está en tus favoritos"}
-        
-    nuevo_favorito = models.Favorito(usuario_id=usuario_actual.id, producto_id=favorito.producto_id)
+
+    nuevo_favorito = models.Favorito(
+        usuario_id=usuario_actual.id, producto_id=favorito.producto_id
+    )
     db.add(nuevo_favorito)
     db.commit()
     return {"mensaje": "Producto añadido a favoritos correctamente"}
 
+
 @app.get("/api/favoritos", response_model=List[schemas.FavoriteResponse])
 def obtener_favoritos(
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
 ):
-    return db.query(models.Favorito).filter(models.Favorito.usuario_id == usuario_actual.id).all()
+    return (
+        db.query(models.Favorito)
+        .filter(models.Favorito.usuario_id == usuario_actual.id)
+        .all()
+    )
+
 
 @app.delete("/api/favoritos/{producto_id}")
 def eliminar_favorito(
     producto_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
 ):
-    favorito = db.query(models.Favorito).filter(
-        models.Favorito.usuario_id == usuario_actual.id,
-        models.Favorito.producto_id == producto_id
-    ).first()
-    
+    favorito = (
+        db.query(models.Favorito)
+        .filter(
+            models.Favorito.usuario_id == usuario_actual.id,
+            models.Favorito.producto_id == producto_id,
+        )
+        .first()
+    )
+
     if not favorito:
-        raise HTTPException(status_code=404, detail="El producto no está en tus favoritos")
-        
+        raise HTTPException(
+            status_code=404, detail="El producto no está en tus favoritos"
+        )
+
     db.delete(favorito)
     db.commit()
     return {"mensaje": "Producto eliminado de favoritos"}
+
 
 # ==========================================
 # --- RUTAS DE NEWSLETTER ---
 # ==========================================
 
+
 @app.post("/api/newsletter/subscribe")
-def suscribir_newsletter(suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)):
+def suscribir_newsletter(
+    suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
+):
     email_limpio = suscripcion.email.lower().strip()
-    registro = db.query(models.SuscripcionNewsletter).filter(models.SuscripcionNewsletter.email == email_limpio).first()
-    
+    registro = (
+        db.query(models.SuscripcionNewsletter)
+        .filter(models.SuscripcionNewsletter.email == email_limpio)
+        .first()
+    )
+
     if registro:
         if registro.activo:
-            raise HTTPException(status_code=400, detail="Este email ya está suscrito a la newsletter")
+            raise HTTPException(
+                status_code=400, detail="Este email ya está suscrito a la newsletter"
+            )
         else:
             registro.activo = True
             db.commit()
-            
+
             from services.email_service import enviar_email_bienvenida
+
             enviar_email_bienvenida(email_limpio)
-            
+
             return {"message": "¡Suscripción reactivada con éxito!"}
-            
+
     nueva_suscripcion = models.SuscripcionNewsletter(email=email_limpio)
     db.add(nueva_suscripcion)
     db.commit()
-    
+
     from services.email_service import enviar_email_bienvenida
+
     enviar_email_bienvenida(email_limpio)
-    
+
     return {"message": "¡Suscripción completada con éxito!"}
+
 
 # ==========================================
 # --- RUTAS DE HISTORIAL (VISTOS RECIENTEMENTE) ---
 # ==========================================
 
+
 @app.post("/api/historial/{producto_id}")
 def registrar_vista_producto(
-    producto_id: int, 
+    producto_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
 ):
     from datetime import datetime
-    
-    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+
+    producto = (
+        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    )
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-        
-    historial = db.query(models.HistorialVistas).filter(
-        models.HistorialVistas.usuario_id == usuario_actual.id,
-        models.HistorialVistas.producto_id == producto_id
-    ).first()
-    
+
+    historial = (
+        db.query(models.HistorialVistas)
+        .filter(
+            models.HistorialVistas.usuario_id == usuario_actual.id,
+            models.HistorialVistas.producto_id == producto_id,
+        )
+        .first()
+    )
+
     if historial:
         historial.ultima_vista = datetime.utcnow()
     else:
         nuevo_historial = models.HistorialVistas(
-            usuario_id=usuario_actual.id,
-            producto_id=producto_id
+            usuario_id=usuario_actual.id, producto_id=producto_id
         )
         db.add(nuevo_historial)
-        
+
     db.commit()
     return {"status": "ok"}
