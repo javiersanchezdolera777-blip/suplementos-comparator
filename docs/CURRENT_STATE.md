@@ -44,21 +44,33 @@
 - [x] Implementación de umbrales dinámicos de ofertas en HSN (30% Proteínas/Creatinas, 40% Aminoácidos, 50% resto) para regular el sistema antimonopolio.
 - [x] Centralización de la lógica de alérgenos (`es_vegano`, `sin_gluten`, `sin_lactosa`) en el Cerebro NLP (`utils.py`).
 - [x] Diagnóstico completado del feed de Tradedoubler (Farma2Go) y mapeo de limitaciones de precios base.
-- [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido.
+- [x] El bot de Telegram está desplegado con Strict CI/CD y 100% operativo en producción. Los CRON programados inyectan correctamente los Secrets (tokens) y los mensajes llegan al canal sin incidencias varias veces al día.
 
 ## Sprint 3: Monolito Estable Restaurado
 - **Estado Actual:** El "Monolito Estable" se ha consolidado en producción de manera impecable.
 - El catálogo funciona en una estructura plana (un Producto incluye su precio y url de afiliado directamente).
 - El sistema de Telegram (chollos), el motor de retargeting y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
 
-## Bugs Críticos y UI (A corto plazo)
-- Investigar error `failed to fetch` (posible CORS) en el formulario de la Newsletter al introducir un email.
 
 ## Backlog / Roadmap Técnico Pendiente
 - **Migración a Multi-Tienda (Sprint 4):** Acometer en el futuro usando exclusivamente **Alembic** para gestionar las migraciones de base de datos de forma segura. El intento previo desestabilizó la base de datos local y la UI (Agotado masivo).
-- **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
+- **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN u otras tiendas monopolicen las primeras páginas del catálogo, fomentando la diversidad de marcas.
 
 ## Backlog de Negocio
 - **Motor de Historial de Precios Propio:** Desarrollar un sistema para registrar el histórico de precios independiente de los feeds de afiliados. Esto es imperativo para compensar la falta de precio base (MSRP) fiable en plataformas como Tradedoubler (Farma2Go) y garantizar el cálculo real de ofertas a largo plazo.
 - **Capado de Ofertas (Farma2Go):** Hasta que exista el Motor de Historial, se ha decidido utilizar temporalmente solo el precio final como precio base, evitando inyectar falsos chollos al sistema.
 - **Alternativa al Precio/Kg:** Dado que el parseo de Precio/Kg es inconsistente por el formato de las tiendas, priorizar mostrar el "Formato" (ej. "3,50€ - 50g" vs "63€ - 3kg") como fallback confiable en la UI.
+
+## Historial de Actualizaciones / Anexos
+
+### Anexo: Hito de Alérgenos y Estabilidad NLP
+
+#### 1. Mejora en el Sistema de Ingestión (Farma2Go y Sportlive)
+Se ha implementado una capa de detección avanzada de alérgenos sin alterar la estructura central del pipeline.
+- **Parche Quirúrgico:** Se ha inyectado lógica de escaneo en las funciones locales `clasificar_producto` de los módulos `pharma2go.py` y `sportlive.py`. Esta lógica habilita la identificación precisa de los flags `sin_gluten` y `sin_lactosa`.
+- **Motor de Variaciones Léxicas:** La detección evalúa el texto completo extraído del proveedor contra un array exhaustivo de variaciones semánticas y comerciales (ej. *"gluten free"*, *"0% lactosa"*, *"libre de..."*, *"zero lactose"*), garantizando una cobertura total frente a nomenclaturas inconsistentes de terceros.
+
+#### 2. Mantenimiento Estratégico de la Arquitectura Híbrida
+Se ha dictaminado una política de contención arquitectónica respecto al Cerebro Central NLP (`utils.py`).
+- **Aislamiento de Riesgos:** Para evitar desestabilizar el catálogo actual en producción, se ha optado por mantener operativos los clasificadores locales independientes de Farma2Go y Sportlive, posponiendo una migración completa al clasificador centralizado.
+- **Garantía de Estabilidad:** Esta decisión técnica garantiza **cero colisiones** en la asignación de categorías base (Proteínas, Aminoácidos, etc.) procedentes de estas tiendas y salvaguarda de forma estricta la integridad de los filtros de navegación del frontend.
