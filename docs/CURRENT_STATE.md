@@ -11,6 +11,7 @@
 *   **Volumen:** Más de 800 productos clasificados e ingestados correctamente.
 *   **NLP:** Catálogo de HSN 100% re-etiquetado con flags de alérgenos (Sin Gluten / Sin Lactosa) y categorías NLP en cascada.
 *   **Limpieza:** Las marcas huérfanas de pruebas anteriores han sido purgadas de la tabla maestra de `marcas`. La normalización agrupa todas las gamas de HSN bajo el paraguas de HSN y aísla las marcas externas reales.
+*   **Entornos Segregados:** Uso activo de Neon DB con ramas separadas (Producción frente a la nueva rama `dev-ofertas` para staging), protegiendo la integridad de los datos reales durante el desarrollo de nuevas lógicas de precios.
 
 ## Tareas Completadas (Checklist Reciente)
 - [x] Refactorización masiva del `utils.py` (Cerebro NLP de catalogación).
@@ -40,6 +41,9 @@
 - [x] Ampliación del diccionario del Cerebro Central NLP (`utils.py`) para rescatar productos atrapados en categorías fantasma (Otros/Accesorios), integrando nuevas reglas para "gainer", vitaminas (B-Complex, coenzimas) y depurativos.
 - [x] Arreglo del scraper de HSN (DOM Hyvä Theme), certificando que el Monolito Estable es totalmente robusto.
 - [x] Preparación y estabilización total de la rama `fix-bugs-ui`, dejándola lista para su paso a producción (`main`).
+- [x] Implementación de umbrales dinámicos de ofertas en HSN (30% Proteínas/Creatinas, 40% Aminoácidos, 50% resto) para regular el sistema antimonopolio.
+- [x] Centralización de la lógica de alérgenos (`es_vegano`, `sin_gluten`, `sin_lactosa`) en el Cerebro NLP (`utils.py`).
+- [x] Diagnóstico completado del feed de Tradedoubler (Farma2Go) y mapeo de limitaciones de precios base.
 - [⏳ PENDIENTE DE VERIFICACIÓN] El bot de Telegram está desplegado con Strict CI/CD. Queda confirmar que el CRON programado inyecta correctamente los Secrets en modo desatendido.
 
 ## Sprint 3: Monolito Estable Restaurado
@@ -55,5 +59,6 @@
 - **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
 
 ## Backlog de Negocio
-- **Capado de Ofertas:** Implementar un umbral (ej. > 20% descuento) para que un producto se considere "Oferta". Los que no lo superen, se mostrarán en el catálogo normal con el precio actualizado, evitando que HSN sature la sección de chollos. Para Farma2Go, usar temporalmente solo el precio final como precio base.
-- **Alternativa al Precio/Kg:** Dado que el parseo de Precio/Kg es inconsistente por el formato de las tiendas, priorizar mostrar el "Formato" (ej. "3,50€ - 50g" vs "63€ - 3kg") como fallback confiable.
+- **Motor de Historial de Precios Propio:** Desarrollar un sistema para registrar el histórico de precios independiente de los feeds de afiliados. Esto es imperativo para compensar la falta de precio base (MSRP) fiable en plataformas como Tradedoubler (Farma2Go) y garantizar el cálculo real de ofertas a largo plazo.
+- **Capado de Ofertas (Farma2Go):** Hasta que exista el Motor de Historial, se ha decidido utilizar temporalmente solo el precio final como precio base, evitando inyectar falsos chollos al sistema.
+- **Alternativa al Precio/Kg:** Dado que el parseo de Precio/Kg es inconsistente por el formato de las tiendas, priorizar mostrar el "Formato" (ej. "3,50€ - 50g" vs "63€ - 3kg") como fallback confiable en la UI.

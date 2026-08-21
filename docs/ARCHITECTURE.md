@@ -6,7 +6,7 @@ Este documento consolida la arquitectura tecnológica del proyecto, sirviendo co
 
 *   **Frontend:** Next.js App Router (React 19, TypeScript, Tailwind CSS). Alojado en **Vercel** (Dominio de producción: `https://www.tussuplementos.com` con redirección desde `.es`).
 *   **Backend:** FastAPI (Python). Alojado en **Render**.
-*   **Base de Datos:** PostgreSQL alojada en **Neon DB**.
+*   **Base de Datos:** PostgreSQL alojada en **Neon DB**. La arquitectura de datos implementa una estricta separación de entornos, utilizando la rama principal para Producción y una rama segregada (`dev-ofertas`) para Staging y Desarrollo.
 
 ## Estructura del Backend
 
@@ -29,7 +29,9 @@ El sistema de ingestión se nutre de datos de múltiples tiendas, unificándolos
 
 *   **Arquitectura `BaseIngestor` (`ingestor_generico.py`):** Clase abstracta que unifica y estandariza los flujos de carga, borrado, parseo y persistencia para cualquier nueva tienda.
 *   **Extractor Resiliente HSN (`hsn.py`):** Scraper blindado con sistema de backoff (reintentos) y borrado hiper-estricto por tienda (`tienda == "HSN"`). Destaca por su algoritmo exhaustivo de validación de marcas en 4 Fases (JSON-LD, URL, HTML, Regex) diseñado para superar las limitaciones de temas dinámicos (como Hyvä Theme) y erradicar los falsos positivos por parámetros de rastreo (UTMs).
-*   **Cerebro Central NLP (`utils.py`):** Motor avanzado de clasificación que analiza nombres y descripciones para asignar categoría, formato, tipo de proteína, sabor y dietas (ej. vegano). Resuelve colisiones complejas (ej. "Colágeno Hidrolizado" -> Salud; "NAC" -> Aminoácidos).
+*   **Cerebro Central NLP (`utils.py`):** Motor avanzado de clasificación que centraliza toda la lógica de catalogación (categoría, formato, tipo, sabor). También incluye el análisis centralizado de alérgenos y dietas, estandarizando de manera robusta las etiquetas `es_vegano`, `sin_gluten` y `sin_lactosa` a través de todas las fuentes. Resuelve colisiones complejas (ej. "Colágeno Hidrolizado" -> Salud; "NAC" -> Aminoácidos).
+*   **Filtro Antimonopolio y Umbrales Dinámicos:** El motor de ingesta incorpora inteligencia de negocio aplicando umbrales de descuento dinámicos por categoría en tiendas masivas como HSN (30% para Proteínas y Creatinas, 40% para Aminoácidos/Pre-entrenos, 50% para el resto). Esto evita saturar la sección de ofertas y fomenta la diversidad del catálogo.
+*   **Gestión de Feeds de Afiliados:** Procesamiento de fuentes complejas como Tradedoubler (Farma2Go). Tras el diagnóstico de sus limitaciones operativas, se ha dictaminado la necesidad arquitectónica de implementar un **motor de historial de precios propio** (Price History Engine) a futuro, dado que los feeds de terceros no siempre proveen un precio base o MSRP consistente para identificar chollos reales.
 *   **Normalización de Marcas (`schemas.py`):** Embudo estricto que agrupa marcas dispersas (ej. *Sport Series*, *Raw Series* -> *HSN*) y mantiene la pureza de marcas internacionales (*NOW Foods*, *Swanson*).
 
 ## Sistema de Ordenación por Relevancia
