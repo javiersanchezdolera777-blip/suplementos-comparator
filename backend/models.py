@@ -157,12 +157,14 @@ class Perfil(Base):
     # Gamificación global
     puntos_totales = Column(Integer, default=0)
     racha_actual = Column(Integer, default=0)
+    objetivo_etapa = Column(String, default="Mantenimiento") # Puede ser: "Volumen", "Definición", "Mantenimiento"
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="perfil")
     stacks = relationship("Stack", back_populates="creador", cascade="all, delete-orphan")
     resenas = relationship("ResenaSabor", back_populates="perfil", cascade="all, delete-orphan")
     checkins = relationship("CheckDiario", back_populates="perfil", cascade="all, delete-orphan")
+    
     
     # Sistema de seguidores (Self-referential Many-to-Many)
     seguidos = relationship(

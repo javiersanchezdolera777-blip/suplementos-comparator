@@ -245,6 +245,7 @@ class PerfilBase(BaseModel):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     suplemento_favorito: Optional[str] = None
+    objetivo_etapa: Optional[str] = "Mantenimiento"
 
 class PerfilCreate(PerfilBase):
     pass
