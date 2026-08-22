@@ -63,3 +63,13 @@ El siguiente gran hito evolutivo transforma la plataforma de un catálogo unific
 - [ ] Estrategia de SEO programático (Landing pages automáticas por marca, categoría y objetivo).
 - [ ] Caché de servidor (Redis/Memcached) para el endpoint principal de catálogo garantizando latencias <100ms.
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
+
+## Sprint 6 (Comunidad, Gamificación y "Tamagotchi del Gym") - [NUEVO SPRINT ACTIVO 🚀]
+Tras preparar el núcleo social en el backend, el esfuerzo se centra en construir el frontend para la mayor herramienta de retención de la plataforma.
+
+- **[ ] 6.1 Dashboard "Mi Zona":** Construcción de la vista de perfil de usuario (`/comunidad/[username]`). Integración visual del sistema de Seguidores y puntos de Experiencia (XP) totales.
+- **[ ] 6.2 El "Tamagotchi del Gym" (Componente UI):**
+  - Desarrollo del componente React (`GymMascota.tsx`) que gestiona la evolución visual del usuario.
+  - Lógica condicional anclada a los datos del backend: La mascota cambia de forma (Flaco/Gordito -> Fuerte -> Monstruo) cruzando la `XP` acumulada por los check-ins y el `objetivo_etapa` (Volumen o Definición).
+- **[ ] 6.3 Fabricación de Assets Visuales:** Generación (vía IA) de los 6 sprites en formato `.png` (estilo vectorial, fondo transparente) para las fases de la mascota.
+- **[ ] 6.4 Sistema de Stacks:** Maquetación de la cuadrícula de Stacks, reutilizando los componentes `ProductCard` del catálogo para permitir añadir productos favoritos a "Rutinas Públicas".

@@ -401,7 +401,18 @@ def iniciar_sesion(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/swagger")
+from fastapi.security import OAuth2PasswordRequestForm
+
+@app.post("/api/login/swagger", include_in_schema=False)
+def login_exclusivo_swagger(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Esta es una puerta trasera oculta solo para que funcione el candado verde de Swagger"""
+    user_db = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
+    if not user_db or not security.verificar_password(form_data.password, user_db.hashed_password):
+        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+        
+    access_token = security.crear_token_acceso(data={"sub": user_db.email})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credenciales_exception = HTTPException(
@@ -450,6 +461,283 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
     except ValueError as e:
         print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
         raise HTTPException(status_code=401, detail="Token de Google inválido")
+
+# ==========================================
+# --- RUTAS DE LA RED SOCIAL (PERFILES) ---
+# ==========================================
+
+@app.post("/api/perfil", response_model=schemas.PerfilResponse)
+def crear_perfil(
+    perfil_in: schemas.PerfilCreate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    # 1. Comprobar si el usuario ya tiene un perfil (Solo se permite 1 por cuenta)
+    if usuario_actual.perfil:
+        raise HTTPException(status_code=400, detail="Ya tienes un perfil creado.")
+    
+    # 2. Limpiamos el username (quitamos espacios y pasamos a minúsculas para evitar duplicados como "Pepe" y "pepe")
+    username_limpio = perfil_in.username.strip().lower()
+    if not username_limpio:
+        raise HTTPException(status_code=400, detail="El nombre de usuario no puede estar vacío.")
+
+    # 3. Comprobar si el username ya está pillado por otra persona
+    perfil_existente = db.query(models.Perfil).filter(models.Perfil.username == username_limpio).first()
+    if perfil_existente:
+        raise HTTPException(status_code=400, detail="Este nombre de usuario ya está en uso. ¡Prueba con otro!")
+        
+    # 4. Crear el perfil y vincularlo mágicamente al usuario que ha iniciado sesión
+    nuevo_perfil = models.Perfil(
+        usuario_id=usuario_actual.id,
+        username=username_limpio,
+        bio=perfil_in.bio,
+        avatar_url=perfil_in.avatar_url,
+        suplemento_favorito=perfil_in.suplemento_favorito
+    )
+    
+    # IMPORTANTE: Preservamos cómo el usuario escribió su nombre (ej: "FitBoy99")
+    # pero guardamos la versión minúscula en la BD si queremos hacer búsquedas más seguras, 
+    # aunque en este caso guardaremos su versión original y usaremos .lower() en las búsquedas.
+    nuevo_perfil.username = perfil_in.username.strip() 
+
+    db.add(nuevo_perfil)
+    db.commit()
+    db.refresh(nuevo_perfil)
+    return nuevo_perfil
+
+
+@app.get("/api/perfil/me", response_model=schemas.PerfilResponse)
+def obtener_mi_perfil(
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Devuelve el perfil social del usuario que tiene la sesión iniciada."""
+    if not usuario_actual.perfil:
+        raise HTTPException(status_code=404, detail="Aún no has configurado tu perfil social.")
+    return usuario_actual.perfil
+
+
+@app.get("/api/perfil/{username}", response_model=schemas.PerfilResponse)
+def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
+    """Visitar el perfil de otra persona (ej: tussuplementos.com/comunidad/pepe)"""
+    # Buscamos ignorando mayúsculas y minúsculas gracias a ilike
+    perfil = db.query(models.Perfil).filter(models.Perfil.username.ilike(username.strip())).first()
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado.")
+    return perfil
+
+# ==========================================
+# --- RUTAS DE COMUNIDAD: SEGUIDORES ---
+# ==========================================
+
+@app.post("/api/comunidad/seguir/{username}")
+def seguir_usuario(
+    username: str, 
+    db: Session = Depends(get_db), 
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Permite al usuario logueado seguir a otro perfil."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    # Buscamos a la persona que queremos seguir
+    perfil_objetivo = db.query(models.Perfil).filter(models.Perfil.username.ilike(username.strip())).first()
+    if not perfil_objetivo:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        
+    # Evitar que se siga a sí mismo (eso es muy triste)
+    if mi_perfil.id == perfil_objetivo.id:
+        raise HTTPException(status_code=400, detail="No puedes seguirte a ti mismo, narcisista.")
+        
+    # Comprobar si ya le sigue
+    if perfil_objetivo in mi_perfil.seguidos:
+        return {"mensaje": f"Ya sigues a {perfil_objetivo.username}."}
+        
+    # La magia de SQLAlchemy: Añadir a la lista es suficiente para actualizar la base de datos
+    mi_perfil.seguidos.append(perfil_objetivo)
+    db.commit()
+    
+    return {"mensaje": f"¡Ahora sigues a {perfil_objetivo.username}!"}
+
+
+@app.delete("/api/comunidad/seguir/{username}")
+def dejar_de_seguir_usuario(
+    username: str, 
+    db: Session = Depends(get_db), 
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Permite al usuario logueado dejar de seguir a otro perfil."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    perfil_objetivo = db.query(models.Perfil).filter(models.Perfil.username.ilike(username.strip())).first()
+    if not perfil_objetivo:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        
+    if perfil_objetivo not in mi_perfil.seguidos:
+        raise HTTPException(status_code=400, detail=f"No sigues a {perfil_objetivo.username}.")
+        
+    mi_perfil.seguidos.remove(perfil_objetivo)
+    db.commit()
+    
+    return {"mensaje": f"Has dejado de seguir a {perfil_objetivo.username}."}
+
+
+# ==========================================
+# --- RUTAS DE COMUNIDAD: STACKS (RUTINAS) ---
+# ==========================================
+
+@app.post("/api/stacks", response_model=schemas.StackResponse)
+def crear_stack(
+    stack_in: schemas.StackCreate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Crea un nuevo Stack vacío para el usuario (Ej: 'Definición 2026')."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    nuevo_stack = models.Stack(
+        perfil_id=mi_perfil.id,
+        nombre=stack_in.nombre.strip(),
+        descripcion=stack_in.descripcion,
+        es_publico=stack_in.es_publico
+    )
+    db.add(nuevo_stack)
+    db.commit()
+    db.refresh(nuevo_stack)
+    
+    return nuevo_stack
+
+@app.post("/api/stacks/{stack_id}/productos/{producto_id}")
+def anadir_producto_a_stack(
+    stack_id: int, 
+    producto_id: int, 
+    db: Session = Depends(get_db), 
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Mete un producto de la tienda dentro de un Stack tuyo."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    # 1. Comprobamos que el stack existe y que es TUYO
+    stack = db.query(models.Stack).filter(models.Stack.id == stack_id, models.Stack.perfil_id == mi_perfil.id).first()
+    if not stack:
+        raise HTTPException(status_code=404, detail="Stack no encontrado o no te pertenece.")
+        
+    # 2. Comprobamos que el producto que quieres añadir existe en el catálogo
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="El producto no existe en el catálogo.")
+        
+    # 3. Comprobamos que no esté ya dentro para no duplicar
+    if producto in stack.productos:
+        return {"mensaje": "Este producto ya está en el Stack."}
+        
+    # Magia SQLAlchemy: Añadimos a la lista
+    stack.productos.append(producto)
+    db.commit()
+    
+    return {"mensaje": f"{producto.nombre} añadido a tu stack '{stack.nombre}'"}
+
+@app.delete("/api/stacks/{stack_id}/productos/{producto_id}")
+def quitar_producto_de_stack(
+    stack_id: int, 
+    producto_id: int, 
+    db: Session = Depends(get_db), 
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """Saca un producto de tu Stack."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    stack = db.query(models.Stack).filter(models.Stack.id == stack_id, models.Stack.perfil_id == mi_perfil.id).first()
+    if not stack:
+        raise HTTPException(status_code=404, detail="Stack no encontrado o no te pertenece.")
+        
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if producto not in stack.productos:
+        raise HTTPException(status_code=400, detail="El producto no está en este Stack.")
+        
+    stack.productos.remove(producto)
+    db.commit()
+    
+    return {"mensaje": "Producto eliminado del Stack."}
+
+# ==========================================
+# --- RUTAS DE COMUNIDAD: GAMIFICACIÓN (CHECK-IN) ---
+# ==========================================
+
+@app.post("/api/comunidad/checkin")
+def hacer_checkin_diario(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    """El ritual diario. Gana puntos y mantén tu racha de suplementación."""
+    from datetime import date, timedelta
+    
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+
+    hoy = date.today()
+    ayer = hoy - timedelta(days=1)
+
+    # 1. Escudo anti-trampas: Comprobar si ya hizo el check-in hoy
+    check_hoy = db.query(models.CheckDiario).filter(
+        models.CheckDiario.perfil_id == mi_perfil.id,
+        models.CheckDiario.fecha == hoy
+    ).first()
+
+    if check_hoy:
+        raise HTTPException(status_code=400, detail="¡Ya has hecho tu check-in hoy! Vuelve mañana para no perder tu racha.")
+
+    # 2. Sistema de Rachas: Comprobar si hizo el check-in ayer
+    check_ayer = db.query(models.CheckDiario).filter(
+        models.CheckDiario.perfil_id == mi_perfil.id,
+        models.CheckDiario.fecha == ayer
+    ).first()
+
+    if check_ayer:
+        mi_perfil.racha_actual += 1
+    else:
+        # Castigo por fallar un día: se reinicia la racha
+        mi_perfil.racha_actual = 1  
+
+    # 3. Asignación de Puntos de Experiencia (XP)
+    puntos_base = 10
+    
+    # ¡BONUS! Si alcanza un múltiplo de 7 días seguidos (una semana entera), le damos un premio gordo
+    if mi_perfil.racha_actual > 0 and mi_perfil.racha_actual % 7 == 0:
+        puntos_base += 50
+        mensaje = f"¡INCREÍBLE! Has completado {mi_perfil.racha_actual} días seguidos. Toma 50 XP extra. 🔥"
+    else:
+        mensaje = "¡Check-in completado con éxito! Sigue así. 💪"
+
+    mi_perfil.puntos_totales += puntos_base
+
+    # 4. Registrar el check-in en el historial
+    nuevo_check = models.CheckDiario(
+        perfil_id=mi_perfil.id,
+        fecha=hoy,
+        puntos_ganados=puntos_base
+    )
+
+    db.add(nuevo_check)
+    db.commit()
+    db.refresh(mi_perfil)
+
+    # Devolvemos el estado actual para que el frontend pinte los numeritos actualizados al instante
+    return {
+        "mensaje": mensaje,
+        "puntos_ganados": puntos_base,
+        "puntos_totales_actualizados": mi_perfil.puntos_totales,
+        "racha_actualizada": mi_perfil.racha_actual
+    }
 
 # ==========================================
 # --- RUTAS DE FAVORITOS (PRIVADAS) ---

@@ -232,3 +232,45 @@ class FavoriteResponse(BaseModel):
 # ==========================================
 class NewsletterCreate(BaseModel):
     email: str = Field(..., pattern=r'^\S+@\S+\.\S+$', description="Dirección de correo electrónico")
+
+
+# ==========================================
+# --- ESQUEMAS SOCIALES Y DE COMUNIDAD ---
+# ==========================================
+from typing import Optional
+from pydantic import BaseModel, ConfigDict
+
+class PerfilBase(BaseModel):
+    username: str
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    suplemento_favorito: Optional[str] = None
+    objetivo_etapa: Optional[str] = "Mantenimiento"
+
+class PerfilCreate(PerfilBase):
+    pass
+
+class PerfilResponse(PerfilBase):
+    id: int
+    puntos_totales: int
+    racha_actual: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+from datetime import datetime
+
+class StackBase(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = None
+    es_publico: Optional[bool] = True
+
+class StackCreate(StackBase):
+    pass
+
+class StackResponse(StackBase):
+    id: int
+    fecha_creacion: datetime
+    # Reutilizamos tu súper esquema de productos para devolver los botes dentro del Stack
+    productos: List[ProductResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
