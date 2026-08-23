@@ -254,6 +254,7 @@ class PerfilResponse(PerfilBase):
     id: int
     puntos_totales: int
     racha_actual: int
+    stacks: List["StackResponse"] = []
     
     model_config = ConfigDict(from_attributes=True)
 

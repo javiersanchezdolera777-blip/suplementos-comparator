@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import GymMascota from '@/components/GymMascota';
+import GestorStacks from '@/components/GestorStacks';
+import ModalAñadirStack from '@/components/ModalAñadirStack';
 // Importamos tu modal de login (ajusta la ruta si es distinta, por el error anterior sé que lo tienes por aquí)
 import LoginModal from '@/components/LoginModal'; 
 
@@ -16,6 +18,7 @@ export default function MiZonaPage() {
   const [formUsername, setFormUsername] = useState("");
   const [formObjetivo, setFormObjetivo] = useState("Mantenimiento");
   const [errorForm, setErrorForm] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   useEffect(() => {
     comprobarEstado();
@@ -191,7 +194,26 @@ export default function MiZonaPage() {
             >
               🔥 Hacer Check-in Hoy
             </button>
+            {/* BOTÓN DE PRUEBA PARA EL MODAL */}
+            <button 
+              onClick={() => setModalAbierto(true)}
+              className="mt-4 text-blue-600 font-bold underline text-sm"
+            >
+              Test: Simular añadir "Proteína Whey" a un Stack
+            </button>
+
+            {/* EL MODAL INVISIBLE */}
+            <ModalAñadirStack 
+              isOpen={modalAbierto} 
+              onClose={() => setModalAbierto(false)} 
+              productoId={1} // Asumimos que el producto con ID 1 existe en tu BBDD
+              productoNombre="Proteína Whey Gold Standard"
+            />
           </div>
+        </div>
+        {/* --- NUEVA SECCIÓN: TUS STACKS --- */}
+        <div className="mt-8">
+          <GestorStacks perfil={perfil} recargarPerfil={comprobarEstado} />
         </div>
       </div>
     </div>
