@@ -393,6 +393,7 @@ def obtener_productos(
     return {"total_resultados": total_resultados, "productos": productos}
 
 
+
 # ==========================================
 # --- RUTA DE COMPARADOR MULTITIENDA ---
 # ==========================================
