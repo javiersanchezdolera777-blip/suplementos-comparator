@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCompareStore } from '@/store/useCompareStore';
 
 interface Product {
   id: number;
@@ -110,6 +111,9 @@ export default function ProductCard({ product }: { product: Product }) {
   }, []);
 
   const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
+  
+  const { addId, compareIds } = useCompareStore();
+  const isCompared = compareIds.includes(product.id);
   
   const [imageError, setImageError] = useState(false);
   const isFavorite = favoriteIds.includes(product.id);
@@ -228,6 +232,15 @@ export default function ProductCard({ product }: { product: Product }) {
     }
   };
 
+  const handleCompare = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+    addId(product.id);
+  };
+
   return (
     <>
       <div 
@@ -281,6 +294,17 @@ export default function ProductCard({ product }: { product: Product }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
+            </div>
+          </div>
+
+          {/* Botón VS (Comparar) flotante debajo del corazón */}
+          <div className="absolute top-14 right-3 z-20 group/vs cursor-pointer active:scale-125 transition-transform duration-200" onClick={handleCompare}>
+            <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-[34px] h-[34px] ${
+              isCompared 
+                ? "bg-blue-50 border-blue-200 scale-105" 
+                : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
+            }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
+              <span className={`text-[10px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
             </div>
           </div>
         </div>
@@ -395,20 +419,32 @@ export default function ProductCard({ product }: { product: Product }) {
                    )}
                  </div>
                  
-                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
-                   <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
-                     isFavorite 
-                       ? "bg-red-50 border-red-200 scale-105" 
-                       : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
-                   }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
-                     <svg 
-                       className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} 
-                       fill={isFavorite ? "currentColor" : "none"}
-                       stroke="currentColor" 
-                       viewBox="0 0 24 24"
-                     >
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                     </svg>
+                 <div className="flex items-center">
+                   <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
+                     <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
+                       isFavorite 
+                         ? "bg-red-50 border-red-200 scale-105" 
+                         : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
+                     }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
+                       <svg 
+                         className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} 
+                         fill={isFavorite ? "currentColor" : "none"}
+                         stroke="currentColor" 
+                         viewBox="0 0 24 24"
+                       >
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                       </svg>
+                     </div>
+                   </div>
+
+                   <div className="group/vs cursor-pointer active:scale-125 transition-transform duration-200 mt-1 ml-2" onClick={handleCompare}>
+                     <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-9 h-9 ${
+                       isCompared 
+                         ? "bg-blue-50 border-blue-200 scale-105" 
+                         : "bg-white border-slate-200 group-hover/vs:bg-slate-50"
+                     }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
+                       <span className={`text-[11px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
+                     </div>
                    </div>
                  </div>
                </div>

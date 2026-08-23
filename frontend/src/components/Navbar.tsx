@@ -2,13 +2,24 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useCompareStore } from '@/store/useCompareStore';
 import SearchOmnibox from './SearchOmnibox';
 export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { compareIds } = useCompareStore();
   const isSoloOfertas = searchParams ? searchParams.get('solo_ofertas') === 'true' : false;
+  const handleVersusClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      openLoginModal();
+    } else {
+      router.push('/versus');
+    }
+  };
 
   return (
     <nav className="w-full py-3 px-4 md:px-8 lg:px-12 flex items-center justify-between z-40 border-b border-slate-100 bg-white sticky top-0 transition-all duration-300 gap-4">
@@ -57,6 +68,20 @@ export default function Navbar() {
             </svg>
             <span>Top Ofertas</span>
           </Link>
+
+          {/* Botón Modo Versus (Premium) */}
+          <button
+            onClick={handleVersusClick}
+            className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors group cursor-pointer"
+          >
+            <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-tighter shadow-sm group-hover:scale-105 transition-transform">VS</span>
+            <span className="font-bold">Modo Versus</span>
+            {compareIds && compareIds.length > 0 && (
+              <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold min-w-[18px] text-center shadow-sm ml-0.5 animate-in zoom-in duration-200">
+                {compareIds.length}
+              </span>
+            )}
+          </button>
 
           <div className="w-px h-4 bg-slate-200"></div>
         </div>
