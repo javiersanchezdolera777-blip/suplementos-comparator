@@ -14,7 +14,7 @@ export default function GymMascota({ xpTotales, objetivo }: Props) {
   else if (xpTotales >= 200) nivel = 2;
 
   // 2. Elegimos la imagen correcta según el objetivo y el nivel
-  let imagenSrc = '/mascotas/default.png';
+  let imagenSrc = '/mascotas/flaco.png';
   
   if (objetivo === 'Volumen') {
     if (nivel === 1) imagenSrc = '/mascotas/flaco.png';

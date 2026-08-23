@@ -3,10 +3,14 @@ import React, { useState, useEffect } from 'react';
 import GymMascota from '@/components/GymMascota';
 import GestorStacks from '@/components/GestorStacks';
 import ModalAñadirStack from '@/components/ModalAñadirStack';
-// Importamos tu modal de login (ajusta la ruta si es distinta, por el error anterior sé que lo tienes por aquí)
+import { useAuth } from '@/context/AuthContext'; 
+// Importamos tu modal de login
 import LoginModal from '@/components/LoginModal'; 
 
 export default function MiZonaPage() {
+  // CONECTAMOS CON EL CEREBRO CENTRAL
+  const { isLoggedIn, openLoginModal } = useAuth();
+
   const [perfil, setPerfil] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -20,12 +24,20 @@ export default function MiZonaPage() {
   const [errorForm, setErrorForm] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
 
+  // LA MAGIA: Si cierras sesión en el Navbar, esta página se actualiza al instante
   useEffect(() => {
-    comprobarEstado();
-  }, []);
+    if (isLoggedIn) {
+      setNecesitaLogin(false);
+      comprobarEstado();
+    } else {
+      setNecesitaLogin(true);
+      setPerfil(null); // Borramos tus datos de la pantalla por seguridad
+      setLoading(false);
+    }
+  }, [isLoggedIn]);
 
   const comprobarEstado = async () => {
-    const token = localStorage.getItem("token"); // Ajusta si en tu app se llama diferente
+    const token = localStorage.getItem("token");
     
     if (!token) {
       setNecesitaLogin(true);
@@ -34,7 +46,6 @@ export default function MiZonaPage() {
     }
 
     try {
-      // CAMBIO: Sustituimos localhost por 127.0.0.1 para evitar errores de red de Next.js
       const res = await fetch("http://127.0.0.1:8000/api/perfil/me", {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -61,7 +72,6 @@ export default function MiZonaPage() {
     setErrorForm("");
     const token = localStorage.getItem("token");
 
-    // CAMBIO: Sustituimos localhost por 127.0.0.1
     const res = await fetch("http://127.0.0.1:8000/api/perfil", {
       method: "POST",
       headers: {
@@ -76,7 +86,6 @@ export default function MiZonaPage() {
     });
 
     if (res.ok) {
-      // ¡Éxito! Recargamos el estado para que cargue el Tamagotchi
       setNecesitaPerfil(false);
       comprobarEstado();
     } else {
@@ -87,24 +96,19 @@ export default function MiZonaPage() {
 
   // --- RENDERIZADO DE LAS 3 PANTALLAS ---
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-semibold">Cargando tu zona...</div>;
 
-  // PANTALLA 1: PEDIR LOGIN
+  // PANTALLA 1: PEDIR LOGIN (Ahora usa el botón oficial del AuthContext)
   if (necesitaLogin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
         <h1 className="text-3xl font-bold mb-4">Únete a la Comunidad</h1>
         <p className="text-gray-600 mb-8 max-w-md">Inicia sesión para ganar XP diaria, subir de nivel y compartir tus rutinas con el resto.</p>
-        {/* Aquí renderizamos el modal que ya teníais programado Javiki y tú */}
-        <LoginModal />
         <button 
-          onClick={() => {
-            // Un pequeño truco por si el LoginModal no se abre solo
-            alert("Si no ves el Login, revisa cómo se abre tu LoginModal en la cabecera (Navbar). Una vez logueado, recarga esta página.");
-          }}
-          className="mt-4 text-sm text-blue-600 underline"
+          onClick={openLoginModal}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:-translate-y-1"
         >
-          Ya he iniciado sesión, recargar
+          Iniciar Sesión
         </button>
       </div>
     );
@@ -149,7 +153,6 @@ export default function MiZonaPage() {
   }
 
   // PANTALLA 3: EL TAMAGOTCHI 
-  // ¡EL PARACAÍDAS! Si el backend está apagado o falla, mostramos este error amigable en vez de romper la web entera.
   if (!perfil) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-500 font-semibold p-4 text-center">
@@ -161,6 +164,15 @@ export default function MiZonaPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
        <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* MINI-MENÚ NAVEGACIÓN (Lo he puesto aquí para que se alinee con todo tu perfil) */}
+        <div className="flex justify-between items-center mb-6">
+          <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm transition-colors">⬅️ Volver a tienda</a>
+          <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
+            🔍 Buscar amigos
+          </a>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
@@ -180,7 +192,6 @@ export default function MiZonaPage() {
             <button 
               onClick={async () => {
                 try {
-                  // CAMBIO: Sustituimos localhost por 127.0.0.1
                   const res = await fetch("http://127.0.0.1:8000/api/comunidad/checkin", {
                     method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                   });
@@ -190,14 +201,15 @@ export default function MiZonaPage() {
                   alert("Fallo de conexión. Revisa que el backend esté encendido.");
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-lg shadow-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-lg shadow-lg mb-4"
             >
               🔥 Hacer Check-in Hoy
             </button>
+            
             {/* BOTÓN DE PRUEBA PARA EL MODAL */}
             <button 
               onClick={() => setModalAbierto(true)}
-              className="mt-4 text-blue-600 font-bold underline text-sm"
+              className="mt-2 text-blue-600 font-bold underline text-sm"
             >
               Test: Simular añadir "Proteína Whey" a un Stack
             </button>
@@ -206,23 +218,17 @@ export default function MiZonaPage() {
             <ModalAñadirStack 
               isOpen={modalAbierto} 
               onClose={() => setModalAbierto(false)} 
-              productoId={1} // Asumimos que el producto con ID 1 existe en tu BBDD
+              productoId={1}
               productoNombre="Proteína Whey Gold Standard"
             />
           </div>
         </div>
+        
         {/* --- NUEVA SECCIÓN: TUS STACKS --- */}
         <div className="mt-8">
           <GestorStacks perfil={perfil} recargarPerfil={comprobarEstado} />
         </div>
       </div>
-      {/* MINI-MENÚ NAVEGACIÓN */}
-        <div className="flex justify-between items-center mb-4">
-          <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm">⬅️ Volver a tienda</a>
-          <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2">
-            🔍 Buscar amigos
-          </a>
-        </div>
     </div>
   );
 }
