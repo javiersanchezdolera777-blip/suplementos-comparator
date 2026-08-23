@@ -390,8 +390,7 @@ def obtener_productos(
     offset_real = skip if skip > 0 else (page - 1) * limit
     productos = productos_filtrados[offset_real : offset_real + limit]
 
-
-return {"total_resultados": total_resultados, "productos": productos}
+    return {"total_resultados": total_resultados, "productos": productos}
 
 
 # ==========================================
