@@ -2,6 +2,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import Catalog from "@/components/Catalog";
 import TelegramBanner from "@/components/TelegramBanner";
+import Link from 'next/link';
 
 export default function Home() {
   return (

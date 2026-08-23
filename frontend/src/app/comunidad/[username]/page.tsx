@@ -156,6 +156,13 @@ export default function PerfilPublico() {
 
         </div>
       </div>
+      {/* MINI-MENÚ NAVEGACIÓN */}
+        <div className="flex justify-between items-center mb-4">
+          <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm">⬅️ Volver a tienda</a>
+          <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2">
+            🔍 Buscar amigos
+          </a>
+        </div>
     </div>
   );
 }

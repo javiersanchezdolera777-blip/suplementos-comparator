@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import SearchOmnibox from './SearchOmnibox';
+
 export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
   const searchParams = useSearchParams();
@@ -60,6 +61,18 @@ export default function Navbar() {
 
           <div className="w-px h-4 bg-slate-200"></div>
         </div>
+
+        {/* --- NUEVA ZONA: PUENTES A LA COMUNIDAD --- */}
+        <div className="hidden sm:flex items-center gap-3">
+          <Link href="/comunidad" className="text-slate-600 hover:text-blue-600 font-bold text-sm transition-colors flex items-center gap-1">
+            🔍 Comunidad
+          </Link>
+          <Link href="/mi-zona" className="bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition-transform transform hover:-translate-y-0.5 flex items-center gap-1.5">
+            🎮 Mi Zona
+          </Link>
+          <div className="w-px h-4 bg-slate-200 ml-1 hidden md:block"></div>
+        </div>
+        {/* ------------------------------------------- */}
 
         {/* Autenticación & Favoritos */}
         {isLoggedIn ? (
