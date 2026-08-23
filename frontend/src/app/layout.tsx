@@ -4,6 +4,7 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import Script from 'next/script';
 import "./globals.css";
 import Providers from "./Providers";
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,6 +61,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col max-w-full overflow-x-hidden bg-slate-50 text-slate-900" suppressHydrationWarning>
         <Providers>
+          <Toaster position="bottom-right" />
           {children}
         </Providers>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-GMZDENG5MM"} />
