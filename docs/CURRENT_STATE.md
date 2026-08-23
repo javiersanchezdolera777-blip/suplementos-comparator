@@ -45,6 +45,13 @@
 - [x] Centralización de la lógica de alérgenos (`es_vegano`, `sin_gluten`, `sin_lactosa`) en el Cerebro NLP (`utils.py`).
 - [x] Diagnóstico completado del feed de Tradedoubler (Farma2Go) y mapeo de limitaciones de precios base.
 - [x] El bot de Telegram está desplegado con Strict CI/CD y 100% operativo en producción. Los CRON programados inyectan correctamente los Secrets (tokens) y los mensajes llegan al canal sin incidencias varias veces al día.
+- [x] El bot de Telegram está desplegado con Strict CI/CD y 100% operativo en producción.
+- [x] **[NUEVO] Endpoint Comparador:** Creación de `GET /api/productos/comparar` blindado (máx. 4 productos) para nutrir la nueva UI del "Modo Versus", manteniendo el orden exacto de peticiones y devolviendo el objeto estructurado.
+- [x] **[NUEVO] Arquitectura Social en BD:** Despliegue de la Fase 1 del "IG de Suplementos" en Neon DB. Creación de las tablas puente e identidades: `perfiles`, `seguidores`, `stacks`, `resenas_sabores` y `checks_diarios`.
+- [x] **[NUEVO] Motor Social API (Perfiles & Followers):** Endpoints para crear un `@username` único asociado 1:1 a la cuenta de usuario. Implementación de lógica de seguidores con protección anti-bucle (no seguirse a uno mismo).
+- [x] **[NUEVO] Stacks (Rutinas):** Endpoints para agrupar productos (`ProductResponse` completo) en listas públicas compartibles, reutilizando la lógica del catálogo.
+- [x] **[NUEVO] Motor de Gamificación:** Endpoint `POST /api/comunidad/checkin` que premia la constancia diaria mediante Rachas (Streaks) y puntos de Experiencia (XP), con sistema anti-trampas (un solo check por día).
+- [x] **[NUEVO] Fix de Seguridad de Entorno:** Creación de la puerta trasera `/api/login/swagger` compatible con `OAuth2PasswordRequestForm` para permitir el testeo seguro de los endpoints sociales privados.
 
 ## Sprint 3: Monolito Estable Restaurado
 - **Estado Actual:** El "Monolito Estable" se ha consolidado en producción de manera impecable.
