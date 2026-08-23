@@ -231,7 +231,7 @@ export default function Catalog() {
         </h1>
 
         {/* 2. Subtexto Claro */}
-        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">  
+        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 
@@ -245,10 +245,8 @@ export default function Catalog() {
           </div>
           <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
           <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span><strong className="text-slate-700 font-semibold">Transparencia</strong> €/kg</span>
+            <span className="text-base leading-none">📦</span>
+            <span><strong className="text-slate-700 font-semibold">Más de 1500</strong> productos</span>
           </div>
           <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
           <div className="flex items-center gap-1.5">
@@ -266,10 +264,11 @@ export default function Catalog() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
             {[
-              { name: "MyProtein", displayName: "MYPROTEIN", style: "text-base sm:text-lg font-black tracking-tighter" },
-              { name: "HSN", displayName: "HSN", style: "text-lg sm:text-xl font-black italic" },
-              { name: "Bulk", displayName: "BULK", style: "text-base sm:text-lg font-bold tracking-widest" },
-              { name: "Prozis", displayName: "Prozis", style: "text-base sm:text-lg font-extrabold uppercase" },
+              { name: "HSN", displayName: "HSN", style: "text-lg sm:text-xl font-black italic uppercase" },
+              { name: "NOW Foods", displayName: "NOW FOODS", style: "text-base sm:text-lg font-bold uppercase tracking-wide" },
+              { name: "Swanson", displayName: "SWANSON", style: "text-base sm:text-lg font-semibold uppercase tracking-widest" },
+              { name: "Solgar", displayName: "SOLGAR", style: "text-base sm:text-lg font-extrabold uppercase tracking-tight" },
+              { name: "Drasanvi", displayName: "DRASANVI", style: "text-base sm:text-lg font-black uppercase tracking-wider" },
             ].map((brand) => {
               const isSelected = selectedBrands.includes(brand.name);
               return (
@@ -284,8 +283,8 @@ export default function Catalog() {
                     document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
                   }}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
-                      ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
-                      : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
+                    ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
+                    : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
                     } ${brand.style}`}
                 >
                   {brand.displayName}
@@ -367,7 +366,7 @@ export default function Catalog() {
             <div className="text-slate-600 text-sm">
               Mostrando <span className="font-semibold text-slate-900">
                 {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
-              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> suplementos
+              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> productos
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">

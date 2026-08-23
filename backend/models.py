@@ -1,6 +1,7 @@
-from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy import ARRAY, Column, Integer, String, Float, ForeignKey, Boolean, JSON, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 # ... El resto de tu código se queda exactamente igual ...
 class Marca(Base):
@@ -84,7 +85,9 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)  # ¡Nunca guardamos contraseñas reales!
+    fecha_ultimo_retargeting = Column(DateTime, nullable=True) # Control anti-spam de retargeting
     favoritos = relationship("Favorito", back_populates="usuario")
+    historial_vistas = relationship("HistorialVistas", back_populates="usuario")
 
 
 class Favorito(Base):
@@ -99,4 +102,24 @@ class Favorito(Base):
     # Relaciones para que Python pueda navegar entre las tablas fácilmente
     usuario = relationship("Usuario", back_populates="favoritos")
     producto = relationship("Producto")
+
+class SuscripcionNewsletter(Base):
+    __tablename__ = "suscripciones_newsletter"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    activo = Column(Boolean, default=True)
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
+
+class HistorialVistas(Base):
+    __tablename__ = "historial_vistas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
+    ultima_vista = Column(DateTime, default=datetime.utcnow)
+
+    usuario = relationship("Usuario", back_populates="historial_vistas")
+    producto = relationship("Producto")
+
 

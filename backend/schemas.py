@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Dict, Any, List, Optional
 from enum import Enum
 
@@ -30,7 +30,7 @@ class SaborEnum(str, Enum):
 class FormatoEnum(str, Enum):
     polvo = "Polvo"
     capsulas = "Cápsulas"
-    liquido = "Líquido"
+    gel = "Gel"
     barrita = "Barrita"
     gominolas = "Gominolas"
 
@@ -90,7 +90,7 @@ def normalizar_marca(nombre: str) -> str:
         "food series", "foodseries",
         "keto series", "ketoseries",
         "flavour series", "flavourseries",
-        "myco nutrition", "myconutrition"
+        "myco nutrition", "myconutrition",
         "bio series", "bioseries",
         
     ]
@@ -173,6 +173,25 @@ class ProductResponse(BaseModel):
     brand: Optional[BrandResponse] = Field(validation_alias="marca", default=None)
     category: Optional[CategoryResponse] = Field(validation_alias="categoria", default=None)
     
+    @model_validator(mode="after")
+    def filter_intelligent_price_per_kg(self):
+        if self.price_per_kg is not None:
+            # Regla 1: Categorías Core
+            palabras_clave = ["proteina", "creatina", "carbohidrato", "ganador", "mass", "gainer"]
+            name_lower = self.name.lower() if self.name else ""
+            cat_lower = self.category.name.lower() if (self.category and self.category.name) else ""
+            
+            es_core = any(p in name_lower for p in palabras_clave) or any(p in cat_lower for p in palabras_clave)
+            if not es_core:
+                self.price_per_kg = None
+                
+            # Regla 2: Filtro de Cordura (Outliers)
+            if self.price_per_kg is not None:
+                if self.price_per_kg > 100 or self.price_per_kg < 2:
+                    self.price_per_kg = None
+                    
+        return self
+    
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class PaginatedProducts(BaseModel):
@@ -207,3 +226,9 @@ class FavoriteResponse(BaseModel):
     product: ProductResponse = Field(validation_alias="producto")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+# ==========================================
+# --- ESQUEMAS DE NEWSLETTER ---
+# ==========================================
+class NewsletterCreate(BaseModel):
+    email: str = Field(..., pattern=r'^\S+@\S+\.\S+$', description="Dirección de correo electrónico")

@@ -441,35 +441,7 @@ export default function FilterSidebar({
                 </div>
               )}
 
-              {/* Pills Top Marcas (Ultra-compactas) */}
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  Top Marcas
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {popularBrands.map((brand) => {
-                    const isSelected = selectedBrands.includes(brand);
-                    return (
-                      <button
-                        key={brand}
-                        type="button"
-                        onClick={() => {
-                          setSelectedBrands((prev) =>
-                            isSelected ? prev.filter((b) => b !== brand) : [...prev, brand]
-                          );
-                        }}
-                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${
-                          isSelected
-                            ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
-                      >
-                        {brand}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+
 
               {/* Input Buscador de Marcas */}
               <div className="relative flex items-center mt-0.5">

@@ -5,8 +5,8 @@ import { AuthProvider } from "../context/AuthContext";
 import LoginModal from "../components/LoginModal";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // El Client ID de Google configurado por Diego
-  const clientId = "318282148406-908hoi15scu4vcc8v9lhqfkislin10cb.apps.googleusercontent.com";
+  // 🔒 Cargamos el Client ID desde las variables de entorno de forma segura
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   return (
     <GoogleOAuthProvider clientId={clientId}>

@@ -19,11 +19,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tus Suplementos | Comparador de Precios de Nutrición Deportiva",
   description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
-  metadataBase: new URL('https://tussuplementos.es'),
+  metadataBase: new URL('https://www.tussuplementos.com'),
+  alternates: {
+    canonical: 'https://www.tussuplementos.com',
+  },
   openGraph: {
     title: "Tus Suplementos | Comparador de Precios de Nutrición Deportiva",
     description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
-    url: 'https://tussuplementos.es',
+    url: 'https://www.tussuplementos.com',
     siteName: 'Tus Suplementos',
     locale: 'es_ES',
     type: 'website',
@@ -42,8 +45,14 @@ export const metadata: Metadata = {
     description: "Compara precios en tiempo real de proteínas, creatinas y vitaminas entre las mejores tiendas oficiales. Encuentra la mejor relación €/kg.",
   },
   icons: {
-    icon: '/Logo_icon2.png',
-    apple: '/Logo_icon2.png',
+    icon: [
+      { url: '/Logo_icon2.png?v=2', sizes: 'any' },
+      { url: '/icon.png?v=2', type: 'image/png' },
+    ],
+    shortcut: '/Logo_icon2.png?v=2',
+    apple: [
+      { url: '/apple-icon.png?v=2', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
@@ -59,6 +68,11 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href="/Logo_icon2.png?v=3" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/Logo_icon2.png?v=3" type="image/png" />
+        <link rel="apple-touch-icon" href="/Logo_icon2.png?v=3" />
+      </head>
       <body className="min-h-full flex flex-col max-w-full overflow-x-hidden bg-slate-50 text-slate-900" suppressHydrationWarning>
         <Providers>
           <Toaster position="bottom-right" />

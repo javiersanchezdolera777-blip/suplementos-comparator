@@ -8,15 +8,15 @@ Planificación estructurada en Sprints para la evolución de "Tus Suplementos".
 - [x] Estandarización de interfaz en Modo Claro Oficial de Alto Contraste.
 - [x] Añadir filtros de alérgenos (Sin Gluten, Sin Lactosa) en el frontend y backend.
 
-## Sprint 2 (Buscador & Automatización)
-- [ ] Integrar Fuzzy Search en PostgreSQL mediante la extensión `pg_trgm`.
-- [ ] Implementar Omnibox en vivo (búsqueda predictiva) en el frontend.
-- [ ] Desarrollo e integración del endpoint `POST /api/click` para capturar la interacción de los usuarios.
-- [ ] Configuración de CRON Jobs diarios para ingesta automática de datos.
-- [ ] Corrección y despliegue del Bot de Telegram (ofertas automatizadas).
+## Sprint 2 (Buscador Inteligente & Automatización) - [EN PROGRESO 🟡]
+- [x] Motor Fuzzy Search (pg_trgm + unaccent) en PostgreSQL para tolerancia a erratas y tildes.
+- [x] Endpoint ligero `/api/productos/live-search` con ranking de relevancia.
+- [x] SearchOmnibox interactivo en vivo con miniaturas, precios y debouncing.
+- [x] Pipeline de ejecución programada (CRON Scrapers / GitHub Actions) para actualización diaria de precios.
+- [ ] Bot de Chollos de Telegram con alertas en tiempo real (botón en web para unirse al canal)
 
 ## Sprint 3 (Retención & Comunidad)
-- [ ] Sistema de alertas de bajada de precio notificadas por email.
+- [ ] Sistema de alertas de bajada de precio notificadas por email (newsletter)
 - [ ] Creación de perfiles de usuario públicos ("Stack habitual / Instagram de suplementos").
 - [ ] Inyección dinámica de Schema.org JSON-LD para productos y categorías.
 - [ ] Estrategia de SEO programático.

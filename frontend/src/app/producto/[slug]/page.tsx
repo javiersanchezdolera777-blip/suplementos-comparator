@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import TrackedAffiliateLink from '@/components/TrackedAffiliateLink';
+import ProductViewTracker from '@/components/ProductViewTracker';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -119,6 +120,7 @@ export default async function ProductDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <ProductViewTracker productId={product.id} />
       <div className="max-w-6xl mx-auto">
 
         {/* 1. NAVEGACIÓN Y BREADCRUMB */}
