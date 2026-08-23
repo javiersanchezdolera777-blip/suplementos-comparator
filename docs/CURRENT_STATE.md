@@ -52,6 +52,13 @@
 - [x] **[NUEVO] Stacks (Rutinas):** Endpoints para agrupar productos (`ProductResponse` completo) en listas públicas compartibles, reutilizando la lógica del catálogo.
 - [x] **[NUEVO] Motor de Gamificación:** Endpoint `POST /api/comunidad/checkin` que premia la constancia diaria mediante Rachas (Streaks) y puntos de Experiencia (XP), con sistema anti-trampas (un solo check por día).
 - [x] **[NUEVO] Fix de Seguridad de Entorno:** Creación de la puerta trasera `/api/login/swagger` compatible con `OAuth2PasswordRequestForm` para permitir el testeo seguro de los endpoints sociales privados.
+- [x] **[FRONTEND] UI del "Tamagotchi del Gym":** Creación del componente `GymMascota.tsx` con barra de progreso animada, cálculo de niveles (1-3) y renderizado condicional de assets visuales (`public/mascotas/`) cruzando la XP total y el `objetivo_etapa`.
+- [x] **[FRONTEND] Embudo de Onboarding "Mi Zona":** Desarrollo de la página `/mi-zona` con gestión de estados complejos:
+  1. Detección de sesión (Token JWT) -> Prompt de Login.
+  2. Creación de Identidad -> Formulario de `@username` y Fase (Volumen/Definición).
+  3. Dashboard interactivo -> Renderizado del Tamagotchi y botón de Check-in conectado.
+- [x] **[BACKEND] Fix de CORS:** Configuración exitosa de `CORSMiddleware` en FastAPI (`main.py`) para permitir peticiones preflight (`OPTIONS`) desde `localhost:3000` y `127.0.0.1:3000`.
+- [x] **[BBDD] Migración Manual Neon DB:** Inyección directa de SQL (`ALTER TABLE perfiles ADD COLUMN objetivo_etapa...`) para sincronizar el esquema de producción con los nuevos modelos de SQLAlchemy sin arriesgar la estabilidad con Alembic.
 
 ## Sprint 3: Monolito Estable Restaurado
 - **Estado Actual:** El "Monolito Estable" se ha consolidado en producción de manera impecable.

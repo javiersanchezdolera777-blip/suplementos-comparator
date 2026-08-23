@@ -31,8 +31,10 @@ origins = [
     "https://www.tussuplementos.es",
     "https://tussuplementos.es",
     "https://suplementos-comparator.vercel.app",
+    "http://192.168.64.1:3000" 
     "http://localhost:3000",
     "http://localhost:8000",
+    "*"
 ]
 
 app.add_middleware(
