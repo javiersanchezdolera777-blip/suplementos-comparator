@@ -26,45 +26,50 @@ def limpiar_texto(texto: str) -> str:
 def normalizar_descripcion_ui(texto: str) -> str:
     if not texto:
         return ""
-    
+
     # 1. Eliminar HTML y decodificar entidades raras (ej: &#8211; se vuelve un guion)
     t = re.sub(r"<[^>]+>", " ", str(texto))
     t = html.unescape(t)
     t = re.sub(r"\s+", " ", t).strip()
-    
-    # 2. Aniquilar preguntas iniciales. 
+
+    # 2. Aniquilar preguntas iniciales.
     # Bucle por si hay varias seguidas ("¿Qué es X? ¿Para qué sirve?")
     while re.match(r"^¿[^?]+\?\s*", t):
         t = re.sub(r"^¿[^?]+\?\s*", "", t).strip()
-        
+
     if not t:
         return ""
-    
+
     # 3. Tijera inteligente (solo si el rollo comercial está en medio o al final)
     corte_tags = [
-        "¿para qué sirve", "¿a quién va dirigido", "¿qué beneficios",
-        "beneficios de", "funciones del", "ingredientes:", "una combinación ganadora"
+        "¿para qué sirve",
+        "¿a quién va dirigido",
+        "¿qué beneficios",
+        "beneficios de",
+        "funciones del",
+        "ingredientes:",
+        "una combinación ganadora",
     ]
     t_lower = t.lower()
     idx_corte = len(t)
-    
+
     for tag in corte_tags:
         idx = t_lower.find(tag)
         # Solo cortamos si encontramos el tag más adelante en el texto, no en la posición 0
         if idx > 0 and idx < idx_corte:
             idx_corte = idx
-            
+
     t = t[:idx_corte].strip()
-    
+
     if not t:
         return ""
-        
+
     # 4. Capitalizar primera letra y asegurar punto final
     # NO CORTAMOS a 200 caracteres para permitir que el Frontend gestione el "Leer más"
     t = t[0].upper() + t[1:]
     if not t.endswith((".", "!", "?")):
         t += "."
-        
+
     return t
 
 
@@ -278,7 +283,7 @@ def clasificar_producto(
         "mochila",
         "pastillero",
     ]
-    if any(p in n for p in basura_titulo):
+    if any(re.search(r"\b" + p + r"\b", n) for p in basura_titulo):
         return None
 
     # 1.2 FILTRO VETERINARIO (Búsqueda estricta en Título + Descripción)
@@ -296,7 +301,7 @@ def clasificar_producto(
         "felino",
         "canino",
     ]
-    if any(p in texto_completo for p in basura_veterinaria):
+    if any(re.search(r"\b" + p + r"\b", texto_completo) for p in basura_veterinaria):
         return None
 
     if categorias_raw:
@@ -651,7 +656,7 @@ def clasificar_producto(
             "no gluten",
             "0% gluten",
             "apto para celíacos",
-            "apto para celiacos", 
+            "apto para celiacos",
             "sin trigo",
         ]
     )
@@ -665,13 +670,121 @@ def clasificar_producto(
             "no lactosa",
             "0% lactosa",
             "zero lactose",
-            "lactasa",  
+            "lactasa",
             "digezyme",
             "tolarase",
         ]
     )
 
+    # ==========================================
+    # 1. FORMATO (Diccionario Súper-Ampliado)
+    # ==========================================
+    c["formato"] = None
+    if any(
+        p in n
+        for p in [
+            "cápsula",
+            "capsula",
+            "caps",
+            "cápsulas",
+            "capsulas",
+            "comprimido",
+            "comprimidos",
+            "perla",
+            "perlas",
+            "tableta",
+            "tabletas",
+            "tablets",
+            "tabs",
+            "veg caps",
+            "vcap",
+            "vcaps",
+            "softgel",
+            "pastilla",
+            "pastillas",
+        ]
+    ):
+        c["formato"] = FormatoEnum.capsulas.value
+    elif any(
+        p in texto_completo
+        for p in [
+            "polvo",
+            "harina",
+            "cacito",
+            "scoop",
+            "cucharada",
+            "cucharadita",
+            "cucharaditas",
+            "dosificador",
+            "batido",
+            "soluble",
+            "disolución",
+            "copos",
+            "granulado",
+        ]
+    ):
+        c["formato"] = FormatoEnum.polvo.value
+    elif any(
+        p in texto_completo
+        for p in [
+            "vial",
+            "viales",
+            "gel",
+            "geles",
+            "líquido",
+            "liquido",
+            "gotas",
+            "liquid",
+            "ampolla",
+            "ampollas",
+            "bebida",
+            "ml",
+            "jarabe",
+            "spray",
+            "sirope",
+        ]
+    ):
+        c["formato"] = FormatoEnum.liquido_gel.value
+    elif any(
+        p in texto_completo
+        for p in [
+            "barrita",
+            "barritas",
+            "barra",
+            "snack",
+            "flapjack",
+            "galleta",
+            "galletas",
+            "cookie",
+            "cookies",
+            "brownie",
+            "bizcocho",
+        ]
+    ):
+        c["formato"] = FormatoEnum.barrita.value
+    elif any(
+        p in texto_completo
+        for p in ["gominola", "gominolas", "gummy", "gummies", "caramelo", "caramelos"]
+    ):
+        c["formato"] = FormatoEnum.gominolas.value
+
+    if not c["formato"]:
+        if c.get("categoria") in [
+            CategoriaEnum.proteinas.value,
+            CategoriaEnum.creatinas.value,
+        ]:
+            c["formato"] = FormatoEnum.polvo.value
+        elif any(
+            p in texto_completo
+            for p in ["cazo", "cacito", "scoop", "dosificador", "mezclar", "ml de agua"]
+        ):
+            c["formato"] = FormatoEnum.polvo.value
+
+    # ==========================================
+    # 2. SABORES (Léxico simple + Gourmet)
+    # ==========================================
     sabores = []
+
     if "vainilla" in texto_completo:
         sabores.append(SaborEnum.vainilla.value)
     if any(p in texto_completo for p in ["chocolate", "cacao", "brownie"]):
@@ -689,33 +802,24 @@ def clasificar_producto(
     if "frutas del bosque" in texto_completo or "berry" in texto_completo:
         sabores.append(SaborEnum.frutas.value)
     if "coco" in texto_completo:
-        sabores.append("Coco")
-    if not sabores:
-        sabores.append(SaborEnum.neutro.value)
-    c["sabor"] = sabores
+        sabores.append(SaborEnum.coco.value)
+    if "caramelo" in texto_completo:
+        sabores.append(SaborEnum.caramelo.value)
+    if "avellana" in texto_completo:
+        sabores.append(SaborEnum.avellana.value)
+    if "cacahuete" in texto_completo or "peanut" in texto_completo:
+        sabores.append(SaborEnum.cacahuete.value)
+    if "almendra" in texto_completo:
+        sabores.append(SaborEnum.almendra.value)
+    if re.search(r"\bmenta\b", texto_completo):
+        sabores.append(SaborEnum.menta.value)
 
-    # FORMATO: Priorizar título para cápsulas/perlas antes de buscar polvo
-    c["formato"] = None
-    if any(
-        p in n
-        for p in [
-            "cápsula",
-            "capsula",
-            "caps",
-            "comprimido",
-            "perla",
-            "tableta",
-            "tablets",
-            "veg caps",
-        ]
-    ):
-        c["formato"] = FormatoEnum.capsulas.value
-    elif any(p in texto_completo for p in ["polvo", "harina", "cacito", "scoop", "cucharada", "cucharadita", "cucharaditas", "cacito", "dosificador"]):
-        c["formato"] = FormatoEnum.polvo.value
-    elif any(p in texto_completo for p in ["vial", "gel", "líquido", "gotas"]):
-        c["formato"] = FormatoEnum.gel.value
-    elif "barrita" in texto_completo or "flapjack" in texto_completo:
-        c["formato"] = FormatoEnum.barrita.value
+    # Solo añadimos "Neutro" si no hemos encontrado sabor Y no es una cápsula
+    if not sabores:
+        if c.get("formato") != FormatoEnum.capsulas.value:
+            sabores.append(SaborEnum.neutro.value)
+
+    c["sabor"] = sabores
 
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c[
         "perfil_aminoacidos"
