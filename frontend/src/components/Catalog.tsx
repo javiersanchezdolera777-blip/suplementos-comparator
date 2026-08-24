@@ -112,10 +112,11 @@ export default function Catalog() {
 
   useEffect(() => {
     const qFromUrl = searchParams ? (searchParams.get("busqueda") || searchParams.get("q")) : null;
-    if (qFromUrl !== null && qFromUrl !== searchQuery) {
-      setSearchQuery(qFromUrl);
+    const newQuery = qFromUrl || "";
+    if (newQuery !== searchQuery) {
+      setSearchQuery(newQuery);
     }
-  }, [searchParams]);
+  }, [searchParams, searchQuery]);
 
   const buildQueryParams = () => {
     const queryParams = new URLSearchParams();
