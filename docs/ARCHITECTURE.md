@@ -66,11 +66,16 @@ El ecosistema de comunicaciones está diseñado bajo un modelo SaaS premium, enf
     *   **Filtros de Cordura Matemática:** El cálculo del "Ratio de Oro" (€/kg) se blinda validando rangos lógicos (entre 2€ y 100€), descartando errores de precio o gramaje arrastrados del scraping.
     *   **Garantía Visual:** El pipeline `actualizador_precios.py` inyecta sistemáticamente `imagen_url` en la cola de alertas, previniendo el colapso visual de los correos automáticos.
 
-## Roadmap de Producto / Features
+## Ecosistema de Funcionalidades (V1)
+
+*   **Motor NLP de Clasificación Quirúrgica:** Análisis léxico avanzado en tiempo de ingesta que detecta formatos (polvo, cápsulas, gominolas), sabores (diccionario gourmet), alérgenos y macronutrientes esenciales.
+*   **Modo Versus (Comparador Cara a Cara):** UI premium para comparar hasta 4 productos simultáneamente, con mapeo inteligente de características y sincronización global de estado mediante Zustand.
+*   **Ecosistema Social ("El IG de Suplementos"):** Perfiles de usuario (`@username`), red de seguidores, y publicación de *Stacks* (rutinas de suplementación).
+*   **Gamificación Activa:** Check-ins diarios, rachas (streaks) y puntos de experiencia (XP) para fidelizar y retener usuarios.
+
+## Roadmap de Producto / Features Pendientes
 - **Migración a Multi-Tienda (Sprint 4):** Transición del catálogo plano a un esquema relacional donde `Producto` sea una entidad abstracta padre y los `Precios` residan en una tabla hija `Oferta` vinculada a `Tienda`. Esta migración requerirá el uso estricto de **Alembic** para gestionar las migraciones de base de datos de forma segura.
 - **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
-- **Perfiles de Usuario (El "IG de Suplementos"):** Permitir a los usuarios fijar sus "stacks" habituales (ej. Creatina Amix, Proteína HSN) para hacerlos públicos.
-- **Tabla Comparativa Multitienda:** Interfaz para comparar 2+ productos/tiendas y resaltar el más barato.
 - **Optimizador de Afiliados:** Reducir la latencia de las redirecciones de Tradedoubler hacia SportLive/Farma2Go.
 - **Nuevas Tiendas:** Integrar Aminha Farmacia y Bulk (vía Awin, requerirá scraper sin datafeed).
 

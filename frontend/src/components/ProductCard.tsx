@@ -112,7 +112,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
   
-  const { addId, compareIds } = useCompareStore();
+  const { addId, removeId, compareIds } = useCompareStore();
   const isCompared = compareIds.includes(product.id);
   
   const [imageError, setImageError] = useState(false);
@@ -238,7 +238,11 @@ export default function ProductCard({ product }: { product: Product }) {
       openLoginModal();
       return;
     }
-    addId(product.id);
+    if (isCompared) {
+      removeId(product.id);
+    } else {
+      addId(product.id);
+    }
   };
 
   return (

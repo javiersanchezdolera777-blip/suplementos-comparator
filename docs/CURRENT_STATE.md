@@ -13,6 +13,25 @@
 *   **Limpieza:** Las marcas huérfanas de pruebas anteriores han sido purgadas de la tabla maestra de `marcas`. La normalización agrupa todas las gamas de HSN bajo el paraguas de HSN y aísla las marcas externas reales.
 *   **Entornos Segregados:** Uso activo de Neon DB con ramas separadas (Producción frente a la nueva rama `dev-ofertas` para staging), protegiendo la integridad de los datos reales durante el desarrollo de nuevas lógicas de precios.
 
+## Hitos Recientes (V1 Release Candidate)
+
+### 1. Modo Versus (Comparador Multi-tienda Premium)
+- Tabla comparativa cara a cara de hasta 4 productos simultáneos.
+- Mapeo dinámico e inteligente de características (ocultando filas vacías de forma automática).
+- Acceso directo a la compra mediante enlaces de afiliado y botones de conversión limpios.
+- Sincronización de estado en el cliente mediante Zustand, con soporte de toggle directo desde el catálogo (botón "VS" persistente).
+
+### 2. Ecosistema Social y Gamificación (Backend & Frontend)
+- Sistema de perfiles de usuario únicos (`@username`) con biografías y avatares.
+- Red social de seguidores (capacidad de seguir y dejar de seguir a otros perfiles).
+- Creación de *Stacks*: Listas públicas y compartibles con las rutinas personalizadas de suplementación de cada usuario.
+- Sistema de gamificación integrado con *Check-in* diario, cálculo de rachas y asignación de puntos de experiencia (XP) con bonus semanales por constancia.
+
+### 3. Motor NLP y Clasificación Quirúrgica
+- Análisis léxico avanzado (Cerebro NLP) para la detección automática de formatos físicos (polvo, cápsulas, líquido, barritas, gominolas).
+- Detección precisa de sabores mediante un diccionario gourmet ampliado, capaz de identificar neutros y variantes complejas.
+- Etiquetado automático de alérgenos y porcentajes de proteína, operando en tiempo de ingesta sin requerir intervención humana.
+
 ## Tareas Completadas (Checklist Reciente)
 - [x] Refactorización masiva del `utils.py` (Cerebro NLP de catalogación).
 - [x] Actualización del bloque de extracción de precios y marcas dinámicas en `hsn.py` (JSON-LD prioritario y Fallback HTML).
