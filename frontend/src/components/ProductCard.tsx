@@ -253,18 +253,18 @@ export default function ProductCard({ product }: { product: Product }) {
       >
         
         {/* Zona Superior: Imagen y Badges */}
-        <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
+        <div className="relative h-32 md:h-48 p-2 md:p-4 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
             <img
               src={product.image_url}
               alt={formattedName}
               onError={() => setImageError(true)}
-              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
+              className="w-full h-24 md:h-32 object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-2xl border border-slate-200/80 p-4 text-center relative z-10">
-              <span className="text-slate-400 font-extrabold tracking-[0.2em] text-xs uppercase mb-1">Tus Suplementos</span>
-              <span className="text-slate-400 text-[10px] font-semibold">{product.brand?.name || "Oficial"}</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-2xl border border-slate-200/80 p-2 md:p-4 text-center relative z-10">
+              <span className="text-slate-400 font-extrabold tracking-[0.2em] text-[8px] md:text-xs uppercase mb-1">Tus Suplementos</span>
+              <span className="text-slate-400 text-[9px] md:text-[10px] font-semibold">{product.brand?.name || "Oficial"}</span>
             </div>
           )}
 
@@ -314,35 +314,37 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
-        <div className="p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
+        <div className="p-3 md:p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
           <div className="flex flex-col gap-0.5 mb-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
+            <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
               {brandName || "Sin marca"}
             </span>
             
             {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[12px] font-normal text-slate-500 truncate">
+              <span className="text-[10px] md:text-[12px] font-normal text-slate-500 truncate">
                 Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
               </span>
             )}
           </div>
 
-          <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
+          <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
             {formattedName}
           </h3>
 
-          <div className="flex items-center justify-between mt-auto pt-4 gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto pt-3 md:pt-4 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
-              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                {currentPrice?.toFixed(2)} €
+              <span className="flex items-baseline gap-1 whitespace-nowrap text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight">
+                <span>{currentPrice?.toFixed(2)}</span>
+                <span className="text-base md:text-xl font-bold text-slate-700">€</span>
               </span>
               {hasOffer && (
-                <span className="text-sm font-semibold text-slate-400 line-through ml-1">
-                  {previousPrice?.toFixed(2)} €
+                <span className="flex items-baseline gap-1 whitespace-nowrap text-xs md:text-sm font-semibold text-slate-400 line-through ml-1">
+                  <span>{previousPrice?.toFixed(2)}</span>
+                  <span className="text-[10px] md:text-xs">€</span>
                 </span>
               )}
               {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-md ml-2 my-auto">
+                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-[10px] md:text-xs font-semibold px-2 py-0.5 md:px-2.5 md:py-1 rounded-md ml-1 md:ml-2 my-auto">
                   {product.price_per_kg.toFixed(2)} € / kg
                 </span>
               )}
@@ -356,7 +358,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 e.stopPropagation();
                 trackClick();
               }}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[10px] md:text-xs px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap self-start sm:self-auto"
             >
               Ver oferta
             </a>
@@ -455,12 +457,14 @@ export default function ProductCard({ product }: { product: Product }) {
 
                <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{formattedName}</h2>
                <div className="flex items-center flex-wrap gap-3 mb-4">
-                 <span className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                   {currentPrice?.toFixed(2)} €
+                 <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                   <span>{currentPrice?.toFixed(2)}</span>
+                   <span className="text-xl md:text-2xl font-bold text-slate-700">€</span>
                  </span>
                  {hasOffer && (
-                   <span className="text-base font-semibold text-slate-400 line-through">
-                     {previousPrice?.toFixed(2)} €
+                   <span className="flex items-baseline gap-1 whitespace-nowrap text-base font-semibold text-slate-400 line-through">
+                     <span>{previousPrice?.toFixed(2)}</span>
+                     <span className="text-sm">€</span>
                    </span>
                  )}
                  {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (

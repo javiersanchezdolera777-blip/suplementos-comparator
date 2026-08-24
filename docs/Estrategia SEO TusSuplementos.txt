@@ -1,0 +1,630 @@
+Sí. Y de hecho, **lo que estáis planteando tiene bastante sentido**, pero hay que separar tres cosas que a menudo se mezclan:
+
+1. **SEO → conseguir posiciones orgánicas en Google.**
+2. **Publicidad → comprar tráfico mientras el SEO despega.**
+3. **Contenido en TikTok/Instagram/YouTube → generar tráfico, marca y señales indirectas de autoridad.**
+
+Y una cosa importante desde el principio: **pagar publicidad en Google no hace que vuestra web suba posiciones orgánicas**. Son dos sistemas distintos.
+
+Para vuestro caso —comparador de suplementación deportiva monetizado por afiliación— yo montaría una estrategia bastante agresiva pero progresiva. Y sí: **llegar a ser 2.º/3.º para búsquedas tipo "comprar HSN proteína" es muchísimo más realista inicialmente que intentar "comprar proteína"**.
+
+---
+
+# 1. Primero: entender qué queréis posicionar
+
+Hay una diferencia enorme entre estas búsquedas:
+
+| Búsqueda                        | Intención                        | Dificultad probable |
+| ------------------------------- | -------------------------------- | ------------------: |
+| `proteína`                      | Informativa/comercial muy amplia |          🔴🔴🔴🔴🔴 |
+| `comprar proteína`              | Comercial                        |          🔴🔴🔴🔴🔴 |
+| `mejor proteína whey`           | Comparación                      |            🔴🔴🔴🔴 |
+| `mejor proteína calidad precio` | Comparación                      |              🔴🔴🔴 |
+| `proteína HSN`                  | Marca/producto                   |                🔴🔴 |
+| `comprar HSN proteína`          | Transaccional                    |                🔴🔴 |
+| `HSN Evowhey 2.0 precio`        | Producto concreto                |                  🟠 |
+| `HSN Evowhey 2.0 opiniones`     | Producto concreto                |                  🟠 |
+| `mejor proteína whey 2026`      | Comparativa                      |              🔴🔴🔴 |
+| `creatina HSN vs MyProtein`     | Comparación                      |                  🟠 |
+| `dónde comprar creatina HSN`    | Transaccional                    |               🟢/🟠 |
+
+**Yo no intentaría atacar "comprar proteína" de primeras.**
+
+Atacaría cientos de búsquedas más pequeñas que, juntas, pueden acabar generando muchísimo tráfico.
+
+Y aquí vuestro modelo de comparador tiene una ventaja bastante buena.
+
+---
+
+# 2. El objetivo no debería ser "posicionar la web"
+
+Debería ser:
+
+> **Construir una web que tenga una página extremadamente buena para cada intención de búsqueda relacionada con suplementación.**
+
+Por ejemplo, imaginemos que tenéis:
+
+`/proteinas/`
+
+Pero además:
+
+`/proteinas/whey/`
+
+`/proteinas/aislada/`
+
+`/proteinas/vegana/`
+
+`/proteinas/hsn/`
+
+`/proteinas/hsn/evowhey-20/`
+
+`/proteinas/myprotein/`
+
+`/proteinas/myprotein/impact-whey/`
+
+etc.
+
+Y luego contenido:
+
+`/comparativas/mejores-proteinas-whey/`
+
+`/comparativas/hsn-vs-myprotein/`
+
+`/guias/cuanta-proteina-tomar/`
+
+`/guias/whey-concentrada-vs-aislada/`
+
+...
+
+Ahí empieza a aparecer una **red de páginas relacionadas**, en vez de una única página intentando posicionarse para todo.
+
+Google recomienda precisamente pensar en el contenido de comercio electrónico, estructura de navegación, datos de producto y cómo facilitar que encuentre y entienda los productos. ([Google for Developers][1])
+
+---
+
+# 3. Y aquí está probablemente vuestra mayor oportunidad
+
+Si sois un comparador, **NO hagáis simplemente fichas copiadas de las tiendas**.
+
+Esto sería:
+
+> HSN Evowhey 2.0
+> 24 g proteína
+> 5 g BCAA
+> 2 kg
+> 39,90 €
+
+Y coger la descripción de HSN.
+
+Eso es bastante débil.
+
+En cambio:
+
+### HSN Evowhey 2.0
+
+**Precio actual:** 39,90 €
+**Precio por kg:** 19,95 €/kg
+**Proteína:** 75 g/100 g
+**Proteína por servicio:** 24 g
+**Tipo:** concentrado de suero
+
+**Comparación:**
+
+| Producto   |    €/kg | Proteína/100g | Proteína/servicio |
+| ---------- | ------: | ------------: | ----------------: |
+| Evowhey    | 19,95 € |          75 g |              24 g |
+| Producto B | 22,50 € |          78 g |              25 g |
+| Producto C | 18,90 € |          72 g |              23 g |
+
+Y después:
+
+### ¿Merece la pena la Evowhey?
+
+Aquí metéis **vuestra propia valoración**.
+
+Y eso es mucho más interesante para Google y, sobre todo, para el usuario.
+
+Google ha insistido en contenido útil y no simplemente generado/replicado a escala; sus políticas incluyen específicamente el abuso de contenido escalado y las páginas afiliadas con poco valor añadido. ([Google for Developers][2])
+
+---
+
+# 4. La IA os puede ayudar muchísimo, pero hay una trampa
+
+Esto que comentas:
+
+> "automatizar vídeos con IA para TikTok e Instagram"
+
+**Sí. Lo haría.**
+
+Pero no haría:
+
+> IA genera 500 vídeos → publicar automáticamente 10 al día.
+
+Eso puede acabar siendo basura.
+
+Haría algo parecido a:
+
+**Base de datos de productos → IA → guion → vídeo → publicación → métricas → aprendizaje.**
+
+Por ejemplo:
+
+### Vídeo 1
+
+> "¿Sabías que estas dos proteínas cuestan prácticamente lo mismo pero una tiene un 8% más de proteína?"
+
+Comparación visual.
+
+### Vídeo 2
+
+> "¿Cuál comprarías?
+> Evowhey vs Impact Whey"
+
+### Vídeo 3
+
+> "He calculado cuánto cuesta realmente cada 25 g de proteína de estas 5 marcas."
+
+### Vídeo 4
+
+> "La creatina más barata no siempre es la que tiene mejor precio."
+
+Eso **sí puede generar tráfico**.
+
+Además, TikTok está potenciando herramientas de IA para generación de guiones, conceptos y vídeos, y recomienda precisamente probar múltiples creatividades y quedarse con las que funcionan. ([TikTok For Business][3])
+
+---
+
+# 5. Pero hay algo todavía más interesante: usar esos vídeos para descubrir qué busca la gente
+
+Aquí podéis crear un círculo bastante potente:
+
+**Google**
+↓
+palabras clave
+↓
+páginas del comparador
+↓
+productos
+↓
+vídeos
+↓
+TikTok/Instagram
+↓
+usuarios
+↓
+Google
+↓
+más búsquedas de vuestra marca
+
+Y actualmente Google incluso permite analizar desde Search Console el rendimiento de contenido social y vídeo de plataformas como Instagram, TikTok y YouTube en Google Search. ([Google for Developers][4])
+
+---
+
+# 6. ¿Y deberíais pagar publicidad?
+
+### Sí, pero NO para intentar sustituir el SEO.
+
+Yo utilizaría publicidad de manera muy concreta.
+
+Imagina que tenéis una página:
+
+> **"HSN Evowhey 2.0: precio, características y dónde comprar"**
+
+Y conseguís:
+
+**Google Ads → 100 visitas → 10 clics a HSN → 2 compras**
+
+Si ganáis X € de comisión por compra, podéis calcular:
+
+**beneficio por visita**
+
+y saber exactamente cuánto podéis pagar por adquirir un usuario.
+
+Eso es publicidad racional.
+
+Lo que NO haría:
+
+> "Tenemos web nueva → metemos 1.000 € en Google Ads → a ver qué pasa."
+
+Porque podéis quemar dinero sin saber si el funnel convierte.
+
+---
+
+# 7. De hecho, yo dividiría vuestro marketing así
+
+### FASE 1 — SEO
+
+**Objetivo:** empezar a construir autoridad.
+
+Crear:
+
+* páginas de categorías
+* páginas de marcas
+* páginas de productos
+* comparativas
+* guías
+* contenido informativo
+* enlazado interno
+* datos estructurados
+* sitemap
+* Search Console
+* rendimiento técnico
+
+Y especialmente **long tail**.
+
+---
+
+### FASE 2 — Contenido social
+
+Aquí metería vuestra automatización.
+
+Por ejemplo:
+
+**3-5 vídeos/día**
+
+pero no necesariamente todos distintos.
+
+Podéis reutilizar una misma información:
+
+> "HSN vs MyProtein"
+
+y generar:
+
+* TikTok
+* Reel
+* Short
+* artículo
+* comparativa
+* imagen para Pinterest
+* etc.
+
+Una investigación → múltiples contenidos.
+
+---
+
+# 8. FASE 3 — backlinks
+
+Aquí está una de las partes que mucha gente que empieza con SEO se salta.
+
+Google necesita encontrar razones para considerar que vuestra página es una referencia.
+
+No compraría 500 backlinks baratos de Fiverr ni cosas similares.
+
+Intentaría conseguir enlaces reales de:
+
+* blogs de fitness
+* webs de nutrición
+* medios deportivos
+* gimnasios
+* entrenadores
+* universidades/organizaciones cuando sea natural
+* webs especializadas
+* comparadores
+* comunidades
+
+Por ejemplo, si publicáis:
+
+> **"Ranking de las 50 proteínas con mejor relación €/25 g de proteína"**
+
+podéis tener un contenido que alguien quiera enlazar.
+
+Eso es muchísimo más interesante que:
+
+> "10 mejores proteínas"
+
+que ya existe mil veces.
+
+---
+
+# 9. Y vuestro objetivo de "2º o 3º para comprar HSN proteína"
+
+Este me parece **un objetivo perfectamente razonable a medio plazo**, dependiendo de la competencia actual.
+
+Y además tiene una característica muy interesante:
+
+La persona que busca:
+
+> **"comprar HSN proteína"**
+
+está prácticamente diciendo:
+
+> "quiero comprar una proteína de HSN."
+
+Es muchísimo más valiosa que alguien que busca:
+
+> "qué es la proteína whey"
+
+Porque la intención comercial es enorme.
+
+Por eso yo haría una estructura como:
+
+### Marca
+
+**HSN**
+
+↓
+
+### Categoría
+
+**Proteínas HSN**
+
+↓
+
+### Producto
+
+**HSN Evowhey 2.0**
+
+↓
+
+### Comparación
+
+**Evowhey 2.0 vs Impact Whey**
+
+↓
+
+### Informacional
+
+**¿Qué proteína HSN comprar?**
+
+↓
+
+### Transaccional
+
+**Dónde comprar proteína HSN**
+
+Esto crea una especie de **ecosistema alrededor de HSN**.
+
+---
+
+# 10. Y hay otra cosa MUY importante para vosotros
+
+Como sois afiliados, yo pondría especial atención en que vuestra web **no parezca una tienda afiliada cuyo único propósito es mandar al usuario a otra tienda**.
+
+El usuario debería pensar:
+
+> "Esta web me sirve para decidir qué comprar."
+
+No:
+
+> "Esta web es una copia de HSN/MyProtein/etc. con botones de afiliado."
+
+Esto es especialmente importante porque Google contempla específicamente las páginas afiliadas con poco valor añadido dentro de sus políticas de spam. ([Google for Developers][2])
+
+Por tanto:
+
+**Comparador + análisis + datos propios + filtros + cálculo de precio real + comparativas = muy bien.**
+
+**Catálogo + descripción copiada + botón "Comprar" = peligroso.**
+
+---
+
+# 11. Yo aprovecharía muchísimo vuestra propia tecnología
+
+Por lo que me has contado de vuestro stack, aquí podéis hacer algo bastante más sofisticado que una web de afiliados normal.
+
+Tenéis:
+
+**React + Node + API + NeonDB + Render...**
+
+Podéis construir una base de datos de suplementos con:
+
+* marca
+* producto
+* categoría
+* formato
+* gramos
+* precio
+* precio/kg
+* precio/servicio
+* proteína/100 g
+* carbohidratos
+* grasas
+* ingredientes
+* sabores
+* valoración
+* tiendas
+* disponibilidad
+* histórico de precios
+
+Y automáticamente generar:
+
+> **"Las 10 proteínas más baratas por 25 g de proteína"**
+
+o:
+
+> **"Creatinas por debajo de 20 €"**
+
+o:
+
+> **"Mejores proteínas de menos de 15 €/kg"**
+
+Eso empieza a ser **un producto tecnológico**, no simplemente un blog de afiliados.
+
+Y eso me gusta mucho más.
+
+---
+
+# 12. Incluso podéis crear una ventaja brutal: histórico de precios
+
+Imagina:
+
+### HSN Evowhey 2.0
+
+**Precio actual:** 39,90 €
+
+**Precio más bajo últimos 12 meses:** 31,90 €
+
+**Precio medio:** 42,30 €
+
+**¿Está barato ahora?** 🟢 Sí
+
+Eso es **información que HSN no necesariamente tiene interés en ofrecerte**.
+
+Y el usuario sí quiere saberla.
+
+Además os permite posicionar:
+
+> "HSN Evowhey 2.0 precio"
+
+> "HSN Evowhey 2.0 ofertas"
+
+> "HSN Evowhey 2.0 barata"
+
+> "precio Evowhey"
+
+etc.
+
+---
+
+# 13. Lo que NO haría ahora
+
+No gastaría muchísimo dinero en:
+
+❌ Google Ads masivo
+❌ comprar backlinks basura
+❌ artículos IA genéricos a cientos
+❌ 50 páginas casi idénticas
+❌ comprar seguidores
+❌ automatizar 20 vídeos basura diarios
+❌ intentar posicionar "proteína" inmediatamente
+
+Y tampoco me obsesionaría con que **cada URL aparezca inmediatamente en Google**.
+
+Que ya tengáis Search Console, sitemap y las URLs indexadas es un **primer paso técnico**, no posicionamiento.
+
+**Indexación ≠ ranking.**
+
+Que Google conozca:
+
+`vuestraweb.com/hsn/evowhey`
+
+no significa que vaya a ponerla en posición 3 para:
+
+> comprar hsn proteína
+
+Eso vendrá de la combinación de **relevancia + calidad + autoridad + experiencia del usuario + competencia + señales externas**, entre otras cosas.
+
+---
+
+# 14. Y os propongo algo bastante más concreto
+
+Si la web está ya casi terminada, **yo no empezaría todavía gastando dinero**.
+
+Haría primero una especie de **auditoría SEO inicial de la web completa**.
+
+Me interesaría ver:
+
+### Arquitectura
+
+```text
+/
+├── proteinas/
+│   ├── whey/
+│   ├── aisladas/
+│   └── veganas/
+├── creatina/
+├── marcas/
+│   ├── hsn/
+│   ├── myprotein/
+│   └── ...
+├── productos/
+│   ├── hsn-evowhey/
+│   └── ...
+├── comparativas/
+└── blog/guias/
+```
+
+Y comprobar:
+
+* títulos
+* H1
+* meta descriptions
+* URLs
+* canonical
+* sitemap
+* robots.txt
+* enlazado interno
+* breadcrumbs
+* schema
+* `Product`
+* `Review`
+* `AggregateRating` cuando corresponda
+* velocidad
+* Core Web Vitals
+* indexabilidad
+* contenido duplicado
+* páginas huérfanas
+* filtros
+* paginación
+* arquitectura de categorías
+* intención de búsqueda
+* etc.
+
+Google recomienda además que determinados datos estructurados de producto estén disponibles en el HTML inicial cuando sea posible, algo especialmente relevante en una aplicación ecommerce/React. ([Google for Developers][2])
+
+---
+
+# 15. Y después haría algo que creo que os puede venir MUY bien
+
+**Un estudio de palabras clave específico para vuestra web.**
+
+No un estudio genérico de:
+
+> "palabras clave de nutrición deportiva"
+
+Sino algo como:
+
+### NIVEL 1 — Dinero
+
+* comprar proteína
+* comprar creatina
+* proteína whey precio
+* creatina monohidrato precio
+* proteína HSN
+* comprar proteína HSN
+* comprar creatina HSN
+* etc.
+
+### NIVEL 2 — Producto
+
+* HSN Evowhey 2.0
+* HSN Creatina
+* MyProtein Impact Whey
+* etc.
+
+### NIVEL 3 — Comparación
+
+* HSN vs MyProtein
+* Evowhey vs Impact Whey
+* mejor proteína whey
+* mejor creatina
+* etc.
+
+### NIVEL 4 — Informacional
+
+* qué proteína comprar
+* cuánta proteína tomar
+* proteína whey qué es
+* cuándo tomar creatina
+* creatina antes o después de entrenar
+* etc.
+
+Y luego asignar **cada keyword a una URL concreta**.
+
+Eso evita uno de los problemas más habituales: tener 5 páginas intentando posicionar exactamente para lo mismo.
+
+---
+
+## Y aquí es donde creo que podemos hacer algo bastante interesante
+
+Si me pasas **la URL de vuestra web**, puedo hacerte una primera auditoría externa bastante seria: estructura, páginas que Google está indexando, cómo está planteada la arquitectura, qué competidores aparecen para las búsquedas que queréis atacar, qué keywords tendría sentido atacar primero y **cómo organizaría yo el SEO durante los próximos 6-12 meses**.
+
+Y si además me dices **qué comparador/tiendas afiliadas tenéis y qué productos ya tenéis cargados**, podemos bajar incluso a algo tipo:
+
+> **"Estas son las 50 páginas que deberíais crear primero, estas 20 keywords son las primeras que atacaría, estas 10 no las tocaría todavía y este sería el plan de contenido + TikTok + Ads."**
+
+Ahí ya podemos pasar de hablar de SEO en abstracto a diseñar **la estrategia concreta para intentar llevar vuestra web de prácticamente 0 → primeras posiciones**.
+
+[1]: https://developers.google.com/search/docs/specialty/ecommerce?authuser=0000&hl=it&utm_source=chatgpt.com "Best practice relative alla SEO per i siti di e-commerce | Google Search Central  |  Documentation  |  Google for Developers"
+[2]: https://developers.google.com/search/updates?utm_source=chatgpt.com "Latest Google Search Documentation Updates | Google Search Central  |  What's new  |  Google for Developers"
+[3]: https://ads.tiktok.com/business/library/TikTok_2025_Q5_Commerce_Playbook.pdf?utm_source=chatgpt.com "TikTok 2025 Q5 Commerce Playbook"
+[4]: https://developers.google.com/search/blog/2026/07/platform-properties-social-video-guide?authuser=108&hl=en&utm_source=chatgpt.com "Platform properties roll out globally, plus a new social and video performance guide  |  Google Search Central Blog  |  Google for Developers"
