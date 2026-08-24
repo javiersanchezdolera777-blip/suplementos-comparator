@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 interface ProductoLive {
@@ -15,14 +15,26 @@ interface ProductoLive {
 }
 
 export default function SearchOmnibox() {
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentQ = searchParams ? searchParams.get("q") : null;
+
+  const [query, setQuery] = useState(currentQ || "");
   const [resultados, setResultados] = useState<ProductoLive[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // 1. Sincronización Bidireccional (URL <-> Input)
+  useEffect(() => {
+    if (currentQ === null) {
+      setQuery("");
+    } else {
+      setQuery(currentQ);
+    }
+  }, [currentQ]);
 
   // Debounced Fetch en tiempo real
   useEffect(() => {
@@ -75,7 +87,10 @@ export default function SearchOmnibox() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      router.push("/");
+      return;
+    }
     setIsOpen(false);
     router.push(`/?q=${encodeURIComponent(query.trim())}`);
   };
@@ -84,6 +99,16 @@ export default function SearchOmnibox() {
     setIsOpen(false);
     setQuery("");
     router.push(`/?q=${encodeURIComponent(prod.nombre)}`);
+  };
+
+  // 2. Limpieza Automática al Borrar
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    
+    if (val === "") {
+      router.push("/");
+    }
   };
 
   return (
@@ -98,7 +123,7 @@ export default function SearchOmnibox() {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleQueryChange}
           onFocus={() => { if (query.trim().length >= 2) setIsOpen(true); }}
           placeholder="Buscar proteína, creatina, marca..."
           className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm"
@@ -107,7 +132,7 @@ export default function SearchOmnibox() {
         {query && (
           <button
             type="button"
-            onClick={() => { setQuery(""); setResultados([]); setIsOpen(false); }}
+            onClick={() => { setQuery(""); setResultados([]); setIsOpen(false); router.push("/"); }}
             className="absolute right-3 text-slate-400 hover:text-slate-600 p-0.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

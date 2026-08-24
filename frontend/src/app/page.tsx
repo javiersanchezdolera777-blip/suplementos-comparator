@@ -6,12 +6,14 @@ import TelegramBanner from "@/components/TelegramBanner";
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900 relative selection:bg-blue-100 selection:text-blue-900">
-      
-      {/* Announcement Bar at the very top */}
-      <TelegramBanner/>
-      
-      {/* Navigation */}
-      <Navbar/>
+      {/* Sticky Header Group: Banner + Navbar */}
+      <header className="sticky top-0 z-50 flex flex-col w-full shadow-sm">
+        {/* Announcement Bar at the very top */}
+        <TelegramBanner/>
+        
+        {/* Navigation */}
+        <Navbar/>
+      </header>
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col items-center z-10 w-full max-w-7xl mx-auto px-6 pt-2 pb-12">
