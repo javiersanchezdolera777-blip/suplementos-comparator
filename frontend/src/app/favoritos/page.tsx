@@ -76,7 +76,7 @@ export default function FavoritosPage() {
           </div>
         ) : loading ? (
           // Estado: Cargando
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 md:gap-4 mt-8">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden h-[420px] animate-pulse">
                 <div className="h-[220px] bg-slate-50"></div>
@@ -91,7 +91,7 @@ export default function FavoritosPage() {
           </div>
         ) : favoritos.length > 0 ? (
           // Estado: Con Favoritos
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 md:gap-4">
             {favoritos.map((fav) => (
               // Pasamos la flag isFavoriteActive a ProductCard si es necesario,
               // o asumimos que en esta vista todos son favoritos.

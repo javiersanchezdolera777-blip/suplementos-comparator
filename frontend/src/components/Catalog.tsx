@@ -227,17 +227,17 @@ export default function Catalog() {
       {/* HERO BANNER PREMUM ULTRA-COMPACTO SOBRIO */}
       <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-1 sm:pt-2 pb-1 sm:pb-2 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
         {/* 1. Titular Principal H1 con Acento Tipográfico Elegante */}
-        <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-1.5">
+        <h1 className="text-2xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-0 md:mb-1.5">
           Compara precios y <span className="text-blue-600">ahorra</span> en tu suplementación
         </h1>
 
-        {/* 2. Subtexto Claro */}
-        <p className="text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
+        {/* 2. Subtexto Claro (Oculto en móvil) */}
+        <p className="hidden md:block text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 
         {/* 3. Trío de Pilares de Valor (Texto Fino Sobrio) */}
-        <div className="flex items-center justify-center gap-5 text-xs text-slate-500 font-medium flex-wrap mt-1 mb-3">
+        <div className="flex items-center justify-center gap-3 md:gap-5 text-[11px] md:text-xs text-slate-500 font-medium flex-wrap my-2 md:my-3">
           <div className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -259,7 +259,7 @@ export default function Catalog() {
         </div>
 
         {/* 5. Bar de Tiendas Interactivas (Clicables con Scroll) */}
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto my-2 md:my-0">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 text-center">
             INTEGRADO CON EL CATÁLOGO DE
           </p>
@@ -297,13 +297,13 @@ export default function Catalog() {
       </section>
 
       {/* ZONA DE CATÁLOGO (Filtros y Resultados) */}
-      <div id="catalogo" className="scroll-mt-24 flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5 animate-in fade-in duration-1000 delay-300 fill-mode-both ease-out">
+      <div id="catalogo" className="scroll-mt-24 flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5">
 
-        {/* Botón Flotante para Móviles */}
-        <div className="md:hidden w-full sticky top-24 z-20 mb-4">
+        {/* Botón Flotante para Móviles (FAB) */}
+        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
           <button
             onClick={() => setIsMobileFilterOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-xl shadow-blue-600/30 transition-all tracking-wide whitespace-nowrap"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             Filtrar Catálogo
@@ -386,14 +386,14 @@ export default function Catalog() {
 
           {/* Contenido (Skeleton, Grid o EmptyState) */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
               {[...Array(8)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : productosFiltrados.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
                 {productosFiltrados.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

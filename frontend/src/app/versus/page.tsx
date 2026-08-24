@@ -58,7 +58,7 @@ export default function VersusPage() {
   if (compareIds.length === 0) {
     return (
       <div className="min-h-[80vh] bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-4xl font-black text-gray-900 mb-4">Comparativa Cara a Cara ⚖️</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-4 flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap">Comparativa Cara a Cara <span>⚖️</span></h1>
         <p className="text-gray-500 mb-8 max-w-md">No has seleccionado ningún producto. Visita el catálogo y elige a los contendientes para ver quién es el ganador.</p>
         <Link className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20" href="/">
           Explorar Catálogo
@@ -83,7 +83,7 @@ export default function VersusPage() {
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center py-4">
         <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900">Comparativa Cara a Cara ⚖️</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 flex items-center gap-2 whitespace-nowrap">Comparativa Cara a Cara <span>⚖️</span></h1>
           </div>
           <Link href="/" className="group flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all px-4 py-2 rounded-xl shadow-sm hover:shadow-md">
             <svg className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,8 +98,9 @@ export default function VersusPage() {
             <span className="animate-pulse text-lg font-bold text-gray-400">Preparando el cuadrilátero...</span>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full text-sm">
-            <div className="w-full">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full text-sm relative">
+            <div className="w-full overflow-x-auto pb-4 scrollbar-thin rounded-2xl">
+              <div className="min-w-max md:min-w-full">
 
               {/* CABECERA (Ricitos de Oro) */}
               <div className="flex border-b border-gray-200 bg-gray-50/50">
@@ -112,7 +113,7 @@ export default function VersusPage() {
                   const currentPrice = prod.precio_actual ?? prod.price ?? 0;
                   
                   return (
-                    <div key={prod.id} className="flex-1 p-3 md:p-5 border-l border-gray-200 flex flex-col relative group min-w-0">
+                    <div key={prod.id} className="flex-1 p-3 md:p-5 border-l border-gray-200 flex flex-col relative group min-w-[160px] sm:min-w-[200px] md:min-w-0">
                       <button
                         onClick={() => removeId(prod.id)}
                         className="absolute top-2 right-2 md:top-3 md:right-3 text-gray-300 hover:text-red-500 transition font-black bg-white rounded-full w-6 h-6 md:w-8 md:h-8 flex items-center justify-center shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10 border border-gray-100"
@@ -141,7 +142,7 @@ export default function VersusPage() {
                     <span className="text-xs md:text-sm font-semibold text-gray-600">📦 Formato</span>
                   </div>
                   {productos.map(prod => (
-                    <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                    <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                       <span className="text-xs md:text-sm font-medium text-gray-600 capitalize truncate" title={prod.format || prod.formato || '-'}>
                         {prod.format || prod.formato || '-'}
                       </span>
@@ -162,7 +163,7 @@ export default function VersusPage() {
                             ? flavs.join(', ') 
                             : (flavs && typeof flavs === 'string' ? flavs : '-');
                     return (
-                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                         <span className="text-[11px] md:text-xs font-medium text-gray-600 line-clamp-2" title={display}>
                           {display}
                         </span>
@@ -185,7 +186,7 @@ export default function VersusPage() {
                     if (prod.sin_lactosa) tags.push("Sin lactosa");
                     const label = tags.length > 0 ? tags.join(' · ') : '-';
                     return (
-                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                         <span className={`text-[11px] md:text-xs font-medium line-clamp-2 ${tags.length > 0 ? 'text-emerald-700 font-semibold' : 'text-gray-600'}`} title={label}>
                           {label}
                         </span>
@@ -202,7 +203,7 @@ export default function VersusPage() {
                     <span className="text-xs md:text-sm font-semibold text-gray-600">🏅 Sello de calidad</span>
                   </div>
                   {productos.map(prod => (
-                    <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                    <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                       <span className="text-[11px] md:text-xs font-medium text-gray-600 truncate" title={prod.quality_seal || prod.sello_calidad || '-'}>
                         {prod.quality_seal || prod.sello_calidad || '-'}
                       </span>
@@ -220,7 +221,7 @@ export default function VersusPage() {
                   {productos.map(prod => {
                     const perc = prod.protein_percentage ?? prod.porcentaje_proteina;
                     return (
-                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                         <span className="text-xs md:text-sm font-bold text-gray-700">
                           {perc ? `${perc}%` : '-'}
                         </span>
@@ -249,7 +250,7 @@ export default function VersusPage() {
                     }
 
                     return (
-                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                      <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                         {perfilStr !== '-' ? (
                           <span className="text-[11px] md:text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded truncate max-w-full" title={perfilStr}>
                             {perfilStr}
@@ -271,7 +272,7 @@ export default function VersusPage() {
                 {productos.map(prod => {
                   const url = prod.affiliate_url || prod.afiliado_url || "#";
                   return (
-                    <div key={prod.id} className="flex-1 py-3 md:py-4 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-0">
+                    <div key={prod.id} className="flex-1 py-3 md:py-4 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                       <a 
                         href={url}
                         target="_blank"
@@ -285,6 +286,7 @@ export default function VersusPage() {
                 })}
               </div>
 
+              </div>
             </div>
           </div>
         )}
