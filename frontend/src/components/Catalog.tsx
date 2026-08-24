@@ -110,12 +110,32 @@ export default function Catalog() {
     if (selectedCategory !== "Aminoácidos") setSelectedAminoProfile("Todos");
   }, [selectedCategory]);
 
+  // --- 🔥 EL ARREGLO MÁGICO: ESCUCHAR LA URL PARA LOS STACKS ---
   useEffect(() => {
-    const qFromUrl = searchParams ? (searchParams.get("busqueda") || searchParams.get("q")) : null;
-    if (qFromUrl !== null && qFromUrl !== searchQuery) {
+    if (!searchParams) return;
+
+    // 1. Sincronizar Búsqueda Textual
+    const qFromUrl = searchParams.get("busqueda") || searchParams.get("q");
+    if (qFromUrl !== null) {
       setSearchQuery(qFromUrl);
     }
+
+    // 2. Sincronizar Categorías (El atajo de los Stacks)
+    const catFromUrl = searchParams.get("categoria");
+    if (catFromUrl) {
+      let catFormateada = "Todas";
+      // Traductor: pasamos el "id" de la URL al nombre real del catálogo de Javi
+      if (catFromUrl === "proteina") catFormateada = "Proteínas";
+      else if (catFromUrl === "creatina") catFormateada = "Creatinas";
+      else if (catFromUrl === "vitaminas") catFormateada = "Vitaminas y Minerales";
+      else if (catFromUrl === "aminoacidos") catFormateada = "Aminoácidos";
+      else if (catFromUrl === "pre-entreno") catFormateada = "Pre-entrenos";
+      else catFormateada = catFromUrl; // Por si algún día coincide exacto
+
+      setSelectedCategory(catFormateada);
+    }
   }, [searchParams]);
+  // ---------------------------------------------------------------
 
   const buildQueryParams = () => {
     const queryParams = new URLSearchParams();
@@ -149,7 +169,10 @@ export default function Catalog() {
     return queryParams;
   };
 
-  useEffect(() => {
+useEffect(() => {
+    // 1. CREAMOS LA BANDERA MÁGICA
+    let peticionActiva = true; 
+    
     setLoading(true);
 
     const queryParams = buildQueryParams();
@@ -159,14 +182,23 @@ export default function Catalog() {
     fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
       .then((res) => res.json())
       .then((data) => {
+        // 2. SI LA BANDERA ESTÁ BAJADA, IGNORAMOS ESTA RESPUESTA VIEJA
+        if (!peticionActiva) return; 
+        
         setProductos(Array.isArray(data) ? data : data.productos || []);
         setTotalResultados(Array.isArray(data) ? data.length : data.total_resultados || 0);
         setLoading(false);
       })
       .catch((error) => {
+        if (!peticionActiva) return;
         console.error("Error conectando API:", error);
         setLoading(false);
       });
+
+    // 3. FUNCIÓN DE LIMPIEZA: Si el usuario cambia de filtro antes de que termine, bajamos la bandera
+    return () => {
+      peticionActiva = false; 
+    };
   }, [
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
     selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
@@ -208,9 +240,8 @@ export default function Catalog() {
     setSinLactosa(null);
     setIsMobileFilterOpen(false);
 
-    if (soloOfertas) {
-      router.push("/#catalogo");
-    }
+    // 🔥 ARREGLO: Limpiamos la URL para que el filtro de categoría no se quede atascado
+    router.push("/#catalogo");
   };
 
   const hasActiveFilters = soloOfertas || selectedCategory !== "Todas" || selectedBrands.length > 0 || searchQuery !== "" || isVegan === true || sinGluten === true || sinLactosa === true || selectedFormat !== "Todos" || selectedFlavor !== "Todos" || selectedProteinType !== "Todos" || selectedProteinPercentage !== "Todos" || selectedCreatineType !== "Todos" || selectedVitaminType !== "Todos" || selectedAminoProfile !== "Todos" || (ordenPrecio !== "" && ordenPrecio !== "relevancia");

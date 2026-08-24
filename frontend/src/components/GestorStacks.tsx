@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import StackDetalleModal from './StackDetalleModal';
 
 interface Props {
   perfil: any;
@@ -11,6 +12,7 @@ export default function GestorStacks({ perfil, recargarPerfil }: Props) {
   const [descripcion, setDescripcion] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [stackSeleccionado, setStackSeleccionado] = useState<any>(null);
 
   const misStacks = perfil?.stacks || [];
 
@@ -63,9 +65,16 @@ export default function GestorStacks({ perfil, recargarPerfil }: Props) {
       {misStacks.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           {misStacks.map((stack: any) => (
-            <div key={stack.id} className="border border-gray-200 rounded-xl p-4 hover:border-blue-500 transition-colors">
-              <h3 className="font-bold text-lg text-slate-800">{stack.nombre}</h3>
-              {stack.descripcion && <p className="text-gray-500 text-sm mt-1">{stack.descripcion}</p>}
+            <div 
+              key={stack.id} 
+              onClick={() => setStackSeleccionado(stack)}
+              className="border border-gray-200 rounded-xl p-4 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group"
+            >
+              <div className="flex justify-between items-start">
+                <h3 className="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">{stack.nombre}</h3>
+                <span className="text-gray-400 group-hover:text-blue-500">↗️</span>
+              </div>
+              {stack.descripcion && <p className="text-gray-500 text-sm mt-1 line-clamp-2">{stack.descripcion}</p>}
               <div className="mt-4 text-sm font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full">
                 {stack.productos?.length || 0} Productos
               </div>
@@ -108,6 +117,13 @@ export default function GestorStacks({ perfil, recargarPerfil }: Props) {
           {mensaje && <p className="text-sm font-medium text-center mt-2">{mensaje}</p>}
         </div>
       </form>
+      {/* EL MODAL DE DETALLE (Que programamos en el Paso 1) */}
+      <StackDetalleModal 
+        stack={stackSeleccionado} 
+        isOpen={stackSeleccionado !== null} 
+        onClose={() => setStackSeleccionado(null)} 
+        esMio={true} // Como estamos en Mi Zona, SÍ es mío
+      />
     </div>
   );
 }
