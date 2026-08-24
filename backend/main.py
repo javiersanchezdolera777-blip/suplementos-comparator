@@ -527,6 +527,19 @@ def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Perfil no encontrado.")
     return perfil
 
+@app.get("/api/comunidad/buscar")
+def buscar_usuarios(q: str = "", db: Session = Depends(get_db)):
+    """Buscador en tiempo real: devuelve hasta 5 usuarios que coincidan con lo que escribes."""
+    # Si escriben menos de 2 letras, no buscamos nada para no saturar la base de datos
+    if not q or len(q) < 2:
+        return []
+    
+    # Buscamos usuarios cuyo nombre contenga las letras (ignorando mayúsculas/minúsculas)
+    usuarios = db.query(models.Perfil).filter(models.Perfil.username.ilike(f"%{q}%")).limit(5).all()
+    
+    # Devolvemos una lista simplificada para el desplegable
+    return [{"username": u.username, "objetivo": u.objetivo_etapa, "xp": u.puntos_totales} for u in usuarios]
+
 # ==========================================
 # --- RUTAS DE COMUNIDAD: SEGUIDORES ---
 # ==========================================
