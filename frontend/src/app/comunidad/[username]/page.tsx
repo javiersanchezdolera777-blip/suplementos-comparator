@@ -57,8 +57,14 @@ export default function PerfilPublico() {
       const data = await res.json();
       
       if (res.ok) {
-        setSiguiendo(!siguiendo);
-        alert(data.mensaje);
+        // Truco premium: actualizamos el número en pantalla al instante sin recargar
+        setPerfil({
+          ...perfil,
+          seguidores_count: perfil.seguidores_count + (siguiendo ? -1 : 1)
+        });
+        
+        setSiguiendo(!siguiendo); 
+        alert(data.mensaje); 
       } else {
         alert(`❌ ${data.detail}`);
       }
@@ -105,9 +111,23 @@ export default function PerfilPublico() {
             <div className="text-center sm:text-left">
               <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
               <p className="text-gray-500 mt-1">Fase Actual: <span className="font-semibold text-blue-600">{perfil.objetivo_etapa}</span></p>
+              
+              {/* --- CONTADORES DE XP Y RACHA --- */}
               <div className="flex items-center gap-4 mt-3 justify-center sm:justify-start">
                 <div className="text-sm font-semibold text-slate-700"><span className="text-lg font-black text-slate-900">{perfil.racha_actual}</span> 🔥 Racha</div>
                 <div className="text-sm font-semibold text-slate-700"><span className="text-lg font-black text-slate-900">{perfil.puntos_totales}</span> ✨ XP</div>
+              </div>
+              
+              {/* --- NUEVO: CONTADORES SOCIALES --- */}
+              <div className="flex items-center gap-4 mt-4 justify-center sm:justify-start pt-4 border-t border-gray-100">
+                <div className="text-sm font-medium text-gray-500 hover:text-slate-800 cursor-pointer transition-colors">
+                  <span className="text-lg font-bold text-slate-900 mr-1">{perfil.seguidores_count || 0}</span> 
+                  Seguidores
+                </div>
+                <div className="text-sm font-medium text-gray-500 hover:text-slate-800 cursor-pointer transition-colors">
+                  <span className="text-lg font-bold text-slate-900 mr-1">{perfil.siguiendo_count || 0}</span> 
+                  Siguiendo
+                </div>
               </div>
             </div>
           </div>

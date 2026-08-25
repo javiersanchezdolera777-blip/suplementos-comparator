@@ -32,7 +32,29 @@ export default function GymMascota({ xpTotales, objetivo }: Props) {
   // 4. Renderizamos el diseño en pantalla
   return (
     <div className="flex flex-col items-center p-6 bg-white border border-gray-200 rounded-2xl shadow-sm w-full max-w-sm">
-      <h3 className="text-xl font-bold text-slate-800 mb-2">Tu Progreso Físico</h3>
+      {/* Título de la Mascota y el Icono de Información */}
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <h3 className="text-xl font-bold text-slate-800">
+          Tu Progreso Físico
+        </h3>
+        
+        {/* --- EL TOOLTIP MÁGICO --- */}
+        <div className="group relative inline-flex items-center justify-center cursor-help">
+          <span className="text-gray-400 hover:text-blue-500 transition-colors">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </span>
+          
+          {/* La cajita negra que aparece al hacer hover */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 text-white text-xs text-center rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl z-50 pointer-events-none">
+            Completa checks diarios para obtener experiencia y que tu personaje evolucione hasta alcanzar el Olympia. 🏆
+            {/* Flechita hacia abajo */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+          </div>
+        </div>
+        {/* --------------------------- */}
+      </div>
       
       {/* Contenedor de la Imagen */}
       <div className="relative w-32 h-32 mb-4">

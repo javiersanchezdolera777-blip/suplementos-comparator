@@ -257,6 +257,8 @@ class PerfilResponse(PerfilBase):
     stacks: List["StackResponse"] = []
     
     model_config = ConfigDict(from_attributes=True)
+    seguidores_count: int = 0
+    siguiendo_count: int = 0
 
 from datetime import datetime
 

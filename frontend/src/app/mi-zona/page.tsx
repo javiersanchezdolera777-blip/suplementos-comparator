@@ -4,41 +4,33 @@ import GymMascota from '@/components/GymMascota';
 import GestorStacks from '@/components/GestorStacks';
 import ModalAñadirStack from '@/components/ModalAñadirStack';
 import { useAuth } from '@/context/AuthContext'; 
-// Importamos tu modal de login
 import LoginModal from '@/components/LoginModal'; 
 
 export default function MiZonaPage() {
-  // CONECTAMOS CON EL CEREBRO CENTRAL
   const { isLoggedIn, openLoginModal } = useAuth();
-
   const [perfil, setPerfil] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Control de estados de la pantalla
   const [necesitaLogin, setNecesitaLogin] = useState(false);
   const [necesitaPerfil, setNecesitaPerfil] = useState(false);
   
-  // Formulario de creación
   const [formUsername, setFormUsername] = useState("");
   const [formObjetivo, setFormObjetivo] = useState("Mantenimiento");
   const [errorForm, setErrorForm] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
 
-  // LA MAGIA: Si cierras sesión en el Navbar, esta página se actualiza al instante
   useEffect(() => {
     if (isLoggedIn) {
       setNecesitaLogin(false);
       comprobarEstado();
     } else {
       setNecesitaLogin(true);
-      setPerfil(null); // Borramos tus datos de la pantalla por seguridad
+      setPerfil(null); 
       setLoading(false);
     }
   }, [isLoggedIn]);
 
   const comprobarEstado = async () => {
     const token = localStorage.getItem("token");
-    
     if (!token) {
       setNecesitaLogin(true);
       setLoading(false);
@@ -54,10 +46,8 @@ export default function MiZonaPage() {
         const data = await res.json();
         setPerfil(data);
       } else if (res.status === 404) {
-        // El usuario está logueado pero no ha creado su @username
         setNecesitaPerfil(true);
       } else {
-        // El token caducó o es inválido
         setNecesitaLogin(true);
       }
     } catch (error) {
@@ -94,27 +84,20 @@ export default function MiZonaPage() {
     }
   };
 
-  // --- RENDERIZADO DE LAS 3 PANTALLAS ---
-
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-semibold">Cargando tu zona...</div>;
 
-  // PANTALLA 1: PEDIR LOGIN (Ahora usa el botón oficial del AuthContext)
   if (necesitaLogin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
         <h1 className="text-3xl font-bold mb-4">Únete a la Comunidad</h1>
         <p className="text-gray-600 mb-8 max-w-md">Inicia sesión para ganar XP diaria, subir de nivel y compartir tus rutinas con el resto.</p>
-        <button 
-          onClick={openLoginModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:-translate-y-1"
-        >
+        <button onClick={openLoginModal} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:-translate-y-1">
           Iniciar Sesión
         </button>
       </div>
     );
   }
 
-  // PANTALLA 2: ONBOARDING (CREAR @USERNAME)
   if (necesitaPerfil) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -127,11 +110,9 @@ export default function MiZonaPage() {
             <div className="flex">
               <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-500 font-bold">@</span>
               <input type="text" required value={formUsername} onChange={e => setFormUsername(e.target.value)}
-                className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-blue-500 focus:border-blue-500" 
-                placeholder="FitBoy99" />
+                className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-blue-500 focus:border-blue-500" placeholder="FitBoy99" />
             </div>
           </div>
-
           <div className="mb-6">
             <label className="block text-sm font-bold text-gray-700 mb-1">Fase Actual</label>
             <select value={formObjetivo} onChange={e => setFormObjetivo(e.target.value)}
@@ -141,9 +122,7 @@ export default function MiZonaPage() {
               <option value="Mantenimiento">⚖️ Mantenimiento</option>
             </select>
           </div>
-
           {errorForm && <p className="text-red-500 text-sm mb-4">{errorForm}</p>}
-
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
             Crear mi Perfil
           </button>
@@ -152,7 +131,6 @@ export default function MiZonaPage() {
     );
   }
 
-  // PANTALLA 3: EL TAMAGOTCHI 
   if (!perfil) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-500 font-semibold p-4 text-center">
@@ -165,7 +143,6 @@ export default function MiZonaPage() {
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
        <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* MINI-MENÚ NAVEGACIÓN (Lo he puesto aquí para que se alinee con todo tu perfil) */}
         <div className="flex justify-between items-center mb-6">
           <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm transition-colors">⬅️ Volver a tienda</a>
           <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
@@ -173,14 +150,34 @@ export default function MiZonaPage() {
           </a>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
-            <p className="text-gray-500 mt-1">Fase: <span className="font-semibold">{perfil.objetivo_etapa}</span></p>
-          </div>
-          <div className="mt-4 sm:mt-0 text-center sm:text-right">
-            <div className="text-sm text-gray-500 uppercase tracking-wide">Racha Actual</div>
-            <div className="text-3xl font-bold text-orange-500">🔥 {perfil.racha_actual} días</div>
+        {/* --- CABECERA PRINCIPAL CON CONTADORES --- */}
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 w-full">
+            <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-md">
+              {perfil.username.charAt(0).toUpperCase()}
+            </div>
+            
+            <div className="text-center sm:text-left flex-1">
+              <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
+              <p className="text-gray-500 mt-1">Fase: <span className="font-semibold text-blue-600">{perfil.objetivo_etapa}</span></p>
+              
+              {/* LOS CONTADORES */}
+              <div className="flex items-center gap-4 mt-4 justify-center sm:justify-start pt-4 border-t border-gray-100">
+                <div className="text-sm font-medium text-gray-500">
+                  <span className="text-lg font-bold text-slate-900 mr-1">{perfil.seguidores_count || 0}</span> Seguidores
+                </div>
+                <div className="text-sm font-medium text-gray-500">
+                  <span className="text-lg font-bold text-slate-900 mr-1">{perfil.siguiendo_count || 0}</span> Siguiendo
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 sm:mt-0 relative z-10 text-center sm:text-right bg-orange-50 px-6 py-4 rounded-xl border border-orange-100 shadow-inner">
+              <div className="text-xs text-orange-600 uppercase tracking-wide font-bold mb-1">Racha Actual</div>
+              <div className="text-3xl font-black text-orange-500">🔥 {perfil.racha_actual} días</div>
+            </div>
           </div>
         </div>
 
@@ -205,26 +202,13 @@ export default function MiZonaPage() {
             >
               🔥 Hacer Check-in Hoy
             </button>
-            
-            {/* BOTÓN DE PRUEBA PARA EL MODAL */}
-            <button 
-              onClick={() => setModalAbierto(true)}
-              className="mt-2 text-blue-600 font-bold underline text-sm"
-            >
+            <button onClick={() => setModalAbierto(true)} className="mt-2 text-blue-600 font-bold underline text-sm">
               Test: Simular añadir "Proteína Whey" a un Stack
             </button>
-
-            {/* EL MODAL INVISIBLE */}
-            <ModalAñadirStack 
-              isOpen={modalAbierto} 
-              onClose={() => setModalAbierto(false)} 
-              productoId={1}
-              productoNombre="Proteína Whey Gold Standard"
-            />
+            <ModalAñadirStack isOpen={modalAbierto} onClose={() => setModalAbierto(false)} productoId={1} productoNombre="Proteína Whey Gold Standard" />
           </div>
         </div>
         
-        {/* --- NUEVA SECCIÓN: TUS STACKS --- */}
         <div className="mt-8">
           <GestorStacks perfil={perfil} recargarPerfil={comprobarEstado} />
         </div>
