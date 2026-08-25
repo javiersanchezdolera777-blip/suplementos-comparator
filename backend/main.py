@@ -265,9 +265,23 @@ def obtener_productos(
     if sin_lactosa is True:
         query = query.filter(models.Producto.sin_lactosa.is_(True))
     if solo_ofertas:
+        # Cálculo del % de descuento en crudo para PostgreSQL
+        descuento_pct = ((models.Producto.precio_anterior - models.Producto.precio) / models.Producto.precio_anterior) * 100
+
         query = query.filter(
             models.Producto.precio_anterior.isnot(None),
             models.Producto.precio_anterior > models.Producto.precio,
+            models.Producto.precio_anterior > 0,  # Previene división por cero
+            or_(
+                # Regla 1: 30% mínimo para Proteínas y Creatinas
+                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"])) & (descuento_pct >= 30),
+                
+                # Regla 2: 40% mínimo para Aminoácidos y Pre-Entrenos
+                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"])) & (descuento_pct >= 40),
+                
+                # Regla 3: 50% mínimo para el resto de categorías (Salud, Vitaminas, etc.)
+                (~models.Categoria.nombre.in_(["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"])) & (descuento_pct >= 50)
+            )
         )
 
     if sello_calidad:

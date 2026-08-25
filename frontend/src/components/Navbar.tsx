@@ -49,20 +49,20 @@ export default function Navbar() {
 
       {/* 3. BOTONES (Segundo en móvil, tercero en PC) */}
       <div className="order-2 md:order-3 flex items-center gap-2 md:gap-4 lg:gap-8 text-sm font-medium text-slate-600 flex-shrink-0">
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/#catalogo" className="hover:text-slate-900 transition-colors">
+        <div className="hidden md:flex items-center gap-2">
+          <Link href="/#catalogo" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-medium transition-all">
             Catálogo
           </Link>
           <Link
             href="/?solo_ofertas=true#catalogo"
             className={
               isSoloOfertas
-                ? "bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg font-semibold text-sm flex items-center gap-1.5 transition-all shadow-2xs"
-                : "flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
+                ? "bg-slate-900 text-white border border-slate-900 px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all shadow-sm"
+                : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-sm transition-all"
             }
           >
-            <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 23c-4.97 0-9-3.58-9-8 0-4.19 3.01-7.12 6.09-10.09.43-.41 1.15-.12 1.15.47 0 1.95 1.13 3.12 2.26 4.29 1.13 1.17 2.26 2.34 2.26 4.75 0 .28.22.5.5.5s.5-.22.5-.5c0-1.42-.56-2.56-1.12-3.69-.56-1.13-1.13-2.27-1.13-4.31 0-.58.71-.87 1.14-.46C18.06 10.15 21 13.06 21 17c0 4.42-4.03 8-9 8z" />
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             <span>Top Ofertas</span>
           </Link>
