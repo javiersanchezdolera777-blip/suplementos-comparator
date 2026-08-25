@@ -11,7 +11,7 @@ import unicodedata
 import models
 from database import SessionLocal
 from ingestores.http_client import download_json_with_cache
-from ingestores.utils import normalizar_descripcion_ui
+from ingestores.utils import normalizar_descripcion_ui, extraer_presentacion
 from schemas import (
     SaborEnum,
     FormatoEnum,
@@ -218,13 +218,21 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     else:
         c["categoria"] = CategoriaEnum.otros.value
 
-    c["es_vegano"] = (
-        True
-        if any(
-            p in texto_completo
-            for p in ["apto para veganos", "proteína vegana", "vegan protein"]
-        )
-        else False
+    # FILTROS DIETÉTICOS MEJORADOS
+    c["es_vegano"] = any(
+        p in texto_completo
+        for p in [
+            "vegano",
+            "vegana",
+            "vegan ",
+            " vegan",
+            "veggie",
+            "plant-based",
+            "plant based",
+            "apto para veganos",
+            "origen vegetal",
+            "100% vegetal",
+        ]
     )
     c["sin_gluten"] = any(
         p in texto_completo
@@ -250,11 +258,26 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             "no lactosa",
             "0% lactosa",
             "zero lactose",
-            "lactasa",
-            "digezyme",
-            "tolarase",
+            "dairy free",
+            "dairy-free",
+            "sin lácteos",
         ]
     )
+
+    # SELLOS DE CALIDAD COMPLETOS
+    c["sello_calidad"] = None
+    if "creapure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.creapure.value
+    elif "kyowa" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.kyowa.value
+    elif "lacprodan" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.lacprodan.value
+    elif "isolac" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.isolac.value
+    elif "optipep" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.optipep.value
+    elif "carnipure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.carnipure.value
 
     # ==========================================
     # 1. FORMATO (Recuperado de versión estable)
@@ -575,6 +598,8 @@ def inyectar_en_bd():
             if not etiquetas:
                 continue
 
+            presentacion_ext = extraer_presentacion(nombre)
+
             precio = 0.0
             precio_anterior = None
             afiliado_url = ""
@@ -644,6 +669,12 @@ def inyectar_en_bd():
                     elif precio > p_existente.precio:
                         p_existente.precio_anterior = None
                         p_existente.precio = precio
+                        
+                # Forzar actualización explícita si hay un cambio real en la presentación
+                if presentacion_ext and p_existente.presentacion != presentacion_ext:
+                    p_existente.presentacion = presentacion_ext
+                    db.add(p_existente)
+                    db.commit()
             else:
                 nuevo_producto = models.Producto(
                     nombre=nombre,
@@ -667,6 +698,7 @@ def inyectar_en_bd():
                     tipo_vitamina=etiquetas["tipo_vitamina"],
                     peso_gramos=metricas["peso_gramos"],
                     precio_por_kg=metricas["precio_por_kg"],
+                    presentacion=presentacion_ext,
                     slug=slug_norm,
                 )
                 productos_nuevos.append(nuevo_producto)

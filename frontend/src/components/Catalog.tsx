@@ -357,6 +357,7 @@ export default function Catalog() {
           limpiarFiltros={limpiarFiltros}
           hasActiveFilters={hasActiveFilters}
           productosCount={totalResultados}
+          productosFiltrados={productosFiltrados}
         />
 
         {/* ESCAPARATE DE PRODUCTOS */}

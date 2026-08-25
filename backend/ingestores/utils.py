@@ -631,20 +631,21 @@ def clasificar_producto(
 
     # Subfiltros y Sabores
     texto_completo = n + " " + str(desc_limpia or "").lower()
-    c["es_vegano"] = (
-        True
-        if any(
-            p in texto_completo
-            for p in [
-                "apto para veganos",
-                "proteína vegana",
-                "vegan protein",
-                "vegana",
-                "vegetal",
-                "100% vegano",
-            ]
-        )
-        else False
+    # FILTROS DIETÉTICOS MEJORADOS
+    c["es_vegano"] = any(
+        p in texto_completo
+        for p in [
+            "vegano",
+            "vegana",
+            "vegan ",
+            " vegan",
+            "veggie",
+            "plant-based",
+            "plant based",
+            "apto para veganos",
+            "origen vegetal",
+            "100% vegetal",
+        ]
     )
     c["sin_gluten"] = any(
         p in texto_completo
@@ -670,11 +671,26 @@ def clasificar_producto(
             "no lactosa",
             "0% lactosa",
             "zero lactose",
-            "lactasa",
-            "digezyme",
-            "tolarase",
+            "dairy free",
+            "dairy-free",
+            "sin lácteos",
         ]
     )
+
+    # SELLOS DE CALIDAD COMPLETOS
+    c["sello_calidad"] = None
+    if "creapure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.creapure.value
+    elif "kyowa" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.kyowa.value
+    elif "lacprodan" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.lacprodan.value
+    elif "isolac" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.isolac.value
+    elif "optipep" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.optipep.value
+    elif "carnipure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.carnipure.value
 
     # ==========================================
     # 1. FORMATO (Diccionario Súper-Ampliado)
@@ -863,4 +879,39 @@ def clasificar_producto(
         elif "citrulina" in texto_completo:
             c["perfil_aminoacidos"] = PerfilAminoacidosEnum.citrulina.value
 
+    c["presentacion"] = extraer_presentacion(nombre)
+
     return c
+
+
+def extraer_presentacion(nombre: str) -> Optional[str]:
+    """Extrae el formato de presentación (ej: 1,5 kg, 200 perlas) del nombre del producto."""
+    if not nombre:
+        return None
+        
+    nombre_lower = str(nombre).lower()
+    
+    # Patrones ordenados por prioridad
+    patrones = [
+        # Pesos: "1.5 kg", "1,5kg", "500 g", "500g", "2 lbs"
+        (r'(\d+(?:[.,]\d+)?)\s*(kg|g|gr|lbs?)\b', lambda m: f"{m.group(1).replace('.', ',')} {m.group(2).capitalize() if m.group(2).lower() != 'g' and m.group(2).lower() != 'gr' else 'g'}"),
+        
+        # Volúmenes: "500 ml", "1 l"
+        (r'(\d+(?:[.,]\d+)?)\s*(ml|l|litros?)\b', lambda m: f"{m.group(1).replace('.', ',')} {m.group(2).lower() if m.group(2).lower() == 'ml' else m.group(2).capitalize()}"),
+        
+        # Unidades: "120 cápsulas", "200 perlas", "90 tabs", "tabletas", "veg caps", "softgels", "sticks", "comp", etc.
+        (r'(\d+)\s*(veg\s*caps?|vcaps?|softgels?|c[áa]psulas?|caps|perlas?|tabs?|tabletas?|comprimidos?|comp\b|pastillas(?:\s+blandas)?|viales?|uds|unidades|gominolas?|ampollas?|sobres?|sticks?|dosis|servicios?|pz|piezas?)\b', lambda m: f"{m.group(1)} {m.group(2).title()}"),
+        
+        # Casos especiales
+        (r'\b(monodosis)\b', lambda m: "Monodosis")
+    ]
+    
+    for patron, formateador in patrones:
+        # Buscar todas las coincidencias
+        matches = list(re.finditer(patron, nombre_lower))
+        if matches:
+            # Tomar la última coincidencia, que suele ser el tamaño al final del nombre
+            match = matches[-1]
+            return formateador(match).strip()
+            
+    return None

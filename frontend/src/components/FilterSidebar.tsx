@@ -49,6 +49,7 @@ interface FilterSidebarProps {
   limpiarFiltros: () => void;
   hasActiveFilters: boolean;
   productosCount: number;
+  productosFiltrados: any[];
 }
 
 export default function FilterSidebar({
@@ -97,6 +98,7 @@ export default function FilterSidebar({
   limpiarFiltros,
   hasActiveFilters,
   productosCount,
+  productosFiltrados,
 }: FilterSidebarProps) {
   const [mounted, setMounted] = useState(false);
 

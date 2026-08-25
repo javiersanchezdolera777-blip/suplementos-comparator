@@ -222,6 +222,7 @@ def ingestar_tienda_generica(nombre_tienda: str, config: dict) -> Dict[str, Any]
                 categoria_id=categoria_id,
                 sabor=etiquetas.get("sabor", []),
                 formato=etiquetas.get("formato"),
+                presentacion=etiquetas.get("presentacion"),
                 objetivo=etiquetas.get("objetivo"),
                 es_vegano=bool(etiquetas.get("es_vegano")),
                 sello_calidad=etiquetas.get("sello_calidad"),

@@ -69,6 +69,7 @@ export default function VersusPage() {
 
   // --- FILTROS INTELIGENTES PARA MOSTRAR/OCULTAR FILAS ---
   const hasFormat = productos.some(p => p.format || p.formato);
+  const hasPresentation = productos.some(p => p.presentacion);
   const hasFlavors = productos.some(p => {
     const f = p.flavor || p.sabor;
     return Array.isArray(f) ? f.length > 0 : (f && f !== '-');
@@ -145,6 +146,22 @@ export default function VersusPage() {
                     <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
                       <span className="text-xs md:text-sm font-medium text-gray-600 capitalize truncate" title={prod.format || prod.formato || '-'}>
                         {prod.format || prod.formato || '-'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* FILA: TAMAÑO / CANTIDAD */}
+              {hasPresentation && (
+                <div className="flex border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <div className="w-28 md:w-40 py-3 md:py-3.5 px-3 md:px-4 shrink-0 border-r border-gray-100 flex items-center">
+                    <span className="text-xs md:text-sm font-semibold text-gray-600">⚖️ Tamaño / Cantidad</span>
+                  </div>
+                  {productos.map(prod => (
+                    <div key={prod.id} className="flex-1 py-3 md:py-3.5 px-3 md:px-4 border-r border-gray-100 flex items-center justify-center text-center last:border-r-0 min-w-[160px] sm:min-w-[200px] md:min-w-0">
+                      <span className="text-xs md:text-sm font-medium text-gray-600 capitalize truncate" title={prod.presentacion || '-'}>
+                        {prod.presentacion || '-'}
                       </span>
                     </div>
                   ))}
