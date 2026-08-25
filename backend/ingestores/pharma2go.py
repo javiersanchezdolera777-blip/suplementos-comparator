@@ -10,7 +10,7 @@ import unicodedata
 import models
 from database import SessionLocal
 from ingestores.http_client import download_json_with_cache
-from ingestores.utils import normalizar_descripcion_ui
+from ingestores.utils import normalizar_descripcion_ui, extraer_presentacion
 
 from schemas import (
     SaborEnum,
@@ -343,15 +343,22 @@ def clasificar_producto(nombre: str, desc_limpia: str):
         return None
 
     # 3. FILTROS GLOBALES
-    c["es_vegano"] = (
-        True
-        if any(
-            p in texto_completo
-            for p in ["apto para veganos", "proteína vegana", "vegan protein"]
-        )
-        else False
+    # FILTROS DIETÉTICOS MEJORADOS
+    c["es_vegano"] = any(
+        p in texto_completo
+        for p in [
+            "vegano",
+            "vegana",
+            "vegan ",
+            " vegan",
+            "veggie",
+            "plant-based",
+            "plant based",
+            "apto para veganos",
+            "origen vegetal",
+            "100% vegetal",
+        ]
     )
-
     c["sin_gluten"] = any(
         p in texto_completo
         for p in [
@@ -376,11 +383,26 @@ def clasificar_producto(nombre: str, desc_limpia: str):
             "no lactosa",
             "0% lactosa",
             "zero lactose",
-            "lactasa",
-            "digezyme",
-            "tolarase",
+            "dairy free",
+            "dairy-free",
+            "sin lácteos",
         ]
     )
+
+    # SELLOS DE CALIDAD COMPLETOS
+    c["sello_calidad"] = None
+    if "creapure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.creapure.value
+    elif "kyowa" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.kyowa.value
+    elif "lacprodan" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.lacprodan.value
+    elif "isolac" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.isolac.value
+    elif "optipep" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.optipep.value
+    elif "carnipure" in texto_completo:
+        c["sello_calidad"] = SelloCalidadEnum.carnipure.value
 
     # ==========================================
     # 1. FORMATO (Gominolas añadidas + Palabras seguras)
@@ -586,13 +608,13 @@ def clasificar_producto(nombre: str, desc_limpia: str):
     c["objetivo"] = objetivos if objetivos else None
     c["sello_calidad"] = None
     if "creapure" in texto_completo:
-        c["sello_calidad"] = SelloCalidadEnum.creapure
+        c["sello_calidad"] = SelloCalidadEnum.creapure.value
     elif "kyowa" in texto_completo:
-        c["sello_calidad"] = SelloCalidadEnum.kyowa
+        c["sello_calidad"] = SelloCalidadEnum.kyowa.value
     elif "lacprodan" in texto_completo:
-        c["sello_calidad"] = SelloCalidadEnum.lacprodan
+        c["sello_calidad"] = SelloCalidadEnum.lacprodan.value
     elif "isolac" in texto_completo:
-        c["sello_calidad"] = SelloCalidadEnum.isolac
+        c["sello_calidad"] = SelloCalidadEnum.isolac.value
 
     c["tipo_proteina"] = c["porcentaje_proteina"] = c["tipo_creatina"] = c[
         "perfil_aminoacidos"
@@ -634,37 +656,37 @@ def clasificar_producto(nombre: str, desc_limpia: str):
 
     elif c["categoria"] == CategoriaEnum.creatinas.value:
         if "micronizada" in texto_completo or "mesh" in texto_completo:
-            c["tipo_creatina"] = TipoCreatinaEnum.micronizada
+            c["tipo_creatina"] = TipoCreatinaEnum.micronizada.value
         elif "hcl" in texto_completo:
-            c["tipo_creatina"] = TipoCreatinaEnum.hcl
+            c["tipo_creatina"] = TipoCreatinaEnum.hcl.value
         elif "kre-alkalyn" in texto_completo:
-            c["tipo_creatina"] = TipoCreatinaEnum.kre_alkalyn
+            c["tipo_creatina"] = TipoCreatinaEnum.kre_alkalyn.value
         else:
-            c["tipo_creatina"] = TipoCreatinaEnum.monohidrato
+            c["tipo_creatina"] = TipoCreatinaEnum.monohidrato.value
 
     elif c["categoria"] == CategoriaEnum.aminoacidos.value:
         if "bcaa" in texto_completo:
-            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.bcaa
+            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.bcaa.value
         elif "glutamina" in texto_completo:
-            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.glutamina
+            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.glutamina.value
         elif "eaa" in texto_completo:
-            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.eaa
+            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.eaa.value
         elif "citrulina" in texto_completo:
-            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.citrulina
+            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.citrulina.value
         elif "alanina" in texto_completo:
-            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.beta_alanina
+            c["perfil_aminoacidos"] = PerfilAminoacidosEnum.beta_alanina.value
 
     elif c["categoria"] == CategoriaEnum.vitaminas.value:
         if "multivitam" in texto_completo or "complex" in texto_completo:
-            c["tipo_vitamina"] = TipoVitaminaEnum.multivitaminico
+            c["tipo_vitamina"] = TipoVitaminaEnum.multivitaminico.value
         elif "vitamina c" in texto_completo:
-            c["tipo_vitamina"] = TipoVitaminaEnum.vitamina_c
+            c["tipo_vitamina"] = TipoVitaminaEnum.vitamina_c.value
         elif "vitamina d" in texto_completo:
-            c["tipo_vitamina"] = TipoVitaminaEnum.vitamina_d
+            c["tipo_vitamina"] = TipoVitaminaEnum.vitamina_d.value
         elif "magnesio" in texto_completo:
-            c["tipo_vitamina"] = TipoVitaminaEnum.magnesio
+            c["tipo_vitamina"] = TipoVitaminaEnum.magnesio.value
         elif "omega" in texto_completo:
-            c["tipo_vitamina"] = TipoVitaminaEnum.omega3
+            c["tipo_vitamina"] = TipoVitaminaEnum.omega3.value
 
     return c
 
@@ -737,6 +759,8 @@ def inyectar_en_bd():
         etiquetas = clasificar_producto(nombre, desc_limpia)
         if not etiquetas:
             continue
+
+        presentacion_ext = extraer_presentacion(nombre)
 
         # LIMPIEZA DE MARCA
         marca_cruda = item.get("brand", "Desconocida")
@@ -830,6 +854,12 @@ def inyectar_en_bd():
                 elif precio > p_existente.precio:
                     p_existente.precio_anterior = None
                     p_existente.precio = precio
+
+            # Forzar actualización explícita si hay un cambio real en la presentación
+            if presentacion_ext and p_existente.presentacion != presentacion_ext:
+                p_existente.presentacion = presentacion_ext
+                db.add(p_existente)
+                db.commit()
         else:
             nuevo_producto = models.Producto(
                 nombre=nombre,
@@ -855,6 +885,7 @@ def inyectar_en_bd():
                 tipo_vitamina=etiquetas["tipo_vitamina"],
                 peso_gramos=metricas["peso_gramos"],
                 precio_por_kg=metricas["precio_por_kg"],
+                presentacion=presentacion_ext,
                 slug=slug_norm,
             )
             productos_nuevos.append(nuevo_producto)

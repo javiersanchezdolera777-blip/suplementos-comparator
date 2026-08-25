@@ -70,6 +70,7 @@ class Producto(Base):
     objetivo = Column(JSON, nullable=True)
     sabor = Column(JSON, default=list)
     formato = Column(String, nullable=True)                    
+    presentacion = Column(String, nullable=True)
     es_vegano = Column(Boolean, default=False)   
     sin_gluten = Column(Boolean, default=False, nullable=True, index=True)
     sin_lactosa = Column(Boolean, default=False, nullable=True, index=True)

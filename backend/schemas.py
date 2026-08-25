@@ -176,6 +176,7 @@ class ProductResponse(BaseModel):
     # --- Filtros Globales ---
     flavor: List[str] = Field(validation_alias="sabor", default_factory=list)
     format: Optional[FormatoEnum] = Field(validation_alias="formato", default=None)
+    presentacion: Optional[str] = None
     goals: Optional[List[str]] = Field(validation_alias="objetivos", default=None)
     is_vegan: bool = Field(validation_alias="es_vegano", default=False)
     sin_gluten: bool = False

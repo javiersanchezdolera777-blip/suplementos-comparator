@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 2. AHORA SÍ, EMPIEZAN LAS IMPORTACIONES LOCALES
-from ingestores.utils import clasificar_producto, normalizar_descripcion_ui
+from ingestores.utils import clasificar_producto, normalizar_descripcion_ui, extraer_presentacion
 from schemas import (
     SaborEnum,
     FormatoEnum,
@@ -701,6 +701,41 @@ def inyectar_en_bd():
                             nombre, desc_ampliada_para_cerebro
                         )
 
+                        presentacion_ext = None
+                        if datos_producto:
+                            weight_info = datos_producto.get("weight")
+                            if isinstance(weight_info, dict) and weight_info.get("value"):
+                                presentacion_ext = f"{weight_info.get('value')} {weight_info.get('unitText', '').capitalize()}".strip()
+                            elif isinstance(weight_info, str):
+                                presentacion_ext = weight_info
+                                
+                            if not presentacion_ext:
+                                offers = datos_producto.get("offers")
+                                if isinstance(offers, dict):
+                                    offers = [offers]
+                                if isinstance(offers, list) and len(offers) > 0:
+                                    price_spec = offers[0].get("priceSpecification")
+                                    if isinstance(price_spec, dict):
+                                        ref_q = price_spec.get("referenceQuantity")
+                                        if isinstance(ref_q, dict) and ref_q.get("value"):
+                                            presentacion_ext = f"{ref_q.get('value')} {ref_q.get('unitText', '').capitalize()}".strip()
+                        # Fase 2: Intentar extraer del <select id="product_information_select">
+                        if not presentacion_ext:
+                            select_info = soup_prod.find("select", id="product_information_select")
+                            if select_info:
+                                options = select_info.find_all("option")
+                                for opt in options:
+                                    texto_opt = opt.get_text(strip=True)
+                                    if texto_opt:
+                                        pres_opt = extraer_presentacion(texto_opt)
+                                        if pres_opt:
+                                            presentacion_ext = pres_opt
+                                            break
+                        
+                        # Fase 3 (Fallback): Usar el título del producto
+                        if not presentacion_ext:
+                            presentacion_ext = extraer_presentacion(nombre)
+
                         if not etiquetas or not etiquetas.get("categoria"):
                             continue
 
@@ -810,6 +845,12 @@ def inyectar_en_bd():
                                     elif precio_norm > p_existente.precio:
                                         p_existente.precio_anterior = None
                                         p_existente.precio = precio_norm
+
+                                # Forzar actualización explícita si hay un cambio real en la presentación
+                                if presentacion_ext and p_existente.presentacion != presentacion_ext:
+                                    p_existente.presentacion = presentacion_ext
+                                    db.add(p_existente)
+                                    db.commit()
                             else:
                                 nuevo_prod = models.Producto(
                                     nombre=nombre_norm,
@@ -837,6 +878,7 @@ def inyectar_en_bd():
                                     tipo_vitamina=etiquetas.get("tipo_vitamina"),
                                     peso_gramos=peso_norm,
                                     precio_por_kg=preciokg_norm,
+                                    presentacion=presentacion_ext,
                                     slug=slug_norm,
                                 )
                                 productos_nuevos.append(nuevo_prod)

@@ -38,6 +38,7 @@ interface Product {
   price_per_kg?: number | null;
   // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
+  presentacion?: string;
 }
 
 const decodeHTML = (str: string) => {
@@ -72,12 +73,25 @@ const sanitizeDescription = (text?: string | null): string => {
   return cleaned;
 };
 
-// Helper para limpiar el nombre del producto si ya empieza por la marca (evita redundancia)
-const formatTitle = (nombre: string, marca?: string) => {
-  if (!marca || !nombre) return nombre;
-  const escapedMarca = marca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`^${escapedMarca}\\s+`, 'i');
-  return nombre.replace(regex, '');
+const formatTitle = (nombre: string, marca?: string, presentacion?: string) => {
+  if (!nombre) return "";
+  let cleaned = nombre;
+  
+  if (marca) {
+    const escapedMarca = marca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regexMarca = new RegExp(`^${escapedMarca}\\s+`, 'i');
+    cleaned = cleaned.replace(regexMarca, '');
+  }
+  
+  if (presentacion) {
+    // Escapar regex primero, luego cambiar espacios por \s*
+    const escapedPres = presentacion.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*');
+    const regexPres = new RegExp(`[\\s\\-,|]*${escapedPres}(?![a-zA-ZáéíóúÁÉÍÓÚ])`, 'gi');
+    cleaned = cleaned.replace(regexPres, '');
+  }
+  
+  cleaned = cleaned.replace(/^[\s\-,|]+/, '').replace(/[\s\-,|]+$/, '');
+  return cleaned.trim() || nombre.trim();
 };
 
 const formatStoreName = (name: string) => {
@@ -174,7 +188,7 @@ export default function ProductCard({ product }: { product: Product }) {
     ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100)
     : 0;
 
-  const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name);
+  const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name, product.presentacion);
   const cleanDescription = sanitizeDescription(product.description);
   const isLongDescription = cleanDescription.length > 230;
 
@@ -315,21 +329,28 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
         <div className="p-3 md:p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <div className="flex flex-col gap-0.5 mb-1.5">
+          <div className="flex flex-col mb-1.5">
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
               {brandName || "Sin marca"}
             </span>
             
             {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[10px] md:text-[12px] font-normal text-slate-500 truncate">
+              <span className="text-[10px] md:text-[11px] font-normal text-slate-500 truncate mt-0.5 block">
                 Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
               </span>
             )}
           </div>
 
-          <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
-            {formattedName}
-          </h3>
+          <div className="flex flex-col flex-grow mt-1.5">
+            <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow mt-1.5">
+              {formattedName}
+              {product.presentacion && (
+                <span className="text-[11px] md:text-xs font-medium text-slate-500 ml-1.5 inline-block">
+                  {product.presentacion}
+                </span>
+              )}
+            </h3>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto pt-3 md:pt-4 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
@@ -341,11 +362,6 @@ export default function ProductCard({ product }: { product: Product }) {
                 <span className="flex items-baseline gap-1 whitespace-nowrap text-xs md:text-sm font-semibold text-slate-400 line-through ml-1">
                   <span>{previousPrice?.toFixed(2)}</span>
                   <span className="text-[10px] md:text-xs">€</span>
-                </span>
-              )}
-              {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-[10px] md:text-xs font-semibold px-2 py-0.5 md:px-2.5 md:py-1 rounded-md ml-1 md:ml-2 my-auto">
-                  {product.price_per_kg.toFixed(2)} € / kg
                 </span>
               )}
             </div>
@@ -414,12 +430,14 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
                {/* Zona Superior Fija */}
                <div className="flex justify-between items-start mb-2 pr-10">
-                 <div className="flex flex-col gap-0.5 mb-1">
-                   <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                     {brandName || "Sin marca"}
-                   </span>
+                 <div className="flex flex-col mb-1.5">
+                   <div className="flex items-center gap-1.5">
+                     <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                       {brandName || "Sin marca"}
+                     </span>
+                   </div>
                    {sellerStore && !isSameBrandAndStore && (
-                     <span className="text-[12px] font-normal text-slate-500">
+                     <span className="text-[12px] font-normal text-slate-500 mt-0.5 block">
                        Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
                      </span>
                    )}
@@ -467,11 +485,6 @@ export default function ProductCard({ product }: { product: Product }) {
                      <span className="text-sm">€</span>
                    </span>
                  )}
-                 {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                   <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-md my-auto">
-                     {product.price_per_kg.toFixed(2)} € / kg
-                   </span>
-                 )}
                </div>
                
                {/* Zona Central con Scroll Interno Exclusivo */}
@@ -491,6 +504,7 @@ export default function ProductCard({ product }: { product: Product }) {
                      <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
                    )}
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
+                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tamaño</span><span className="text-slate-700 font-medium">{product.presentacion || '-'}</span></div>
 
                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
 
