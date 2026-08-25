@@ -540,6 +540,24 @@ def buscar_usuarios(q: str = "", db: Session = Depends(get_db)):
     # Devolvemos una lista simplificada para el desplegable
     return [{"username": u.username, "objetivo": u.objetivo_etapa, "xp": u.puntos_totales} for u in usuarios]
 
+
+@app.put("/api/perfil/me", response_model=schemas.PerfilResponse)
+def actualizar_perfil(datos: schemas.PerfilUpdate, db: Session = Depends(get_db), current_user = Depends(obtener_usuario_actual)):
+    perfil = db.query(models.Perfil).filter(models.Perfil.usuario_id == current_user.id).first()
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    
+    # Actualizamos solo los datos que el usuario haya enviado
+    if datos.descripcion is not None:
+        perfil.descripcion = datos.descripcion
+    if datos.objetivo_etapa is not None:
+        perfil.objetivo_etapa = datos.objetivo_etapa
+    if datos.foto_perfil is not None:
+        perfil.foto_perfil = datos.foto_perfil
+        
+    db.commit()
+    db.refresh(perfil)
+    return perfil
 # ==========================================
 # --- RUTAS DE COMUNIDAD: SEGUIDORES ---
 # ==========================================

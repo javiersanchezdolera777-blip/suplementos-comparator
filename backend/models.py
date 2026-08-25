@@ -153,7 +153,9 @@ class Perfil(Base):
     avatar_url = Column(String, nullable=True)
     bio = Column(String, nullable=True)
     suplemento_favorito = Column(String, nullable=True) # Ej: "Creatina Creapure", "Whey de Vainilla"
-    
+    descripcion = Column(String, nullable=True)
+    foto_perfil = Column(String, nullable=True) # Guardaremos la imagen en formato texto (Base64)
+
     # Gamificación global
     puntos_totales = Column(Integer, default=0)
     racha_actual = Column(Integer, default=0)
@@ -164,6 +166,8 @@ class Perfil(Base):
     stacks = relationship("Stack", back_populates="creador", cascade="all, delete-orphan")
     resenas = relationship("ResenaSabor", back_populates="perfil", cascade="all, delete-orphan")
     checkins = relationship("CheckDiario", back_populates="perfil", cascade="all, delete-orphan")
+
+    
     
     
     # Sistema de seguidores (Self-referential Many-to-Many)
