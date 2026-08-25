@@ -33,6 +33,11 @@
 - Etiquetado automático de alérgenos y porcentajes de proteína, operando en tiempo de ingesta sin requerir intervención humana.
 
 ## Tareas Completadas (Checklist Reciente)
+- [x] **[NUEVO] Refactorización DRY de Ingestores:** Lógica de clasificación (NLP, alérgenos, sellos) y cálculo de precio/kg centralizada de forma exclusiva en el cerebro `utils.py`. Los scripts `pharma2go.py`, `sportlive.py` y `hsn.py` ahora actúan como clientes limpios y robustos.
+- [x] **[NUEVO] Upsert Masivo y Seguro:** Los ingestores detectan productos existentes, actualizan todos sus campos dinámicamente con el método seguro `.get()` y validaciones `bool()`, realizando un único `db.commit()` por lote para optimizar transacciones en PostgreSQL.
+- [x] **[NUEVO] Sincronización Oficial de BD:** Despliegue de `backend/scripts/reprocesar_nlp.py` como herramienta oficial para re-etiquetar todo el catálogo rápidamente sin necesidad de re-scrapear la web, conservando datos críticos como tamaños (`presentacion`).
+- [x] **[NUEVO] UI/UX Premium:** Eliminada la renderización visual de "precio por kilo" en la `ProductCard` principal y el modal Quick View, logrando un diseño visual mucho más limpio, manteniendo el dato intacto en el backend.
+- [x] **[NUEVO] Infraestructura Vercel:** Aprobación explícita de `allowScripts` en `package.json` para garantizar la compilación correcta de dependencias de frontend como `sharp` (optimización de imágenes).
 - [x] Refactorización masiva del `utils.py` (Cerebro NLP de catalogación).
 - [x] Actualización del bloque de extracción de precios y marcas dinámicas en `hsn.py` (JSON-LD prioritario y Fallback HTML).
 - [x] Configuración estricta de borrado y reinicio (`tienda == "HSN"`) en el script de ingestión.
