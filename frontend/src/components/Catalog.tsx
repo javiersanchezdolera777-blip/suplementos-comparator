@@ -371,17 +371,49 @@ export default function Catalog() {
               </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> productos
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block">Ordenar por</label>
-              <select
-                value={ordenPrecio}
-                onChange={(e) => setOrdenPrecio(e.target.value)}
-                className="w-full sm:w-auto bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none font-medium"
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+              {/* Botón Ofertas Exclusivo Móvil - Estética Premium y Sobria */}
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  if (soloOfertas) {
+                    params.delete("solo_ofertas");
+                  } else {
+                    params.set("solo_ofertas", "true");
+                  }
+                  router.push(`/?${params.toString()}#catalogo`);
+                }}
+                className={`md:hidden flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg border text-[11px] font-bold uppercase tracking-widest transition-all ${
+                  soloOfertas
+                    ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                }`}
               >
-                <option value="relevancia">Relevancia</option>
-                <option value="asc">Precio: Menor a Mayor</option>
-                <option value="desc">Precio: Mayor a Menor</option>
-              </select>
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span className="mt-px">Ofertas</span>
+              </button>
+
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block ml-2">Ordenar por</label>
+              
+              {/* Selector Minimalista (Dropdown Nativo Optimizado) */}
+              <div className="relative w-full sm:w-auto h-10">
+                <select
+                  value={ordenPrecio}
+                  onChange={(e) => setOrdenPrecio(e.target.value)}
+                  className="w-full h-full bg-white border border-slate-200 text-slate-700 rounded-lg pl-3 pr-8 text-[11px] font-bold uppercase tracking-widest focus:ring-1 focus:ring-slate-900 focus:border-slate-900 appearance-none cursor-pointer outline-none transition-colors"
+                >
+                  <option value="relevancia">Relevancia</option>
+                  <option value="asc">Menor Precio</option>
+                  <option value="desc">Mayor Precio</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
