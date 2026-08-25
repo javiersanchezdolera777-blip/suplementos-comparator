@@ -361,11 +361,6 @@ export default function ProductCard({ product }: { product: Product }) {
                   <span className="text-[10px] md:text-xs">€</span>
                 </span>
               )}
-              {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-[10px] md:text-xs font-semibold px-2 py-0.5 md:px-2.5 md:py-1 rounded-md ml-1 md:ml-2 my-auto">
-                  {product.price_per_kg.toFixed(2)} € / kg
-                </span>
-              )}
             </div>
 
             <a
@@ -483,11 +478,6 @@ export default function ProductCard({ product }: { product: Product }) {
                   <span className="flex items-baseline gap-1 whitespace-nowrap text-base font-semibold text-slate-400 line-through">
                     <span>{previousPrice?.toFixed(2)}</span>
                     <span className="text-sm">€</span>
-                  </span>
-                )}
-                {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                  <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-md my-auto">
-                    {product.price_per_kg.toFixed(2)} € / kg
                   </span>
                 )}
               </div>
