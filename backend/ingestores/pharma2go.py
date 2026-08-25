@@ -714,6 +714,7 @@ def inyectar_en_bd():
                     raise
         mapa_categorias[cat.value] = cat_db.id
     productos_nuevos = []
+    actualizados = 0
     cache_marcas = {}
     print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")
     productos_bd = {
@@ -855,11 +856,9 @@ def inyectar_en_bd():
                     p_existente.precio_anterior = None
                     p_existente.precio = precio
 
-            # Forzar actualización explícita si hay un cambio real en la presentación
-            if presentacion_ext and p_existente.presentacion != presentacion_ext:
-                p_existente.presentacion = presentacion_ext
-                db.add(p_existente)
-                db.commit()
+            p_existente.presentacion = presentacion_ext
+            db.add(p_existente)
+            actualizados += 1
         else:
             nuevo_producto = models.Producto(
                 nombre=nombre,
@@ -894,7 +893,7 @@ def inyectar_en_bd():
     db.add_all(productos_nuevos)
     db.commit()
     print(
-        f"\n🎉 ¡Inyección de Farma2Go completada! {len(productos_nuevos)} suplementos reales guardados."
+        f"\n🎉 ¡Inyección de Farma2Go completada! {len(productos_nuevos)} suplementos nuevos guardados, {actualizados} actualizados."
     )
 
 

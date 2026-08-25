@@ -587,6 +587,7 @@ def inyectar_en_bd():
 
         datos = descargar_datos()
         productos_nuevos = []
+        actualizados = 0
 
         for item in datos.get("products", []):
             nombre = html.unescape(item.get("name", "Sin nombre"))
@@ -670,11 +671,9 @@ def inyectar_en_bd():
                         p_existente.precio_anterior = None
                         p_existente.precio = precio
                         
-                # Forzar actualización explícita si hay un cambio real en la presentación
-                if presentacion_ext and p_existente.presentacion != presentacion_ext:
-                    p_existente.presentacion = presentacion_ext
-                    db.add(p_existente)
-                    db.commit()
+                p_existente.presentacion = presentacion_ext
+                db.add(p_existente)
+                actualizados += 1
             else:
                 nuevo_producto = models.Producto(
                     nombre=nombre,
@@ -707,7 +706,7 @@ def inyectar_en_bd():
         db.add_all(productos_nuevos)
         db.commit()
         print(
-            f"\n🎉 ¡Limpieza completada! {len(productos_nuevos)} productos de {nombre_marca} guardados perfectamente estructurados."
+            f"\n🎉 ¡Limpieza completada! {len(productos_nuevos)} productos nuevos y {actualizados} actualizados de {nombre_marca}."
         )
 
     except Exception as e:
