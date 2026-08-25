@@ -160,43 +160,66 @@ def enviar_newsletter_telegram(chollos):
         print("⚠️ Faltan credenciales de Telegram. Envío al canal omitido.")
         return
 
+    # IMPORTANTE: Telegram tiene un límite de 1024 caracteres para los "captions" (textos debajo de foto).
+    # Hemos optimizado el layout para que el Top 5 encaje perfectamente y proteja este límite.
     mensaje = "🏆 <b>TOP 5 CHOLLOS DE LA SEMANA</b> 🏆\n"
-    mensaje += (
-        "<i>Hemos analizado todo el catálogo y esta es la selección élite:</i>\n\n"
-    )
+    mensaje += "<i>Esta es la selección élite del catálogo:</i>\n\n"
 
     medallas = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
 
     for idx, prod in enumerate(chollos):
-        descuento = round(prod.precio_anterior - prod.precio, 2)
         porcentaje = int(
             round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100)
         )
         url = f"{frontend_url}/producto/{prod.slug}"
         medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
+        
+        # Recorte de seguridad para nombres extra largos (protección límite 1024 chars)
+        nombre_corto = prod.nombre[:65] + "..." if len(prod.nombre) > 65 else prod.nombre
 
-        mensaje += f"{medalla} <b><a href='{url}'>{prod.nombre}</a></b>\n"
-        mensaje += f"❌ Antes: <s>{prod.precio_anterior:.2f}€</s>\n"
-        mensaje += f"✅ Ahora: <b>{prod.precio:.2f}€</b> (-{porcentaje}%) <i>¡Ahorras {descuento:.2f}€!</i>\n\n"
+        mensaje += f"{medalla} <b><a href='{url}'>{nombre_corto}</a></b>\n"
+        mensaje += f"💰 <s>{prod.precio_anterior:.2f}€</s> ➡️ <b>{prod.precio:.2f}€</b> (-{porcentaje}%)\n\n"
 
-    mensaje += "⚡️ <i>Corre, las ofertas destacadas suelen agotarse en horas.</i>"
+    mensaje += "⚡️ <i>Las ofertas destacadas suelen agotarse rápido.</i>"
 
-    url_api = f"https://api.telegram.org/bot{token}/sendMessage"
+    # Inyección Visual: Usamos la imagen del chollo #1 como portada del mensaje
+    imagen_portada = chollos[0].imagen_url if chollos[0].imagen_url else "https://www.tussuplementos.com/Logo_icon2.png"
+
+    # Cambiamos el endpoint a sendPhoto en lugar de sendMessage
+    url_api = f"https://api.telegram.org/bot{token}/sendPhoto"
     payload = {
         "chat_id": chat_id,
-        "text": mensaje,
+        "photo": imagen_portada,
+        "caption": mensaje,
         "parse_mode": "HTML",
-        "disable_web_page_preview": True,
     }
 
     try:
+        # PLAN A: Intentar enviar como Foto Nativa (Banner)
         response = requests.post(url_api, json=payload)
-        if response.status_code == 200:
-            print("✅ Top 5 Chollos publicados en el canal de Telegram.")
+        res_data = response.json()
+
+        if response.status_code == 200 and res_data.get("ok"):
+            print("✅ Top 5 Chollos publicados en Telegram con IMAGEN nativa.")
         else:
-            print(f"❌ Error de Telegram ({response.status_code}): {response.text}")
+            print(f"⚠️ Aviso: Telegram rechazó la imagen nativa ({res_data.get('description')}). HSN/Cloudflare bloqueó al bot. Ejecutando Plan B...")
+            
+            # PLAN B: Fallback a mensaje de texto, forzando la previsualización del enlace
+            fallback_url = f"https://api.telegram.org/bot{token}/sendMessage"
+            fallback_payload = {
+                "chat_id": chat_id,
+                "text": mensaje,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": False,  # False obliga a Telegram a extraer la miniatura de la web
+            }
+            res_fb = requests.post(fallback_url, json=fallback_payload)
+            if res_fb.status_code == 200:
+                print("✅ Top 5 publicado (Modo texto con previsualización web).")
+            else:
+                print(f"❌ Error crítico en Fallback de Telegram: {res_fb.text}")
+                
     except Exception as e:
-        print(f"❌ Excepción al conectar con Telegram: {e}")
+        print(f"❌ Excepción de red al conectar con Telegram: {e}")
 
 
 def main():
