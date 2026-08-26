@@ -23,6 +23,12 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
 
+      - name: Ejecutar Reseteo de Cooldown (7 días)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python backend/scripts/reset_cooldown.py
+
       - name: Ejecutar Pipeline de Actualización de Precios
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
