@@ -169,7 +169,7 @@ def mark_as_published(product_id):
         conn = psycopg2.connect(DB_URL)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE productos SET publicado_telegram = TRUE WHERE id = %s;",
+            "UPDATE productos SET publicado_telegram = TRUE, fecha_publicacion_telegram = NOW() WHERE id = %s;",
             (product_id,),
         )
         conn.commit()
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     print("🔍 Buscando chollos pendientes en la base de datos...")
 
     # Valores de producción restaurados
-    chollos = fetch_best_deals(limit=3, min_discount=15)
+    chollos = fetch_best_deals(limit=2, min_discount=15)
 
     if not chollos:
         print("ℹ️ Todo al día. No hay nuevos chollos pendientes.")

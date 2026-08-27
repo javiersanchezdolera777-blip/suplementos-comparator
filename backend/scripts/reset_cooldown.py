@@ -1,0 +1,56 @@
+import sys
+import os
+from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database import SessionLocal
+import models
+
+
+def resetear_ofertas_antiguas():
+    print("🔄 Comprobando chollos antiguos en Telegram (Cooldown de 7 días)...")
+    db = SessionLocal()
+    try:
+        hace_7_dias = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+            days=7
+        )
+
+        # Buscamos productos que estén publicados y cuya fecha sea anterior a hace 7 días
+        productos_caducados = (
+            db.query(models.Producto)
+            .filter(
+                models.Producto.publicado_telegram == True,
+                models.Producto.fecha_publicacion_telegram != None,
+                models.Producto.fecha_publicacion_telegram < hace_7_dias,
+            )
+            .all()
+        )
+
+        if not productos_caducados:
+            print("ℹ️ No hay productos que necesiten reseteo hoy.")
+            return
+
+        for prod in productos_caducados:
+            prod.publicado_telegram = False
+            prod.fecha_publicacion_telegram = (
+                None  # Limpiamos la fecha para el próximo ciclo
+            )
+
+        db.commit()
+        print(
+            f"✅ ¡Reseteo completado! {len(productos_caducados)} productos han vuelto al circuito de ofertas."
+        )
+
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error al resetear el cooldown: {e}")
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    resetear_ofertas_antiguas()
