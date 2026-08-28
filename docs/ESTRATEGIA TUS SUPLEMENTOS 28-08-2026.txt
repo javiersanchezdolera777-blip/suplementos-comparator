@@ -1,0 +1,1012 @@
+Sí. Esto ya es justo el tipo de información que necesitábamos. Voy a basar el análisis en la documentación real del proyecto, no en suposiciones, y voy a separar claramente **lo que ya tenéis bien resuelto**, **los riesgos antes de escalar** y **el roadmap para convertirlo en una plataforma que pueda crecer en SEO, tráfico y afiliación**.
+
+
+He revisado la documentación completa. Y mi impresión general es **bastante mejor de lo que esperaba antes de verla**.
+
+Voy a ser directo:
+
+> **TusSuplementos no está en fase de “tenemos una idea y una web”. Ya tenéis una base de producto bastante seria.**
+
+El problema principal no es que os falten funcionalidades. De hecho, casi diría lo contrario: **tenéis más producto del que necesitáis para empezar a validar el negocio**, mientras que todavía hay varios agujeros importantes en SEO, medición, seguridad y arquitectura de catálogo que conviene resolver antes de intentar escalar fuerte.
+
+La documentación describe un stack bastante sólido: Next.js 16/React 19 en frontend, FastAPI/PostgreSQL-Neon en backend, ingesta automatizada de varias tiendas, clasificación y normalización propia, búsqueda avanzada, comparación, afiliación, Telegram, newsletter y una capa comunitaria con perfiles, stacks y check-ins. También identifica claramente que el gran cuello de botella actual está en cómo se expone todo eso a Google y cómo se mide el negocio.
+
+## Mi veredicto rápido
+
+Si tuviera que ponerle una valoración por áreas:
+
+| Área                           | Estado                 |
+| ------------------------------ | ---------------------- |
+| Producto/idea                  | **8,5/10**             |
+| Backend y automatización       | **8/10**               |
+| Diferenciación potencial       | **8,5/10**             |
+| SEO actual                     | **3/10**               |
+| Medición/Growth                | **3,5/10**             |
+| Conversión de afiliación       | **5/10**               |
+| Escalabilidad actual           | **6,5/10**             |
+| UX para escalar muchas tiendas | **5/10**               |
+| Seguridad antes de producción  | **hay cosas urgentes** |
+| Potencial global               | **alto**               |
+
+Y mi conclusión más importante es esta:
+
+> **No intentaría añadir ahora diez funcionalidades nuevas. Haría una fase de “preparación para crecer”.**
+
+Porque si mañana metéis una campaña de TikTok, SEO o Google Ads y entran 50.000 personas, ahora mismo no tendríais toda la infraestructura de medición y conversión preparada para aprender correctamente de ese tráfico.
+
+---
+
+# 1. Lo que más me gusta del proyecto: tenéis un producto, no solo una web de afiliados
+
+Esto cambia bastante mi opinión respecto a cuando solo conocía la idea.
+
+Vuestra ventaja no es:
+
+> “Tenemos enlaces de afiliado a HSN.”
+
+Eso lo puede hacer cualquiera.
+
+Vuestra ventaja potencial está en esta combinación:
+
+### Datos de múltiples tiendas
+
+*
+
+### Normalización propia
+
+*
+
+### Comparación nutricional
+
+*
+
+### Precio estandarizado
+
+*
+
+### Motor de ofertas
+
+*
+
+### Comunidad
+
+*
+
+### Automatización de distribución.
+
+La documentación describe precisamente ese enfoque: un catálogo agregado y normalizado, un sistema para comparar productos y métricas, filtros por restricciones y un componente de comunidad/gamificación con perfiles, stacks y check-ins.
+
+Eso me parece importante porque os permite construir algo que sea más difícil de copiar que un simple:
+
+> “Top 10 proteínas con enlaces de afiliado”.
+
+---
+
+# 2. Pero hay una decisión estratégica que yo tomaría YA
+
+## Vuestro producto principal debería ser el comparador, no el blog
+
+El blog debería alimentar al comparador.
+
+Las redes sociales deberían alimentar al comparador.
+
+Las guías deberían alimentar al comparador.
+
+Google debería descubrir el comparador.
+
+Todo debería terminar reforzando vuestro activo principal:
+
+> **una base de datos de suplementos estructurada y útil.**
+
+Yo organizaría el producto así:
+
+### Nivel 1 — Descubrimiento
+
+El usuario busca:
+
+> mejor proteína
+
+> creatina barata
+
+> proteína HSN
+
+> HSN vs MyProtein
+
+Llega a TusSuplementos.
+
+### Nivel 2 — Decisión
+
+Ve:
+
+* precio;
+* composición;
+* tipo;
+* alérgenos;
+* precio por kilo;
+* precio por dosis;
+* alternativas;
+* comparaciones.
+
+### Nivel 3 — Conversión
+
+Hace clic en:
+
+> Ver oferta.
+
+### Nivel 4 — Retención
+
+Después puede:
+
+* guardar favoritos;
+* crear stacks;
+* recibir alertas;
+* suscribirse;
+* seguir perfiles;
+* volver cuando haya una oferta.
+
+Ese es el modelo.
+
+Y es bastante mejor que depender únicamente de Google para conseguir una visita que compra una vez y desaparece.
+
+---
+
+# 3. Lo urgente de verdad: antes de escalar tráfico
+
+Aquí sí sería bastante estricto.
+
+## 🔴 URGENCIA 1 — Seguridad
+
+La documentación detecta una `SECRET_KEY` JWT hardcodeada en el código fuente y recomienda moverla a variables de entorno y rotarla antes de producción. También identifica otros secretos que deben permanecer exclusivamente en el backend.
+
+Esto es:
+
+> **hacer antes de seguir.**
+
+Especialmente porque me dijiste que el repositorio es público.
+
+Yo haría:
+
+1. retirar la clave del código;
+2. generar una nueva;
+3. configurar la nueva en producción;
+4. revisar el historial de GitHub para determinar si la clave anterior quedó expuesta;
+5. rotar cualquier secreto que haya estado públicamente accesible.
+
+También revisaría el endpoint de desarrollo/documentación que aparece en la auditoría y eliminaría o protegería cualquier “puerta de testing” que no deba existir en producción.
+
+---
+
+# 4. 🔴 URGENCIA 2 — SEO: ahora mismo tenéis un Ferrari escondido en un garaje
+
+Este es probablemente vuestro mayor problema de negocio.
+
+Tenéis datos.
+
+Tenéis productos.
+
+Tenéis automatización.
+
+Pero la documentación describe que la home y el catálogo dependen fuertemente de renderizado en cliente, mientras que faltan o son insuficientes las landings SEO específicas para categorías y marcas. También señala riesgos en metadatos únicos y datos estructurados.
+
+Yo no lanzaría la estrategia SEO fuerte hasta solucionar esto.
+
+## La arquitectura que construiría
+
+No dependería de:
+
+```text
+/?categoria=proteinas
+/?marca=hsn
+/?orden=precio
+```
+
+como estructura principal para SEO.
+
+Crearía páginas reales:
+
+```text
+/proteinas
+/proteinas/whey
+/proteinas/whey/aislada
+/proteinas/vegana
+
+/creatina
+/creatina/monohidrato
+
+/marcas
+/marcas/hsn
+/marcas/myprotein
+/marcas/bulk
+
+/producto/hsn-evowhey-20
+/producto/myprotein-impact-whey
+
+/comparar/hsn-evowhey-vs-impact-whey
+```
+
+Y después unas cuantas páginas programáticas cuidadosamente seleccionadas:
+
+```text
+/mejores/proteinas-whey
+/mejores/creatinas-monohidrato
+
+/mas-barato/proteina-whey
+/mas-barato/creatina
+
+/ofertas/proteinas
+/ofertas/creatina
+```
+
+La clave es:
+
+> **No generar 100.000 URLs porque técnicamente podéis.**
+
+Generar solo URLs que correspondan a una intención de búsqueda real y que tengan contenido diferencial.
+
+---
+
+# 5. Mi mayor recomendación SEO: construir “páginas vivas”
+
+Aquí es donde vuestro proyecto puede ser realmente interesante.
+
+Por ejemplo:
+
+## “Mejores proteínas whey calidad-precio”
+
+Normalmente, un blog publica un artículo.
+
+Vosotros podéis hacer:
+
+> Hemos analizado actualmente 87 proteínas whey disponibles.
+
+Y una tabla que se actualiza.
+
+Luego explicáis vuestra metodología:
+
+* precio por kilo;
+* porcentaje de proteína;
+* calidad del producto;
+* composición;
+* disponibilidad;
+* etc.
+
+Y cada producto enlaza a su ficha.
+
+Esto es mucho más defendible que:
+
+> “Las 10 mejores proteínas según ChatGPT y un redactor SEO”.
+
+Lo mismo con:
+
+### Mejor creatina monohidrato
+
+### Proteína aislada más barata
+
+### Mejor proteína HSN
+
+### HSN vs MyProtein
+
+### Mejores proteínas sin lactosa
+
+Vuestro contenido tiene que aprovechar los datos que ya habéis construido.
+
+---
+
+# 6. 🔴 URGENCIA 3 — La arquitectura Multi-Tienda
+
+Aquí tengo una opinión ligeramente distinta a la documentación.
+
+La auditoría recomienda dejar la migración Multi-Tienda para después del lanzamiento porque es una refactorización importante. Entiendo el argumento.
+
+Pero yo pondría una condición:
+
+### Si ahora mismo tenéis pocos productos y pocas tiendas, yo me plantearía hacerla antes de escalar SEO.
+
+¿Por qué?
+
+Porque vuestra propuesta central es precisamente:
+
+> **comparar dónde comprar el mismo producto.**
+
+Y si el usuario busca:
+
+> HSN Evowhey 2.0
+
+y le aparecen tres fichas aparentemente iguales porque cada tienda genera un producto distinto, la experiencia pierde muchísimo valor.
+
+La propia documentación identifica este riesgo: el modelo actual puede crear duplicados cuando el mismo producto está disponible en varias tiendas.
+
+Yo haría una reunión técnica con una sola pregunta:
+
+> **¿Cuánto cuesta realmente migrar ahora frente a hacerlo con 10 veces más datos, URLs, tráfico y dependencias?**
+
+Mi intuición es que, si todavía estáis antes del lanzamiento serio, **quizá sea mejor resolver el modelo conceptual ahora**.
+
+La arquitectura ideal sería:
+
+```text
+PRODUCTO MAESTRO
+        │
+        ├──── OFERTA HSN
+        │
+        ├──── OFERTA FARMA2GO
+        │
+        └──── OFERTA SPORTLIVE
+```
+
+Entonces tenéis una sola URL:
+
+```text
+/producto/hsn-evowhey-20
+```
+
+Y dentro:
+
+| Tienda   |  Precio | Envío | Oferta       |
+| -------- | ------: | ----: | ------------ |
+| Tienda A | 39,90 € |     X | Ver oferta   |
+| Tienda B | 42,50 € |     X | Ver oferta   |
+| Tienda C | 37,99 € |     X | Mejor precio |
+
+**Eso es un comparador de verdad.**
+
+---
+
+# 7. 🔴 URGENCIA 4 — Medición
+
+Ahora mismo no quiero que gastéis ni un euro serio en publicidad.
+
+La documentación deja bastante claro que podéis medir visitas y ciertos clics internos, pero falta conectar correctamente el clic de afiliación con GA4 y con la fuente de adquisición.
+
+Antes de hacer marketing, yo implementaría este funnel:
+
+```text
+SOURCE
+TikTok / Google / Instagram / Directo
+          ↓
+SESSION
+          ↓
+VIEW_CATEGORY
+          ↓
+VIEW_ITEM
+          ↓
+COMPARE_PRODUCTS
+          ↓
+ADD_TO_FAVORITES
+          ↓
+CLICK_AFFILIATE
+          ↓
+Affiliate Network Conversion
+          ↓
+COMMISSION
+```
+
+Y guardaría:
+
+* producto;
+* tienda;
+* categoría;
+* marca;
+* precio mostrado;
+* posición del producto;
+* fuente;
+* campaña;
+* dispositivo.
+
+Porque dentro de seis meses queréis poder responder:
+
+> “¿Qué genera más dinero?”
+
+No:
+
+> “¿Qué tiene más visitas?”
+
+Podría resultar que:
+
+**TikTok → 100.000 visitas → 500 €**
+
+mientras que:
+
+**Google → 10.000 visitas → 2.000 €**
+
+Y entonces vuestra estrategia cambia completamente.
+
+---
+
+# 8. Sobre el cloaker/redirección interna de afiliados
+
+La documentación recomienda una ruta interna tipo:
+
+```text
+/out/producto-slug
+```
+
+que después redirija al enlace de afiliación real, entre otras cosas para reducir problemas con bloqueadores y para centralizar tracking.
+
+La idea me parece buena, aunque yo lo llamaría simplemente:
+
+> **sistema interno de outbound tracking/redirection**
+
+más que “cloaker”.
+
+Porque tiene varias ventajas:
+
+```text
+Usuario
+   ↓
+tussuplementos.com/out/abc123
+   ↓
+registráis evento
+   ↓
+302/307
+   ↓
+red de afiliación
+   ↓
+tienda
+```
+
+Así podéis medir:
+
+* qué enlace se pulsó;
+* desde qué página;
+* desde qué fuente;
+* cuándo;
+* cuántas veces.
+
+Y después relacionarlo con las conversiones que os devuelva cada programa de afiliación.
+
+---
+
+# 9. El histórico de precios: para mí es una de vuestras mejores futuras armas
+
+La documentación plantea correctamente un motor de histórico de precios propio porque depender del “precio anterior” que os proporciona una tienda puede producir falsas ofertas.
+
+Estoy totalmente de acuerdo.
+
+Pero empezaría a **guardar snapshots desde ya**, aunque todavía no enseñéis el histórico al usuario.
+
+Cada actualización:
+
+```text
+producto_id
+tienda_id
+precio
+precio_original
+fecha
+stock/disponibilidad
+```
+
+Porque el tiempo es un activo.
+
+No puedes generar:
+
+> “Histórico de los últimos 12 meses”
+
+dentro de 12 meses si empiezas a guardar datos entonces.
+
+Mi recomendación:
+
+### Recopilar desde hoy.
+
+### Mostrar cuando tengáis suficiente histórico.
+
+Y cuando tengáis datos:
+
+> “Precio actual: 39,90 €”
+
+> “Media últimos 30 días: 44,20 €”
+
+> “Precio mínimo registrado: 35,99 €”
+
+> “Ahora está un 9,7 % por debajo de su media.”
+
+Eso es **contenido, retención y conversión**.
+
+---
+
+# 10. Vuestra verdadera ventaja competitiva no es todavía la comunidad
+
+Aquí voy a llevaros un poco la contraria.
+
+La comunidad de stacks, perfiles y check-ins me parece interesante. La documentación la presenta como uno de los grandes elementos diferenciales.
+
+Pero yo **no pondría ahora mucho esfuerzo adicional ahí**.
+
+¿Por qué?
+
+Porque tenéis que resolver primero:
+
+> ¿La gente viene?
+
+> ¿Encuentra valor?
+
+> ¿Hace clic?
+
+> ¿Compra?
+
+> ¿Vuelve?
+
+La comunidad sin tráfico es un gimnasio vacío.
+
+Yo dejaría todo lo que ya habéis construido, porque puede convertirse en una ventaja muy buena, pero no dedicaría los próximos tres meses a añadir:
+
+* más gamificación;
+* más puntos;
+* más funciones sociales;
+* chat;
+* rankings;
+* etc.
+
+Primero haría crecer el núcleo:
+
+### búsqueda
+
+### comparación
+
+### decisión
+
+### compra
+
+### retorno.
+
+Después sí podéis construir la capa social encima.
+
+---
+
+# 11. Mi estrategia SEO de 12 meses
+
+Yo dividiría el crecimiento en cuatro bloques.
+
+## FASE 1 — Preparación
+
+### Objetivo:
+
+Que Google pueda entender perfectamente la web.
+
+Implementar:
+
+* páginas SSR/ISR;
+* metadatos únicos;
+* H1;
+* canonical;
+* sitemap dinámico;
+* robots correcto;
+* enlazado interno;
+* breadcrumbs;
+* Schema adecuado donde corresponda;
+* categorías;
+* marcas;
+* productos;
+* tracking.
+
+Y revisar con Search Console:
+
+* URLs indexadas;
+* errores;
+* cobertura;
+* rendimiento.
+
+**No intentaría conseguir tráfico todavía.**
+
+Primero dejamos la máquina preparada.
+
+---
+
+## FASE 2 — Conseguir las primeras 100-500 keywords
+
+Aquí atacaría:
+
+### Producto
+
+```text
+HSN Evowhey 2.0
+Impact Whey Protein
+HSN Creatina
+...
+```
+
+### Marca + producto
+
+```text
+proteína HSN
+creatina HSN
+proteína MyProtein
+```
+
+### Comparativas
+
+```text
+HSN vs MyProtein
+Evowhey vs Impact Whey
+```
+
+### Categorías específicas
+
+```text
+proteína aislada barata
+creatina monohidrato barata
+proteína sin lactosa
+proteína vegana calidad precio
+```
+
+No intentaría:
+
+> comprar proteína
+
+todavía.
+
+---
+
+# 12. FASE 3 — SEO programático, pero con cerebro
+
+Cuando tengáis suficientes productos estructurados:
+
+```text
+/mejores/creatina-monohidrato
+/mejores/proteina-whey
+/mas-barato/proteina-whey
+/mas-barato/proteina-aislada
+/ofertas/creatina
+```
+
+Pero cada página debe tener:
+
+### contenido editorial;
+
+### metodología;
+
+### tabla de datos;
+
+### actualización dinámica;
+
+### enlaces a fichas.
+
+No:
+
+> plantilla + lista automática + 200 palabras IA.
+
+---
+
+# 13. FASE 4 — Autoridad y marca
+
+Aquí entra el marketing.
+
+## TikTok / Reels / Shorts
+
+Yo veo una oportunidad enorme porque vuestro producto genera automáticamente ideas.
+
+Ejemplos:
+
+### Formato 1
+
+> “He comparado 30 proteínas y esta es la más barata por cada 25 gramos de proteína.”
+
+### Formato 2
+
+> “¿Realmente merece la pena pagar por proteína aislada?”
+
+Comparáis datos.
+
+### Formato 3
+
+> “Esta oferta parece un chollo. Pero hemos mirado su histórico.”
+
+### Formato 4
+
+> “HSN vs MyProtein. Datos, no opiniones.”
+
+### Formato 5
+
+> “Las tres creatinas que más han bajado esta semana.”
+
+Y cada vídeo debería llevar a una página específica.
+
+No simplemente:
+
+> link en bio.
+
+Sino:
+
+```text
+tussuplementos.com/creatina
+```
+
+o:
+
+```text
+tussuplementos.com/comparar/hsn-vs-myprotein
+```
+
+---
+
+# 14. La estrategia de contenido que haría
+
+No produciría contenido independiente para cada plataforma.
+
+Haría esto:
+
+## Un dato
+
+↓
+
+### Página SEO
+
+↓
+
+### TikTok
+
+↓
+
+### Reel
+
+↓
+
+### Short
+
+↓
+
+### Post/carrusel
+
+↓
+
+### Telegram
+
+↓
+
+### Newsletter.
+
+Ejemplo:
+
+**Dato:**
+
+> La creatina X ha bajado un 23 % respecto a su media.
+
+Con eso creáis:
+
+* actualización de producto;
+* vídeo;
+* Reel;
+* Telegram;
+* email;
+* sección “ofertas de la semana”.
+
+Una sola fuente de datos.
+
+Muchos canales.
+
+Eso es escalable.
+
+---
+
+# 15. Publicidad: cuándo empezaría
+
+No todavía.
+
+Yo esperaría hasta tener suficientes datos para saber algo parecido a:
+
+```text
+1.000 visitas
+↓
+120 fichas vistas
+↓
+80 clics afiliados
+↓
+8 compras
+↓
+64 € comisión
+```
+
+Entonces:
+
+**Revenue per Visitor = 0,064 €**
+
+Y podemos preguntarnos:
+
+> ¿Podemos comprar una visita por menos de 0,064 €?
+
+Si sí, probamos.
+
+Si no, no.
+
+---
+
+# 16. Mi roadmap real para vosotros
+
+## Sprint 1 — BLOQUEADORES
+
+Antes de crecer:
+
+1. Rotar cualquier secreto expuesto.
+2. Revisar repositorio público.
+3. Implementar gestión correcta de variables de entorno.
+4. Consentimiento de cookies.
+5. Tracking de eventos.
+6. Redirección interna de outbound/afiliación.
+7. Sitemap dinámico.
+8. Robots/canonical.
+9. Metadatos por página.
+10. Páginas SEO SSR/ISR.
+
+---
+
+## Sprint 2 — FUNDAMENTOS DE NEGOCIO
+
+1. Modelo de categorías definitivo.
+2. Modelo de marcas.
+3. Modelo de producto.
+4. Decisión definitiva sobre Multi-Tienda.
+5. Empezar a guardar histórico de precios.
+6. Definir fórmula de ranking.
+
+Yo no usaría únicamente:
+
+> clics_count.
+
+Porque puede crear un efecto “rico se hace más rico”.
+
+Un producto que ya aparece arriba recibe más clics.
+
+Recibe más clics porque aparece arriba.
+
+Y entonces sigue apareciendo arriba.
+
+Mejor crearía una puntuación combinada:
+
+```text
+SCORE =
+relevancia
++ calidad nutricional
++ precio normalizado
++ tendencia
++ popularidad
++ confianza del dato
+```
+
+Con pesos configurables.
+
+---
+
+## Sprint 3 — SEO
+
+Crear las primeras páginas:
+
+### 10 categorías principales
+
+### 20-30 subcategorías
+
+### marcas prioritarias
+
+### productos prioritarios
+
+### 20-50 comparativas con intención real
+
+### 10-20 rankings dinámicos.
+
+Y monitorizar.
+
+---
+
+## Sprint 4 — DISTRIBUCIÓN
+
+Empezar:
+
+* TikTok;
+* Instagram;
+* YouTube Shorts;
+* Telegram;
+* Newsletter.
+
+Pero no intentaría publicar por publicar.
+
+Crearía un sistema editorial basado en los datos.
+
+---
+
+## Sprint 5 — CRECIMIENTO
+
+Analizar cada semana:
+
+### SEO
+
+* impresiones;
+* clics;
+* CTR;
+* posición;
+* páginas nuevas indexadas.
+
+### Producto
+
+* productos más vistos;
+* búsquedas internas sin resultado;
+* comparaciones realizadas;
+* favoritos.
+
+### Monetización
+
+* clics afiliados;
+* CTR de afiliación;
+* conversión;
+* comisión;
+* ingresos por categoría;
+* ingresos por tienda;
+* ingresos por fuente de tráfico.
+
+---
+
+# Mi estimación de potencial
+
+Aquí quiero ser prudente porque no quiero venderos una fantasía.
+
+Pero sí veo un camino razonable.
+
+Si ejecutáis esto bien, el objetivo no debería ser:
+
+> “A ver si conseguimos visitas”.
+
+El objetivo debería ser construir tres activos.
+
+### 1. Base de datos
+
+Cada nuevo producto mejora la plataforma.
+
+### 2. Páginas indexables
+
+Cada página útil puede capturar búsquedas.
+
+### 3. Marca
+
+Cada usuario que os conoce puede volver directamente.
+
+Con el tiempo:
+
+```text
+DATOS
+  ↓
+PRODUCTO
+  ↓
+SEO
+  ↓
+TRÁFICO
+  ↓
+USUARIOS
+  ↓
+CLICS
+  ↓
+VENTAS
+  ↓
+COMISIONES
+  ↓
+MÁS DATOS
+```
+
+Ese es el círculo que buscaría.
+
+---
+
+# Mi conclusión más importante
+
+Sinceramente, después de leer la documentación, **yo me tomaría el proyecto bastante en serio**.
+
+Porque ya tenéis varias piezas difíciles hechas:
+
+* ingesta;
+* normalización;
+* base de datos;
+* búsqueda;
+* comparación;
+* automatización;
+* afiliación;
+* distribución;
+* una primera capa de retención.
+
+Lo que os falta no es “tener más ideas”.
+
+Lo que os falta es **ordenar el proyecto alrededor de crecimiento y negocio**.
+
+Mi prioridad absoluta sería:
+
+> **Primero asegurar y medir. Después hacer indexable. Después hacer encontrable. Después escalar.**
+
+En ese orden.
+
+Y hay un siguiente paso que creo que sería especialmente útil: con esta documentación ya podemos dejar de hablar en general y crear **el plan maestro real de TusSuplementos**, dividido en bloques técnicos, SEO, contenido, redes sociales, afiliación y objetivos mensuales, con un roadmap de los próximos 12 meses y una lista exacta de qué debería hacer vuestro agente de Antigravity primero, segundo y tercero.
