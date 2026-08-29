@@ -11,6 +11,7 @@ from sqlalchemy import nulls_last
 from typing import List, Optional
 from datetime import datetime
 from fastapi import Query  # ✅ Correcto
+from fastapi.responses import RedirectResponse
 
 # Importamos nuestras piezas
 import models
@@ -323,15 +324,6 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-    # Join inicial maestro + OUTERJOIN a Ofertas para saber los precios
-    query = (
-        db.query(models.Producto)
-        .join(models.Categoria, isouter=True)
-        .join(models.Marca, isouter=True)
-        .outerjoin(models.Oferta)  # <-- ESTO ES CLAVE
-    )
-
-    # ... (deja igual los filtros de categoría, marca y porcentaje de proteína) ...
 
     # 4. Filtros Básicos (Formatos, Vegano, Sellos)
     formato_str = formatos or formato
@@ -411,8 +403,15 @@ def obtener_productos(
             )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
-    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON!
-    productos_raw = query.all()
+    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON Y DEDUPLICACIÓN!
+    productos_raw_duplicados = query.all()
+    
+    productos_raw = []
+    vistos = set()
+    for p in productos_raw_duplicados:
+        if p.id not in vistos:
+            vistos.add(p.id)
+            productos_raw.append(p)
 
     sabor_str = sabores or sabor
     sabores_lista = (
@@ -543,18 +542,39 @@ def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
     return producto
 
 
-# --- RUTA DE TRACKING DE CLICS DE AFILIADOS ---
-@app.post("/api/click/{product_id}")
-def track_click(product_id: int, db: Session = Depends(get_db)):
-    # Incrementa el contador de clics del producto
-    producto = (
-        db.query(models.Producto).filter(models.Producto.id == product_id).first()
+# ==========================================
+# --- CLOAKER DE AFILIADOS Y TRACKING ---
+# ==========================================
+@app.get("/api/out/{tienda}/{slug}")
+def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
+    """
+    Registra el clic en la base de datos y redirige al enlace de afiliado real.
+    Invisible para AdBlockers y scripts de terceros.
+    """
+    # 1. Buscar el producto maestro
+    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # 2. Buscar la oferta específica de esa tienda
+    oferta = next(
+        (
+            o
+            for o in producto.ofertas
+            if o.tienda.strip().lower() == tienda.strip().lower() and o.activo
+        ),
+        None,
     )
-    if producto:
-        producto.clics_count = (producto.clics_count or 0) + 1
-        db.commit()
-        return {"status": "ok", "clics": producto.clics_count}
-    raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    if not oferta or not oferta.afiliado_url:
+        raise HTTPException(status_code=404, detail="Oferta no disponible")
+
+    # 3. Registrar analítica (El Clic)
+    producto.clics_count = (producto.clics_count or 0) + 1
+    db.commit()
+
+    # 4. Redirección 302 temporal a la tienda
+    return RedirectResponse(url=oferta.afiliado_url, status_code=302)
 
 
 # ==========================================

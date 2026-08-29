@@ -175,7 +175,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
 
           {/* COLUMNA DERECHA: INFORMACIÓN DETALLADA */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between">
+          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col gap-8">
             <div>
               {/* Marca */}
               <div className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">
@@ -188,95 +188,101 @@ export default async function ProductDetailPage({ params }: Props) {
               </h1>
 
               {/* Bloque de Precio Minimalista */}
-              <div className="flex items-center flex-wrap gap-3 mb-6">
+              <div className="flex items-center flex-wrap gap-3 mb-2">
                 <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                   {product.price?.toFixed(2)} €
                 </span>
-                {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                  <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs sm:text-sm font-medium px-3 py-1 rounded-md my-auto">
-                    {product.price_per_kg.toFixed(2)} € / kg
-                  </span>
-                )}
-              </div>
 
-              {/* Descripción */}
-              {product.description && (
-                <div className="mb-8 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-100">
-                  <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción del producto</h2>
-                  <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
-                    {decodeHTML(product.description)}
-                  </p>
+              </div>
+            </div>
+
+            {/* 1. TABLA MULTI-TIENDA (Compara y ahorra) */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
+                Compara y ahorra
+              </h3>
+
+              {product.ofertas && product.ofertas.filter((o: any) => o.activo).length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  {product.ofertas
+                    .filter((o: any) => o.activo)
+                    .sort((a: any, b: any) => a.precio - b.precio)
+                    .map((oferta: any, index: number) => (
+                      <div
+                        key={oferta.id}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border transition-all hover:shadow-md ${index === 0
+                          ? "border-green-500 bg-green-50/50"
+                          : "border-slate-200 bg-white"
+                          }`}
+                      >
+                        <div className="flex flex-col mb-3 sm:mb-0">
+                          <span className="font-extrabold text-slate-900 text-lg">{oferta.tienda}</span>
+
+                        </div>
+
+                        <div className="flex items-center w-full sm:w-auto justify-between sm:justify-end gap-5">
+                          <div className="text-right flex flex-col items-end">
+                            {oferta.precio_anterior && oferta.precio_anterior > oferta.precio && (
+                              <span className="text-xs font-semibold line-through text-slate-400 mb-0.5">{oferta.precio_anterior.toFixed(2)} €</span>
+                            )}
+                            <span className={`text-2xl font-black tracking-tight ${index === 0 ? "text-green-700" : "text-slate-900"}`}>
+                              {oferta.precio.toFixed(2)} €
+                            </span>
+                          </div>
+
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                            className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${index === 0 ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" : "bg-slate-900 hover:bg-slate-800 text-white"
+                              }`}
+                          >
+                            Ver oferta
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-200 text-sm font-medium">
+                  Actualmente no hay ofertas activas para este producto.
                 </div>
               )}
+            </div>
 
-              {/* TABLA TÉCNICA DE ESPECIFICACIONES */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-100 text-sm">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{categoryName}</span>
-                </div>
+            {/* 2. TABLA TÉCNICA DE ESPECIFICACIONES */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 text-sm">
+              <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-800 font-bold mt-0.5">{categoryName}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-800 font-bold mt-0.5">{product.format || '-'}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-800 font-bold mt-0.5">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
+              {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo de Proteína</span><span className="text-slate-800 font-bold mt-0.5">{product.protein_type}</span></div>}
+              {product.creatine_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo de Creatina</span><span className="text-slate-800 font-bold mt-0.5">{product.creatine_type}</span></div>}
+              {product.amino_profile && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Perfil Aminoácidos</span><span className="text-slate-800 font-bold mt-0.5">{product.amino_profile}</span></div>}
+              {product.vitamin_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo Vitamina</span><span className="text-slate-800 font-bold mt-0.5">{product.vitamin_type}</span></div>}
+            </div>
 
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{product.format || '-'}</span>
-                </div>
+            {/* 3. DESCRIPCIÓN CON TRUCO CSS "LEER MÁS" */}
+            {product.description && (
+              <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 relative group/desc">
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción del producto</h2>
 
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span>
-                  <span className="text-slate-800 font-bold mt-0.5">
-                    {Array.isArray(product.flavor)
-                      ? (product.flavor.length ? product.flavor.join(', ') : '-')
-                      : (product.flavor ? String(product.flavor) : '-')}
-                  </span>
-                </div>
+                <input type="checkbox" id="desc-toggle" className="peer hidden" />
 
-                {product.protein_type && (
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo de Proteína</span>
-                    <span className="text-slate-800 font-bold mt-0.5">{product.protein_type}</span>
-                  </div>
-                )}
+                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line line-clamp-4 peer-checked:line-clamp-none transition-all duration-300">
+                  {decodeHTML(product.description)}
+                </p>
 
-                {product.creatine_type && (
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo de Creatina</span>
-                    <span className="text-slate-800 font-bold mt-0.5">{product.creatine_type}</span>
-                  </div>
-                )}
-
-                {product.amino_profile && (
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Perfil Aminoácidos</span>
-                    <span className="text-slate-800 font-bold mt-0.5">{product.amino_profile}</span>
-                  </div>
-                )}
-
-                {product.vitamin_type && (
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tipo Vitamina</span>
-                    <span className="text-slate-800 font-bold mt-0.5">{product.vitamin_type}</span>
-                  </div>
-                )}
+                <label htmlFor="desc-toggle" className="text-blue-600 text-xs font-bold cursor-pointer mt-3 inline-block peer-checked:hidden hover:text-blue-800">
+                  Leer más...
+                </label>
+                <label htmlFor="desc-toggle" className="text-blue-600 text-xs font-bold cursor-pointer mt-3 hidden peer-checked:inline-block hover:text-blue-800">
+                  Leer menos
+                </label>
               </div>
-            </div>
-
-            {/* BOTÓN CTA COMPRA AFILIADO */}
-            <div className="pt-4 border-t border-slate-100">
-              <TrackedAffiliateLink
-                href={product.affiliate_url || "#"}
-                productId={product.id}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-base transition-all shadow-lg shadow-blue-600/25 active:scale-98 cursor-pointer"
-              >
-                <span>Ver oferta en la tienda oficial</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </TrackedAffiliateLink>
-            </div>
+            )}
           </div>
         </div>
-
       </div>
     </div>
   );
-}
+}  

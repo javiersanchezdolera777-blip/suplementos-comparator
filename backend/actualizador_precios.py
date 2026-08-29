@@ -21,30 +21,31 @@ import models
 alertas_pendientes = {}
 
 
-def registrar_actualizacion_precio(db, producto_id: int, nuevo_precio: float):
+def registrar_actualizacion_precio(db, oferta_id: int, nuevo_precio: float):
     """
-    Actualiza el precio de un producto. Si el nuevo precio es menor,
+    Actualiza el precio de una oferta. Si el nuevo precio es menor,
     mantiene el precio viejo en 'precio_anterior' para activar el filtro de ofertas.
     """
-    prod = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    if not prod or nuevo_precio <= 0:
+    oferta = db.query(models.Oferta).filter(models.Oferta.id == oferta_id).first()
+    if not oferta or nuevo_precio <= 0:
         return False
 
-    precio_actual = float(prod.precio)
+    precio_actual = float(oferta.precio)
+    prod = oferta.producto  # Navegamos hacia arriba para sacar el nombre y slug
 
     if nuevo_precio < precio_actual:
         print(
-            f"🔥 ¡BAJADA DE PRECIO! {prod.nombre}: {precio_actual}€ -> {nuevo_precio}€"
+            f"🔥 ¡BAJADA DE PRECIO! {prod.nombre} en {oferta.tienda}: {precio_actual}€ -> {nuevo_precio}€"
         )
-        prod.precio_anterior = precio_actual
-        prod.precio = nuevo_precio
-        prod.publicado_telegram = False  # Listo para avisar al bot de Telegram
+        oferta.precio_anterior = precio_actual
+        oferta.precio = nuevo_precio
+        oferta.publicado_telegram = False  # Listo para avisar al bot de Telegram
 
         try:
             usuarios_notificar = (
                 db.query(models.Usuario.email)
                 .join(models.Favorito, models.Usuario.id == models.Favorito.usuario_id)
-                .filter(models.Favorito.producto_id == producto_id)
+                .filter(models.Favorito.producto_id == prod.id)
                 .all()
             )
             for (email_usuario,) in usuarios_notificar:
@@ -53,18 +54,19 @@ def registrar_actualizacion_precio(db, producto_id: int, nuevo_precio: float):
                 alertas_pendientes[email_usuario].append(
                     {
                         "nombre": prod.nombre,
+                        "tienda": oferta.tienda,
                         "precio_viejo": precio_actual,
                         "precio_nuevo": nuevo_precio,
                         "slug": prod.slug,
-                        "imagen_url": prod.imagen_url,  # 👈 ¡Añadimos esto para que la foto viaje al email!
+                        "imagen_url": prod.imagen_url,
                     }
                 )
         except Exception as e:
             print(f"⚠️ Error general agrupando alertas de email: {e}")
     elif nuevo_precio > precio_actual:
         # El precio subió: actualizamos base sin oferta falsa
-        prod.precio = nuevo_precio
-        prod.precio_anterior = None
+        oferta.precio = nuevo_precio
+        oferta.precio_anterior = None
 
     return True
 

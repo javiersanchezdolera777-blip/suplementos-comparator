@@ -7,6 +7,16 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCompareStore } from '@/store/useCompareStore';
 
+export interface Oferta {
+  id: number;
+  tienda: string;
+  precio: number;
+  precio_anterior?: number | null;
+  precio_por_kg?: number | null;
+  afiliado_url: string;
+  activo: boolean;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -39,6 +49,7 @@ interface Product {
   // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
   presentacion?: string;
+  ofertas?: Oferta[];
 }
 
 const decodeHTML = (str: string) => {
@@ -76,20 +87,20 @@ const sanitizeDescription = (text?: string | null): string => {
 const formatTitle = (nombre: string, marca?: string, presentacion?: string) => {
   if (!nombre) return "";
   let cleaned = nombre;
-  
+
   if (marca) {
     const escapedMarca = marca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regexMarca = new RegExp(`^${escapedMarca}\\s+`, 'i');
     cleaned = cleaned.replace(regexMarca, '');
   }
-  
+
   if (presentacion) {
     // Escapar regex primero, luego cambiar espacios por \s*
     const escapedPres = presentacion.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*');
     const regexPres = new RegExp(`[\\s\\-,|]*${escapedPres}(?![a-zA-ZáéíóúÁÉÍÓÚ])`, 'gi');
     cleaned = cleaned.replace(regexPres, '');
   }
-  
+
   cleaned = cleaned.replace(/^[\s\-,|]+/, '').replace(/[\s\-,|]+$/, '');
   return cleaned.trim() || nombre.trim();
 };
@@ -115,20 +126,15 @@ export default function ProductCard({ product }: { product: Product }) {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const trackClick = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${apiUrl}/api/click/${product.id}`, { method: 'POST' }).catch(() => {});
-  };
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
-  
+
   const { addId, removeId, compareIds } = useCompareStore();
   const isCompared = compareIds.includes(product.id);
-  
+
   const [imageError, setImageError] = useState(false);
   const isFavorite = favoriteIds.includes(product.id);
   const showImage = product.image_url && product.image_url.trim() !== "" && !imageError;
@@ -176,7 +182,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const brandName = product.brand?.name || "";
 
   // Comprobar si marca y tienda son la misma entidad (ej: HSN == HSN)
-  const isSameBrandAndStore = 
+  const isSameBrandAndStore =
     brandName.trim().toLowerCase() !== "" &&
     sellerStore !== null &&
     brandName.trim().toLowerCase() === sellerStore.trim().toLowerCase();
@@ -194,22 +200,16 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleOpenProduct = () => {
     setIsModalOpen(true);
-    if (product.slug) {
-      window.history.pushState(null, "", `/producto/${product.slug}`);
-    }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setIsExpanded(false);
-    if (typeof window !== "undefined") {
-      window.history.pushState(null, "", "/");
-    }
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
-    e.stopPropagation(); 
-    
+    e.stopPropagation();
+
     if (!isLoggedIn) {
       openLoginModal();
       return;
@@ -247,7 +247,7 @@ export default function ProductCard({ product }: { product: Product }) {
   };
 
   const handleCompare = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     if (!isLoggedIn) {
       openLoginModal();
       return;
@@ -261,11 +261,11 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <div 
+      <div
         className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-1 cursor-pointer"
         onClick={handleOpenProduct}
       >
-        
+
         {/* Zona Superior: Imagen y Badges */}
         <div className="relative h-32 md:h-48 p-2 md:p-4 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
@@ -299,15 +299,14 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
 
           <div className="absolute top-3 right-3 z-20 group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
-            <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
-              isFavorite 
-                ? "bg-red-50 border-red-200 scale-105" 
-                : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
-            }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
-              <svg 
-                className={`w-4 h-4 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} 
+            <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${isFavorite
+              ? "bg-red-50 border-red-200 scale-105"
+              : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
+              }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
+              <svg
+                className={`w-4 h-4 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`}
                 fill={isFavorite ? "currentColor" : "none"}
-                stroke="currentColor" 
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -317,11 +316,10 @@ export default function ProductCard({ product }: { product: Product }) {
 
           {/* Botón VS (Comparar) flotante debajo del corazón */}
           <div className="absolute top-14 right-3 z-20 group/vs cursor-pointer active:scale-125 transition-transform duration-200" onClick={handleCompare}>
-            <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-[34px] h-[34px] ${
-              isCompared 
-                ? "bg-blue-50 border-blue-200 scale-105" 
-                : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
-            }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
+            <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-[34px] h-[34px] ${isCompared
+              ? "bg-blue-50 border-blue-200 scale-105"
+              : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
+              }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
               <span className={`text-[10px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
             </div>
           </div>
@@ -333,12 +331,6 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
               {brandName || "Sin marca"}
             </span>
-            
-            {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[10px] md:text-[11px] font-normal text-slate-500 truncate mt-0.5 block">
-                Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-              </span>
-            )}
           </div>
 
           <div className="flex flex-col flex-grow mt-1.5">
@@ -367,13 +359,10 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
 
             <a
-              href={product.affiliate_url || "#"}
+              href={product.slug && sellerStore ? `${apiUrl}/api/out/${sellerStore.toLowerCase()}/${product.slug}` : (product.affiliate_url || "#")}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => {
-                e.stopPropagation();
-                trackClick();
-              }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[10px] md:text-xs px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap self-start sm:self-auto"
             >
               Ver oferta
@@ -384,13 +373,13 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Modal Quick View via React Portal a document.body */}
       {mounted && isModalOpen && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[99999] w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden"
-          onClick={closeModal} 
+          onClick={closeModal}
         >
-          <div 
+          <div
             className="relative w-full max-w-4xl h-[85vh] max-h-[680px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()} 
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Micro-Toast Notificación Favoritos */}
             {toastMsg && (
@@ -399,8 +388,8 @@ export default function ProductCard({ product }: { product: Product }) {
               </div>
             )}
 
-            <button 
-              onClick={closeModal} 
+            <button
+              onClick={closeModal}
               className="absolute top-4 right-4 z-50 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-500 cursor-pointer shadow-sm"
               title="Cerrar modal"
             >
@@ -428,110 +417,145 @@ export default function ProductCard({ product }: { product: Product }) {
 
             {/* Columna Derecha: Información y Scroll Exclusivo para Textos */}
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
-               {/* Zona Superior Fija */}
-               <div className="flex justify-between items-start mb-2 pr-10">
-                 <div className="flex flex-col mb-1.5">
-                   <div className="flex items-center gap-1.5">
-                     <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                       {brandName || "Sin marca"}
-                     </span>
-                   </div>
-                   {sellerStore && !isSameBrandAndStore && (
-                     <span className="text-[12px] font-normal text-slate-500 mt-0.5 block">
-                       Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-                     </span>
-                   )}
-                 </div>
-                 
-                 <div className="flex items-center">
-                   <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
-                     <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${
-                       isFavorite 
-                         ? "bg-red-50 border-red-200 scale-105" 
-                         : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
-                     }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
-                       <svg 
-                         className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} 
-                         fill={isFavorite ? "currentColor" : "none"}
-                         stroke="currentColor" 
-                         viewBox="0 0 24 24"
-                       >
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                       </svg>
-                     </div>
-                   </div>
+              {/* Zona Superior Fija */}
+              <div className="flex justify-between items-start mb-2 pr-10">
+                <div className="flex flex-col mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                      {brandName || "Sin marca"}
+                    </span>
+                  </div>
+                </div>
 
-                   <div className="group/vs cursor-pointer active:scale-125 transition-transform duration-200 mt-1 ml-2" onClick={handleCompare}>
-                     <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-9 h-9 ${
-                       isCompared 
-                         ? "bg-blue-50 border-blue-200 scale-105" 
-                         : "bg-white border-slate-200 group-hover/vs:bg-slate-50"
-                     }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
-                       <span className={`text-[11px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
-                     </div>
-                   </div>
-                 </div>
-               </div>
+                <div className="flex items-center">
+                  <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
+                    <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${isFavorite
+                      ? "bg-red-50 border-red-200 scale-105"
+                      : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
+                      }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
+                      <svg
+                        className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`}
+                        fill={isFavorite ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                  </div>
 
-               <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{formattedName}</h2>
-               <div className="flex items-center flex-wrap gap-3 mb-4">
-                 <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                   <span>{currentPrice?.toFixed(2)}</span>
-                   <span className="text-xl md:text-2xl font-bold text-slate-700">€</span>
-                 </span>
-                 {hasOffer && (
-                   <span className="flex items-baseline gap-1 whitespace-nowrap text-base font-semibold text-slate-400 line-through">
-                     <span>{previousPrice?.toFixed(2)}</span>
-                     <span className="text-sm">€</span>
-                   </span>
-                 )}
-               </div>
-               
-               {/* Zona Central con Scroll Interno Exclusivo */}
-               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">
-                 <div className={`text-slate-600 text-sm leading-relaxed mb-2 ${isLongDescription && !isExpanded ? 'line-clamp-3' : ''}`}>
-                   {cleanDescription}
-                 </div>
-                 {isLongDescription && (
-                   <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-600 text-xs font-bold mb-4 hover:text-blue-700 self-start cursor-pointer">
-                     {isExpanded ? 'Leer menos' : 'Leer más...'}
-                   </button>
-                 )}
-                 
-                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
-                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
-                   {sellerStore && (
-                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
-                   )}
-                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
-                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tamaño</span><span className="text-slate-700 font-medium">{product.presentacion || '-'}</span></div>
+                  <div className="group/vs cursor-pointer active:scale-125 transition-transform duration-200 mt-1 ml-2" onClick={handleCompare}>
+                    <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm flex items-center justify-center w-9 h-9 ${isCompared
+                      ? "bg-blue-50 border-blue-200 scale-105"
+                      : "bg-white border-slate-200 group-hover/vs:bg-slate-50"
+                      }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
+                      <span className={`text-[11px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{formattedName}</h2>
+              <div className="flex items-center flex-wrap gap-3 mb-4">
+                <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                  <span>{currentPrice?.toFixed(2)}</span>
+                  <span className="text-xl md:text-2xl font-bold text-slate-700">€</span>
+                </span>
+                {hasOffer && (
+                  <span className="flex items-baseline gap-1 whitespace-nowrap text-base font-semibold text-slate-400 line-through">
+                    <span>{previousPrice?.toFixed(2)}</span>
+                    <span className="text-sm">€</span>
+                  </span>
+                )}
+              </div>
 
-                   {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
-                   {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
-                   {(product.protein_percentage || product.porcentaje_proteina) && (
-                     <div className="flex flex-col">
-                       <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">% Proteína</span>
-                       <span className="text-slate-700 font-medium">{product.protein_percentage ?? product.porcentaje_proteina}%</span>
-                     </div>
-                   )}
-                   {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-600 font-medium">{product.quality_seal}</span></div>}
-                 </div>
-               </div>
-               
-               {/* Zona Inferior Fija / Anclada */}
-               <div className="pt-4 border-t border-slate-100 mt-auto">
-                 <a 
-                   href={product.affiliate_url || "#"} 
-                   target="_blank" 
-                   rel="noopener noreferrer" 
-                   onClick={trackClick}
-                   className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
-                 >
-                   Ver oferta en la tienda oficial
-                 </a>
-               </div>
+              {/* Zona Central con Scroll Interno Exclusivo */}
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
+                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
+                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
+                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tamaño</span><span className="text-slate-700 font-medium">{product.presentacion || '-'}</span></div>
+
+                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
+
+                  {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
+                  {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
+                  {(product.protein_percentage || product.porcentaje_proteina) && (
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">% Proteína</span>
+                      <span className="text-slate-700 font-medium">{product.protein_percentage ?? product.porcentaje_proteina}%</span>
+                    </div>
+                  )}
+                  {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-600 font-medium">{product.quality_seal}</span></div>}
+                </div>
+              </div>
+
+              {/* Zona Inferior Fija / Anclada: TABLA MULTI-TIENDA COMPACTA */}
+              <div className="pt-4 border-t border-slate-100 mt-auto">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Ofertas Disponibles
+                </h3>
+
+                {product.ofertas && product.ofertas.filter((o) => o.activo).length > 0 ? (
+                  <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                    {product.ofertas
+                      .filter((o) => o.activo)
+                      .sort((a, b) => a.precio - b.precio)
+                      .map((oferta, index) => (
+                        <div
+                          key={oferta.id}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border ${index === 0
+                            ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                            : "border-slate-200 bg-white dark:bg-slate-800"
+                            }`}
+                        >
+                          {/* Tienda */}
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                              {oferta.tienda}
+                            </span>
+                          </div>
+
+                          {/* Precio y Cloaker */}
+                          <div className="flex items-center gap-3">
+                            <span className={`font-black ${index === 0 ? "text-green-700 dark:text-green-400" : "text-slate-900 dark:text-white"}`}>
+                              {oferta.precio.toFixed(2)} €
+                            </span>
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
+                              target="_blank"
+                              rel="nofollow noopener noreferrer"
+                              className={`px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm ${index === 0
+                                ? "bg-green-600 hover:bg-green-700 text-white"
+                                : "bg-slate-900 hover:bg-slate-800 text-white"
+                                }`}
+                            >
+                              Ver
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-200 text-xs font-medium">
+                    Actualmente no hay ofertas activas.
+                  </div>
+                )}
+
+                {/* Enlace real a la página SEO */}
+                <div className="mt-4 text-center">
+                  <Link
+                    href={`/producto/${product.slug}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeModal();
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors inline-block pb-1 border-b border-transparent hover:border-blue-800"
+                  >
+                    Ver ficha técnica completa &rarr;
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>,
