@@ -152,26 +152,35 @@ class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class OfertaResponse(BaseModel):
+    id: int
+    tienda: str
+    precio: float
+    precio_anterior: Optional[float] = None
+    precio_por_kg: Optional[float] = None
+    afiliado_url: str
+    activo: bool = True
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductResponse(BaseModel):
     id: int
     name: str = Field(validation_alias="nombre")
     description: str = Field(validation_alias="descripcion")
-    price: float = Field(validation_alias="precio")
-    precio_anterior: Optional[float] = None
-    image_url: str = Field(validation_alias="imagen_url")
-    affiliate_url: str = Field(validation_alias="afiliado_url", default="")
-
+    image_url: Optional[str] = Field(validation_alias="imagen_url", default=None)
     slug: Optional[str] = None
-
-    @field_validator("affiliate_url", mode="before")
-    def normalize_affiliate_url(cls, v):
-        return v or ""
-
-    tienda: Optional[str] = None
     weight_grams: Optional[int] = Field(validation_alias="peso_gramos", default=None)
-    price_per_kg: Optional[float] = Field(
-        validation_alias="precio_por_kg", default=None
-    )
+
+    # 1. LA MAGIA MULTI-TIENDA: Cargamos todas las ofertas disponibles
+    ofertas: List[OfertaResponse] = Field(default_factory=list)
+
+    # 2. RETROCOMPATIBILIDAD FRONTEND (Calculado dinámicamente)
+    price: float = 0.0
+    precio_anterior: Optional[float] = None
+    affiliate_url: str = ""
+    tienda: Optional[str] = None
+    price_per_kg: Optional[float] = None
 
     # --- Filtros Globales ---
     flavor: List[str] = Field(validation_alias="sabor", default_factory=list)
@@ -184,16 +193,6 @@ class ProductResponse(BaseModel):
     quality_seal: Optional[SelloCalidadEnum] = Field(
         validation_alias="sello_calidad", default=None
     )
-
-    @field_validator("flavor", mode="before")
-    def normalize_flavor(cls, v):
-        if v is None:
-            return []
-        if isinstance(v, str):
-            return [v]
-        if isinstance(v, list):
-            return [str(item) for item in v]
-        return []
 
     # --- Sub-filtros por Categoría ---
     protein_type: Optional[TipoProteinaEnum] = Field(
@@ -212,20 +211,37 @@ class ProductResponse(BaseModel):
         validation_alias="tipo_vitamina", default=None
     )
 
-    characteristics: Optional[Dict[str, Any]] = Field(
-        validation_alias="caracteristicas", default=None
-    )
-
-    # Objetos anidados en inglés
     brand: Optional[BrandResponse] = Field(validation_alias="marca", default=None)
     category: Optional[CategoryResponse] = Field(
         validation_alias="categoria", default=None
     )
 
+    @field_validator("flavor", mode="before")
+    def normalize_flavor(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, list):
+            return [str(item) for item in v]
+        return []
+
     @model_validator(mode="after")
-    def filter_intelligent_price_per_kg(self):
+    def procesar_ofertas_y_metricas(self):
+        # 1. Encontrar dinámicamente la tienda más barata (Lowest Price)
+        if self.ofertas:
+            activas = [o for o in self.ofertas if o.activo]
+            if activas:
+                # Ordenamos por precio para sacar el ganador
+                mejor_oferta = min(activas, key=lambda x: x.precio)
+                self.price = mejor_oferta.precio
+                self.precio_anterior = mejor_oferta.precio_anterior
+                self.affiliate_url = mejor_oferta.afiliado_url
+                self.tienda = mejor_oferta.tienda
+                self.price_per_kg = mejor_oferta.precio_por_kg
+
+        # 2. Regla de Cordura para el Ratio de Oro (Como lo tenías)
         if self.price_per_kg is not None:
-            # Regla 1: Categorías Core
             palabras_clave = [
                 "proteina",
                 "creatina",
@@ -244,13 +260,8 @@ class ProductResponse(BaseModel):
             es_core = any(p in name_lower for p in palabras_clave) or any(
                 p in cat_lower for p in palabras_clave
             )
-            if not es_core:
+            if not es_core or self.price_per_kg > 100 or self.price_per_kg < 2:
                 self.price_per_kg = None
-
-            # Regla 2: Filtro de Cordura (Outliers)
-            if self.price_per_kg is not None:
-                if self.price_per_kg > 100 or self.price_per_kg < 2:
-                    self.price_per_kg = None
 
         return self
 
@@ -304,11 +315,13 @@ class NewsletterCreate(BaseModel):
         ..., pattern=r"^\S+@\S+\.\S+$", description="Dirección de correo electrónico"
     )
 
+
 # ==========================================
 # --- ESQUEMAS SOCIALES Y DE COMUNIDAD ---
 # ==========================================
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
+
 
 class PerfilBase(BaseModel):
     username: str
@@ -317,8 +330,10 @@ class PerfilBase(BaseModel):
     suplemento_favorito: Optional[str] = None
     objetivo_etapa: Optional[str] = "Mantenimiento"
 
+
 class PerfilCreate(PerfilBase):
     pass
+
 
 class PerfilResponse(PerfilBase):
     id: int
@@ -327,15 +342,19 @@ class PerfilResponse(PerfilBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 from datetime import datetime
+
 
 class StackBase(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
     es_publico: Optional[bool] = True
 
+
 class StackCreate(StackBase):
     pass
+
 
 class StackResponse(StackBase):
     id: int

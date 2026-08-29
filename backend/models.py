@@ -85,25 +85,18 @@ class Producto(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, index=True, nullable=False)
     descripcion = Column(String)
-    precio = Column(Float, nullable=False)
-    precio_anterior = Column(Float, nullable=True)
     imagen_url = Column(String)
-    afiliado_url = Column(String)
-
-    tienda = Column(String, nullable=True)
-    slug = Column(String, index=True)
+    slug = Column(String, index=True, unique=True)  # Ahora es unique
     peso_gramos = Column(Integer, nullable=True)
-    precio_por_kg = Column(Float, nullable=True)
     clics_count = Column(Integer, default=0)
-    publicado_telegram = Column(Boolean, default=False)
-    fecha_publicacion_telegram = Column(DateTime, nullable=True)
 
+    # Relaciones base
     categoria_id = Column(Integer, ForeignKey("categorias.id"))
     marca_id = Column(Integer, ForeignKey("marcas.id"))
-
     categoria = relationship("Categoria")
     marca = relationship("Marca")
 
+    # Metadatos inmutables
     objetivo = Column(JSON, nullable=True)
     sabor = Column(JSON, default=list)
     formato = Column(String, nullable=True)
@@ -112,7 +105,6 @@ class Producto(Base):
     sin_gluten = Column(Boolean, default=False, nullable=True, index=True)
     sin_lactosa = Column(Boolean, default=False, nullable=True, index=True)
     sello_calidad = Column(String)
-
     tipo_proteina = Column(String)
     porcentaje_proteina = Column(Integer)
     tipo_creatina = Column(String)
@@ -121,6 +113,40 @@ class Producto(Base):
 
     # Relación inversa con las reseñas de la comunidad
     resenas = relationship("ResenaSabor", back_populates="producto")
+
+    # NUEVA RELACIÓN 1:N (Un producto -> Muchas Ofertas)
+    ofertas = relationship(
+        "Oferta", back_populates="producto", cascade="all, delete-orphan"
+    )
+
+
+class Oferta(Base):
+    """
+    Guarda el precio y el enlace específico de cada tienda para un producto.
+    """
+
+    __tablename__ = "ofertas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    producto_id = Column(
+        Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False
+    )
+
+    tienda = Column(String, index=True, nullable=False)  # Ej: "HSN", "Farma2Go"
+    precio = Column(Float, nullable=False)
+    precio_anterior = Column(Float, nullable=True)
+    precio_por_kg = Column(Float, nullable=True)
+    afiliado_url = Column(String, nullable=False)
+
+    activo = Column(Boolean, default=True)
+
+    publicado_telegram = Column(Boolean, default=False)
+    fecha_publicacion_telegram = Column(DateTime, nullable=True)
+    ultima_actualizacion = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    producto = relationship("Producto", back_populates="ofertas")
 
 
 # ==========================================

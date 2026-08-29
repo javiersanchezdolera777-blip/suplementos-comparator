@@ -167,7 +167,11 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 "marca": p.marca.nombre if p.marca else "HSN",
                 "categoria": p.categoria.nombre if p.categoria else "Suplementos",
                 "imagen_url": p.imagen_url,
-                "precio_minimo": float(p.precio) if p.precio is not None else None,
+                "precio_minimo": (
+                    min([o.precio for o in p.ofertas if o.activo], default=0.0)
+                    if p.ofertas
+                    else None
+                ),
                 "formato": p.formato,
             }
             for p in resultados
@@ -227,6 +231,7 @@ def obtener_productos(
         db.query(models.Producto)
         .join(models.Categoria, isouter=True)
         .join(models.Marca, isouter=True)
+        .outerjoin(models.Oferta)
     )
 
     # 1. Filtros de Categoría
@@ -264,24 +269,30 @@ def obtener_productos(
         query = query.filter(models.Producto.sin_gluten.is_(True))
     if sin_lactosa is True:
         query = query.filter(models.Producto.sin_lactosa.is_(True))
+
     if solo_ofertas:
-        # Cálculo del % de descuento en crudo para PostgreSQL
-        descuento_pct = ((models.Producto.precio_anterior - models.Producto.precio) / models.Producto.precio_anterior) * 100
+        # Ahora el cálculo del descuento tira de models.Oferta
+        descuento_pct = (
+            (models.Oferta.precio_anterior - models.Oferta.precio)
+            / models.Oferta.precio_anterior
+        ) * 100
 
         query = query.filter(
-            models.Producto.precio_anterior.isnot(None),
-            models.Producto.precio_anterior > models.Producto.precio,
-            models.Producto.precio_anterior > 0,  # Previene división por cero
+            models.Oferta.precio_anterior.isnot(None),
+            models.Oferta.precio_anterior > models.Oferta.precio,
+            models.Oferta.precio_anterior > 0,
             or_(
-                # Regla 1: 30% mínimo para Proteínas y Creatinas
-                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"])) & (descuento_pct >= 30),
-                
-                # Regla 2: 40% mínimo para Aminoácidos y Pre-Entrenos
-                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"])) & (descuento_pct >= 40),
-                
-                # Regla 3: 50% mínimo para el resto de categorías (Salud, Vitaminas, etc.)
-                (~models.Categoria.nombre.in_(["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"])) & (descuento_pct >= 50)
-            )
+                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
+                & (descuento_pct >= 30),
+                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
+                & (descuento_pct >= 40),
+                (
+                    ~models.Categoria.nombre.in_(
+                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
+                    )
+                )
+                & (descuento_pct >= 50),
+            ),
         )
 
     if sello_calidad:
@@ -312,7 +323,61 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-    # 7. ORDENACIÓN (Con Alias y Nulls Last)
+    # Join inicial maestro + OUTERJOIN a Ofertas para saber los precios
+    query = (
+        db.query(models.Producto)
+        .join(models.Categoria, isouter=True)
+        .join(models.Marca, isouter=True)
+        .outerjoin(models.Oferta)  # <-- ESTO ES CLAVE
+    )
+
+    # ... (deja igual los filtros de categoría, marca y porcentaje de proteína) ...
+
+    # 4. Filtros Básicos (Formatos, Vegano, Sellos)
+    formato_str = formatos or formato
+    if formato_str:
+        lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
+        if lista_formatos:
+            query = query.filter(models.Producto.formato.in_(lista_formatos))
+
+    if es_vegano is not None:
+        query = query.filter(models.Producto.es_vegano == es_vegano)
+    if sin_gluten is True:
+        query = query.filter(models.Producto.sin_gluten.is_(True))
+    if sin_lactosa is True:
+        query = query.filter(models.Producto.sin_lactosa.is_(True))
+
+    if solo_ofertas:
+        # Ahora el cálculo del descuento tira de models.Oferta
+        descuento_pct = (
+            (models.Oferta.precio_anterior - models.Oferta.precio)
+            / models.Oferta.precio_anterior
+        ) * 100
+
+        query = query.filter(
+            models.Oferta.precio_anterior.isnot(None),
+            models.Oferta.precio_anterior > models.Oferta.precio,
+            models.Oferta.precio_anterior > 0,
+            or_(
+                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
+                & (descuento_pct >= 30),
+                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
+                & (descuento_pct >= 40),
+                (
+                    ~models.Categoria.nombre.in_(
+                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
+                    )
+                )
+                & (descuento_pct >= 50),
+            ),
+        )
+
+    if sello_calidad:
+        query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
+
+    # ... (deja igual los subfiltros y buscador de texto libre) ...
+
+    # 7. ORDENACIÓN (Ahora tira de Oferta)
     sort_final = (
         request.query_params.get("orden_precio")
         or request.query_params.get("ordenar_por")
@@ -321,12 +386,12 @@ def obtener_productos(
     )
 
     if sort_final in ["precio_asc", "price_asc", "asc"]:
-        query = query.order_by(models.Producto.precio.asc())
+        query = query.order_by(models.Oferta.precio.asc())
     elif sort_final in ["precio_desc", "price_desc", "desc"]:
-        query = query.order_by(models.Producto.precio.desc())
+        query = query.order_by(models.Oferta.precio.desc())
     elif sort_final == "descuento":
         query = query.order_by(
-            (models.Producto.precio_anterior - models.Producto.precio).desc()
+            (models.Oferta.precio_anterior - models.Oferta.precio).desc()
         )
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
@@ -336,16 +401,12 @@ def obtener_productos(
             )
             query = query.order_by(
                 text_score.desc(),
-                nulls_last(
-                    models.Producto.clics_count.desc()
-                ),  # <-- Obliga a que los Nulls vayan al final
+                nulls_last(models.Producto.clics_count.desc()),
                 models.Producto.id.asc(),
             )
         else:
             query = query.order_by(
-                nulls_last(
-                    models.Producto.clics_count.desc()
-                ),  # <-- Evita discrepancias Local vs Prod
+                nulls_last(models.Producto.clics_count.desc()),
                 models.Producto.id.asc(),
             )
 
@@ -405,7 +466,6 @@ def obtener_productos(
     productos = productos_filtrados[offset_real : offset_real + limit]
 
     return {"total_resultados": total_resultados, "productos": productos}
-
 
 
 # ==========================================
