@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+// IMPORTAMOS LA NUEVA BARRA DE NAVEGACIÓN
+import NavbarSocial from '@/components/navBarSocial';
 
 export default function ComunidadHub() {
   const [busqueda, setBusqueda] = useState("");
@@ -19,7 +21,7 @@ export default function ComunidadHub() {
 
       setBuscando(true);
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/comunidad/buscar?q=${busqueda}`);
+        const res = await fetch(`http://localhost:8000/api/comunidad/buscar?q=${busqueda}`);
         if (res.ok) {
           const data = await res.json();
           setSugerencias(data);
@@ -54,19 +56,13 @@ export default function ComunidadHub() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-10 px-4 sm:pt-20 relative">
       <div className="w-full max-w-2xl relative z-10">
         
-        {/* Navegación Superior */}
-        <div className="flex justify-between items-center mb-16">
-          <Link href="/" className="text-gray-500 hover:text-slate-900 font-bold transition-colors flex items-center gap-2">
-            <span>⬅️</span> Volver al comparador
-          </Link>
-          <Link href="/mi-zona" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full font-bold shadow-md transition-transform hover:-translate-y-1">
-            🎮 Mi Zona
-          </Link>
-        </div>
-
-        {/* Buscador Central */}
+        {/* Buscador Central y Títulos */}
         <div className="text-center relative">
-          <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight">Comunidad</h1>
+          
+          {/* BARRA DE NAVEGACIÓN NUEVA INTEGRADA */}
+          <NavbarSocial />
+
+          <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight mt-6">Comunidad</h1>
           <p className="text-gray-500 mb-10 text-lg">Encuentra a tus amigos, cotillea sus rutinas y descubre nuevos suplementos.</p>
 
           <div className="relative">
@@ -102,8 +98,13 @@ export default function ComunidadHub() {
                         className="flex items-center justify-between p-4 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 w-full text-left group"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 text-white font-bold flex items-center justify-center shadow-sm">
-                            {user.username.charAt(0).toUpperCase()}
+                          {/* AVATAR DINÁMICO EN EL BUSCADOR TAMBIÉN */}
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 text-white font-bold flex items-center justify-center shadow-sm overflow-hidden border border-slate-100">
+                            {user.foto_perfil ? (
+                              <img src={user.foto_perfil} alt={user.username} className="w-full h-full object-cover" />
+                            ) : (
+                              user.username.charAt(0).toUpperCase()
+                            )}
                           </div>
                           <div>
                             <div className="font-bold text-slate-800 group-hover:text-blue-700">@{user.username}</div>

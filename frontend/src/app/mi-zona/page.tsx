@@ -5,6 +5,8 @@ import GestorStacks from '@/components/GestorStacks';
 import ModalAñadirStack from '@/components/ModalAñadirStack';
 import { useAuth } from '@/context/AuthContext'; 
 import LoginModal from '@/components/LoginModal'; 
+import ModalEditarPerfil from '@/components/ModalEditarPerfil';
+import NavbarSocial from '@/components/navBarSocial';
 
 export default function MiZonaPage() {
   const { isLoggedIn, openLoginModal } = useAuth();
@@ -17,6 +19,8 @@ export default function MiZonaPage() {
   const [formObjetivo, setFormObjetivo] = useState("Mantenimiento");
   const [errorForm, setErrorForm] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  const [modalAjustesAbierto, setModalAjustesAbierto] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -48,10 +52,15 @@ export default function MiZonaPage() {
       } else if (res.status === 404) {
         setNecesitaPerfil(true);
       } else {
+        // 🔥 EL CHIVATO: Ahora nos dirá la verdad en vez de mandarnos al login
+        const errorDetalle = await res.text();
+        console.error("🕵️‍♂️ Error real del backend:", res.status, errorDetalle);
+        alert(`¡Fallo en el Backend! Código ${res.status}. Revisa la terminal negra de FastAPI.`);
+        
         setNecesitaLogin(true);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error de red:", error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +71,7 @@ export default function MiZonaPage() {
     setErrorForm("");
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://127.0.0.1:8000/api/perfil", {
+    const res = await fetch("http://localhost:8000/api/perfil", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -143,28 +152,43 @@ export default function MiZonaPage() {
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
        <div className="max-w-4xl mx-auto space-y-8">
         
-        <div className="flex justify-between items-center mb-6">
-          <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm transition-colors">⬅️ Volver a tienda</a>
-          <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
-            🔍 Buscar amigos
-          </a>
-        </div>
+        {/* BARRA DE NAVEGACIÓN NUEVA */}
+        <NavbarSocial />
 
-        {/* --- CABECERA PRINCIPAL CON CONTADORES --- */}
+        {/* --- CABECERA PRINCIPAL CON CONTADORES Y AJUSTES --- */}
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
           
-          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 w-full">
-            <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-md">
-              {perfil.username.charAt(0).toUpperCase()}
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5 w-full">
+            
+            {/* AVATAR DINÁMICO */}
+            <div className="w-24 h-24 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-md overflow-hidden">
+              {perfil.foto_perfil ? (
+                <img src={perfil.foto_perfil} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                perfil.username.charAt(0).toUpperCase()
+              )}
             </div>
             
             <div className="text-center sm:text-left flex-1">
-              <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
+              <div className="flex items-center justify-center sm:justify-start gap-3">
+                <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
+                
+                {/* BOTÓN DE AJUSTES */}
+                <button onClick={() => setModalAjustesAbierto(true)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-all" title="Editar Perfil">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+              </div>
+
               <p className="text-gray-500 mt-1">Fase: <span className="font-semibold text-blue-600">{perfil.objetivo_etapa}</span></p>
               
+              {/* LA BIOGRAFÍA EN EL PERFIL */}
+              {perfil.descripcion && (
+                <p className="mt-2 text-sm text-slate-600 max-w-md bg-slate-50 p-3 rounded-lg border border-slate-100">{perfil.descripcion}</p>
+              )}
+              
               {/* LOS CONTADORES */}
-              <div className="flex items-center gap-4 mt-4 justify-center sm:justify-start pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-4 mt-3 justify-center sm:justify-start pt-3 border-t border-gray-100">
                 <div className="text-sm font-medium text-gray-500">
                   <span className="text-lg font-bold text-slate-900 mr-1">{perfil.seguidores_count || 0}</span> Seguidores
                 </div>
@@ -189,7 +213,7 @@ export default function MiZonaPage() {
             <button 
               onClick={async () => {
                 try {
-                  const res = await fetch("http://127.0.0.1:8000/api/comunidad/checkin", {
+                  const res = await fetch("http://localhost:8000/api/comunidad/checkin", {
                     method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                   });
                   const data = await res.json();
@@ -213,6 +237,14 @@ export default function MiZonaPage() {
           <GestorStacks perfil={perfil} recargarPerfil={comprobarEstado} />
         </div>
       </div>
+
+      {/* MODAL DE AJUSTES */}
+      <ModalEditarPerfil 
+        isOpen={modalAjustesAbierto} 
+        onClose={() => setModalAjustesAbierto(false)} 
+        perfilActual={perfil}
+        onActualizado={comprobarEstado} 
+      />
     </div>
   );
 }

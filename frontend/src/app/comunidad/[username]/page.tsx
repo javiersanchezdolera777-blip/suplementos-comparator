@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import GymMascota from '@/components/GymMascota';
 import StackDetalleModal from '@/components/StackDetalleModal';
+import NavbarSocial from '@/components/navBarSocial';
 
 export default function PerfilPublico() {
   const params = useParams();
@@ -13,13 +14,12 @@ export default function PerfilPublico() {
   const [error, setError] = useState("");
   const [siguiendo, setSiguiendo] = useState(false);
   
-  // Estado para el modal de ver productos
   const [stackSeleccionado, setStackSeleccionado] = useState<any>(null);
 
   useEffect(() => {
     const cargarPerfilPublico = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/perfil/${username}`);
+        const res = await fetch(`http://localhost:8000/api/perfil/${username}`);
         
         if (res.ok) {
           const data = await res.json();
@@ -49,7 +49,7 @@ export default function PerfilPublico() {
         return;
       }
 
-      const res = await fetch(`http://127.0.0.1:8000/api/comunidad/seguir/${username}`, {
+      const res = await fetch(`http://localhost:8000/api/comunidad/seguir/${username}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -57,7 +57,6 @@ export default function PerfilPublico() {
       const data = await res.json();
       
       if (res.ok) {
-        // Truco premium: actualizamos el número en pantalla al instante sin recargar
         setPerfil({
           ...perfil,
           seguidores_count: perfil.seguidores_count + (siguiendo ? -1 : 1)
@@ -92,33 +91,33 @@ export default function PerfilPublico() {
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* MINI-MENÚ NAVEGACIÓN (Lo he movido aquí arriba para que sea lo primero que veas) */}
-        <div className="flex justify-between items-center">
-          <a href="/" className="text-gray-500 hover:text-slate-800 font-bold text-sm transition-colors">⬅️ Volver a tienda</a>
-          <a href="/comunidad" className="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
-            🔍 Buscar amigos
-          </a>
-        </div>
+        {/* BARRA DE NAVEGACIÓN NUEVA */}
+        <NavbarSocial />
 
-        {/* CABECERA SOCIAL */}
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
           
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4">
-            <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-md">
-              {perfil.username.charAt(0).toUpperCase()}
+            <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-md overflow-hidden">
+              {perfil.foto_perfil ? (
+                <img src={perfil.foto_perfil} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                perfil.username.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="text-center sm:text-left">
               <h1 className="text-3xl font-black text-slate-900">@{perfil.username}</h1>
               <p className="text-gray-500 mt-1">Fase Actual: <span className="font-semibold text-blue-600">{perfil.objetivo_etapa}</span></p>
               
-              {/* --- CONTADORES DE XP Y RACHA --- */}
+              {perfil.descripcion && (
+                <p className="mt-2 text-sm text-slate-600 max-w-md bg-slate-50 p-3 rounded-lg border border-slate-100">{perfil.descripcion}</p>
+              )}
+
               <div className="flex items-center gap-4 mt-3 justify-center sm:justify-start">
                 <div className="text-sm font-semibold text-slate-700"><span className="text-lg font-black text-slate-900">{perfil.racha_actual}</span> 🔥 Racha</div>
                 <div className="text-sm font-semibold text-slate-700"><span className="text-lg font-black text-slate-900">{perfil.puntos_totales}</span> ✨ XP</div>
               </div>
               
-              {/* --- NUEVO: CONTADORES SOCIALES --- */}
               <div className="flex items-center gap-4 mt-4 justify-center sm:justify-start pt-4 border-t border-gray-100">
                 <div className="text-sm font-medium text-gray-500 hover:text-slate-800 cursor-pointer transition-colors">
                   <span className="text-lg font-bold text-slate-900 mr-1">{perfil.seguidores_count || 0}</span> 
@@ -147,7 +146,6 @@ export default function PerfilPublico() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
           <div className="md:col-span-1">
             <GymMascota xpTotales={perfil.puntos_totales} objetivo={perfil.objetivo_etapa || "Mantenimiento"} />
           </div>
@@ -161,7 +159,6 @@ export default function PerfilPublico() {
                 {stacksPublicos.map((stack: any) => (
                   <div 
                     key={stack.id} 
-                    // PASO 3: Aquí está el evento que abre el modal al hacer clic
                     onClick={() => setStackSeleccionado(stack)}
                     className="border border-gray-100 bg-gray-50 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
                   >
@@ -186,12 +183,11 @@ export default function PerfilPublico() {
         </div>
       </div>
 
-      {/* PASO 4: EL MODAL DE DETALLE PARA COTILLEAR */}
       <StackDetalleModal 
         stack={stackSeleccionado} 
         isOpen={stackSeleccionado !== null} 
         onClose={() => setStackSeleccionado(null)} 
-        esMio={false} // ¡NO ES MÍO! Por eso no saldrán los botones de añadir.
+        esMio={false} 
       />
     </div>
   );
