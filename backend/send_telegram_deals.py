@@ -121,17 +121,21 @@ def fetch_best_deals(limit=3, min_discount=15):
     try:
         conn = psycopg2.connect(DB_URL)
         cursor = conn.cursor()
+
+        # 🚨 CAMBIO: INNER JOIN para cruzar el Producto con su Oferta específica
         query = """
-            SELECT p.id, p.nombre, p.imagen_url, p.afiliado_url, p.precio, 
-                   p.precio_anterior, p.precio_por_kg, m.nombre AS marca, p.tienda, c.nombre AS categoria
-            FROM productos p
+            SELECT p.id, p.nombre, p.imagen_url, o.afiliado_url, o.precio, 
+                   o.precio_anterior, o.precio_por_kg, m.nombre AS marca, o.tienda, c.nombre AS categoria, o.id AS oferta_id
+            FROM ofertas o
+            INNER JOIN productos p ON o.producto_id = p.id
             LEFT JOIN marcas m ON p.marca_id = m.id
             LEFT JOIN categorias c ON p.categoria_id = c.id
-            WHERE p.precio_anterior IS NOT NULL 
-              AND p.precio_anterior > p.precio
-              AND p.publicado_telegram = FALSE
-              AND ROUND(((p.precio_anterior - p.precio) / p.precio_anterior) * 100) >= %s
-            ORDER BY ROUND(((p.precio_anterior - p.precio) / p.precio_anterior) * 100) DESC
+            WHERE o.precio_anterior IS NOT NULL 
+              AND o.precio_anterior > o.precio
+              AND o.activo = TRUE
+              AND o.publicado_telegram = FALSE
+              AND ROUND(((o.precio_anterior - o.precio) / o.precio_anterior) * 100) >= %s
+            ORDER BY ROUND(((o.precio_anterior - o.precio) / o.precio_anterior) * 100) DESC
             LIMIT %s;
         """
         cursor.execute(query, (min_discount, limit))
@@ -151,6 +155,7 @@ def fetch_best_deals(limit=3, min_discount=15):
                     "brand": r[7],
                     "store": r[8],
                     "category": r[9],
+                    "oferta_id": r[10],  # Guardamos el ID de la tabla Ofertas
                     "discount": int(
                         round(((float(r[5]) - float(r[4])) / float(r[5])) * 100)
                     ),
@@ -164,13 +169,14 @@ def fetch_best_deals(limit=3, min_discount=15):
         sys.exit(1)
 
 
-def mark_as_published(product_id):
+def mark_as_published(oferta_id):
     try:
         conn = psycopg2.connect(DB_URL)
         cursor = conn.cursor()
+        # 🚨 CAMBIO: Sellamos la tabla ofertas, no productos
         cursor.execute(
-            "UPDATE productos SET publicado_telegram = TRUE, fecha_publicacion_telegram = NOW() WHERE id = %s;",
-            (product_id,),
+            "UPDATE ofertas SET publicado_telegram = TRUE, fecha_publicacion_telegram = NOW() WHERE id = %s;",
+            (oferta_id,),
         )
         conn.commit()
         cursor.close()
@@ -186,19 +192,21 @@ if __name__ == "__main__":
     )
     print("🔍 Buscando chollos pendientes en la base de datos...")
 
-    # Valores de producción restaurados
     chollos = fetch_best_deals(limit=2, min_discount=15)
 
     if not chollos:
         print("ℹ️ Todo al día. No hay nuevos chollos pendientes.")
     else:
         for chollo in chollos:
-            print(f"🎯 Evaluando: {chollo['name']} (-{chollo['discount']}%)")
-            # 👇 Aquí está el cambio: le pasamos el tercer parámetro (affiliate_url)
+            print(
+                f"🎯 Evaluando: {chollo['name']} de {chollo['store']} (-{chollo['discount']}%)"
+            )
+
             if send_telegram_deal(
                 chollo["image_url"],
                 format_deal_message(chollo),
                 chollo["affiliate_url"],
             ):
-                mark_as_published(chollo["id"])
+                # 🚨 CAMBIO: Pasamos el ID de la Oferta al marcador
+                mark_as_published(chollo["oferta_id"])
                 print(f"✅ DB actualizada.")

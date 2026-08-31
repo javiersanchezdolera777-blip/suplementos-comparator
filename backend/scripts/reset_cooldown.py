@@ -19,30 +19,28 @@ def resetear_ofertas_antiguas():
             days=7
         )
 
-        # Buscamos productos que estén publicados y cuya fecha sea anterior a hace 7 días
-        productos_caducados = (
-            db.query(models.Producto)
+        # 🚨 CAMBIO: Ahora buscamos ofertas caducadas, no productos
+        ofertas_caducadas = (
+            db.query(models.Oferta)
             .filter(
-                models.Producto.publicado_telegram == True,
-                models.Producto.fecha_publicacion_telegram != None,
-                models.Producto.fecha_publicacion_telegram < hace_7_dias,
+                models.Oferta.publicado_telegram == True,
+                models.Oferta.fecha_publicacion_telegram != None,
+                models.Oferta.fecha_publicacion_telegram < hace_7_dias,
             )
             .all()
         )
 
-        if not productos_caducados:
-            print("ℹ️ No hay productos que necesiten reseteo hoy.")
+        if not ofertas_caducadas:
+            print("ℹ️ No hay ofertas que necesiten reseteo hoy.")
             return
 
-        for prod in productos_caducados:
-            prod.publicado_telegram = False
-            prod.fecha_publicacion_telegram = (
-                None  # Limpiamos la fecha para el próximo ciclo
-            )
+        for oferta in ofertas_caducadas:
+            oferta.publicado_telegram = False
+            oferta.fecha_publicacion_telegram = None  # Limpiamos la fecha
 
         db.commit()
         print(
-            f"✅ ¡Reseteo completado! {len(productos_caducados)} productos han vuelto al circuito de ofertas."
+            f"✅ ¡Reseteo completado! {len(ofertas_caducadas)} ofertas han vuelto al circuito del bot."
         )
 
     except Exception as e:

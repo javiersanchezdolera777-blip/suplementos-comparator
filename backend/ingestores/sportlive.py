@@ -16,7 +16,7 @@ from ingestores.utils import (
     extraer_presentacion,
     clasificar_producto,
     extraer_porcentaje_proteina,
-    calcular_metricas_precio
+    calcular_metricas_precio,
 )
 from schemas import (
     SaborEnum,
@@ -68,8 +68,6 @@ def generar_slug(nombre: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", texto.lower()).strip("-")
 
 
-
-
 # --- RUTINA DE INYECCIÓN ---
 def inyectar_en_bd():
     db = SessionLocal()
@@ -115,7 +113,10 @@ def inyectar_en_bd():
         print("🧹 Cargando catálogo antiguo de Sportlive en memoria (Upsert)...")
         productos_bd = {
             p.slug: p
-            for p in db.query(models.Producto).filter_by(tienda="Sportlive").all()
+            for p in db.query(models.Producto)
+            .join(models.Oferta)
+            .filter(models.Oferta.tienda == "Sportlive")
+            .all()
         }
         print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
@@ -178,7 +179,6 @@ def inyectar_en_bd():
                 p_existente.nombre = nombre
                 p_existente.descripcion = descripcion_ui
                 p_existente.imagen_url = imagen_url
-                p_existente.afiliado_url = afiliado_url
                 p_existente.marca_id = marca_oficial.id
                 p_existente.categoria_id = categoria_id
                 p_existente.sabor = etiquetas.get("sabor")
@@ -192,31 +192,46 @@ def inyectar_en_bd():
                 p_existente.perfil_aminoacidos = etiquetas.get("perfil_aminoacidos")
                 p_existente.tipo_vitamina = etiquetas.get("tipo_vitamina")
                 p_existente.peso_gramos = metricas["peso_gramos"]
-                p_existente.precio_por_kg = metricas["precio_por_kg"]
-
-                if precio_anterior is not None:
-                    p_existente.precio_anterior = precio_anterior
-                    p_existente.precio = precio
-                else:
-                    if precio < p_existente.precio:
-                        p_existente.precio_anterior = float(p_existente.precio)
-                        p_existente.precio = precio
-                    elif precio > p_existente.precio:
-                        p_existente.precio_anterior = None
-                        p_existente.precio = precio
-                        
                 p_existente.presentacion = presentacion_ext
+
+                # --- NUEVA LÓGICA DE OFERTAS MULTI-TIENDA ---
+                oferta_sl = next(
+                    (o for o in p_existente.ofertas if o.tienda == "Sportlive"), None
+                )
+
+                if oferta_sl:
+                    oferta_sl.afiliado_url = afiliado_url
+                    oferta_sl.precio_por_kg = metricas["precio_por_kg"]
+                    oferta_sl.activo = True
+
+                    if precio_anterior is not None:
+                        oferta_sl.precio_anterior = precio_anterior
+                        oferta_sl.precio = precio
+                    else:
+                        if precio < oferta_sl.precio:
+                            oferta_sl.precio_anterior = float(oferta_sl.precio)
+                            oferta_sl.precio = precio
+                        elif precio > oferta_sl.precio:
+                            oferta_sl.precio_anterior = None
+                            oferta_sl.precio = precio
+                else:
+                    nueva_oferta = models.Oferta(
+                        tienda="Sportlive",
+                        precio=precio,
+                        precio_anterior=precio_anterior,
+                        precio_por_kg=metricas["precio_por_kg"],
+                        afiliado_url=afiliado_url,
+                        activo=True,
+                    )
+                    p_existente.ofertas.append(nueva_oferta)
+
                 db.add(p_existente)
                 actualizados += 1
             else:
                 nuevo_producto = models.Producto(
                     nombre=nombre,
                     descripcion=descripcion_ui,
-                    precio=precio,
-                    precio_anterior=precio_anterior,
                     imagen_url=imagen_url,
-                    afiliado_url=afiliado_url,
-                    tienda="Sportlive",
                     marca_id=marca_oficial.id,
                     categoria_id=categoria_id,
                     sabor=etiquetas.get("sabor"),
@@ -230,10 +245,19 @@ def inyectar_en_bd():
                     perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
                     tipo_vitamina=etiquetas.get("tipo_vitamina"),
                     peso_gramos=metricas["peso_gramos"],
-                    precio_por_kg=metricas["precio_por_kg"],
                     presentacion=presentacion_ext,
                     slug=slug_norm,
                 )
+                nueva_oferta = models.Oferta(
+                    tienda="Sportlive",
+                    precio=precio,
+                    precio_anterior=precio_anterior,
+                    precio_por_kg=metricas["precio_por_kg"],
+                    afiliado_url=afiliado_url,
+                    activo=True,
+                )
+                nuevo_producto.ofertas.append(nueva_oferta)
+
                 productos_nuevos.append(nuevo_producto)
                 productos_bd[slug_norm] = nuevo_producto
 
