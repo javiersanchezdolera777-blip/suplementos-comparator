@@ -324,7 +324,6 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-
     # 4. Filtros Básicos (Formatos, Vegano, Sellos)
     formato_str = formatos or formato
     if formato_str:
@@ -405,7 +404,7 @@ def obtener_productos(
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
     # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON Y DEDUPLICACIÓN!
     productos_raw_duplicados = query.all()
-    
+
     productos_raw = []
     vistos = set()
     for p in productos_raw_duplicados:
@@ -675,6 +674,7 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
             google_data.token,
             google_requests.Request(),
             client_id,  # ✅ Ahora usas la variable dinámica
+            clock_skew_in_seconds=10,
         )
 
         email = idinfo["email"]

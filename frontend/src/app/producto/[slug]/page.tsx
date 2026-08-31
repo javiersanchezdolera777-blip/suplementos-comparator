@@ -130,7 +130,9 @@ export default async function ProductDetailPage({ params }: Props) {
               Inicio
             </Link>
             <span>/</span>
-            <span className="text-slate-600 font-semibold">{categoryName}</span>
+            <Link href={`/?categoria=${encodeURIComponent(categoryName)}`} className="text-slate-600 font-semibold hover:text-blue-600 transition-colors">
+              {categoryName}
+            </Link>
             <span>/</span>
             <span className="text-slate-900 font-bold truncate max-w-[200px] sm:max-w-xs">{cleanName}</span>
           </nav>

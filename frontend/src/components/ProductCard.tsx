@@ -327,14 +327,14 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
         <div className="p-3 md:p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <div className="flex flex-col mb-1.5">
-            <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
+          <div className="flex flex-col">
+            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-900 truncate mb-1.5">
               {brandName || "Sin marca"}
             </span>
           </div>
 
-          <div className="flex flex-col flex-grow mt-1.5">
-            <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow mt-1.5">
+          <div className="flex flex-col flex-grow">
+            <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
               {formattedName}
               {product.presentacion && (
                 <span className="text-[11px] md:text-xs font-medium text-slate-500 ml-1.5 inline-block">
@@ -419,9 +419,9 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
               {/* Zona Superior Fija */}
               <div className="flex justify-between items-start mb-2 pr-10">
-                <div className="flex flex-col mb-1.5">
+                <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    <span className="text-sm font-black uppercase tracking-widest text-blue-900">
                       {brandName || "Sin marca"}
                     </span>
                   </div>
@@ -455,7 +455,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 </div>
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{formattedName}</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 mb-3 leading-tight tracking-tight">{formattedName}</h2>
               <div className="flex items-center flex-wrap gap-3 mb-4">
                 <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
                   <span>{currentPrice?.toFixed(2)}</span>
@@ -504,10 +504,7 @@ export default function ProductCard({ product }: { product: Product }) {
                       .map((oferta, index) => (
                         <div
                           key={oferta.id}
-                          className={`flex items-center justify-between p-2.5 rounded-xl border ${index === 0
-                            ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                            : "border-slate-200 bg-white dark:bg-slate-800"
-                            }`}
+                          className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white dark:bg-slate-800"
                         >
                           {/* Tienda */}
                           <div className="flex flex-col">
@@ -518,17 +515,14 @@ export default function ProductCard({ product }: { product: Product }) {
 
                           {/* Precio y Cloaker */}
                           <div className="flex items-center gap-3">
-                            <span className={`font-black ${index === 0 ? "text-green-700 dark:text-green-400" : "text-slate-900 dark:text-white"}`}>
+                            <span className="font-black text-slate-900 dark:text-white">
                               {oferta.precio.toFixed(2)} €
                             </span>
                             <a
                               href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
                               target="_blank"
                               rel="nofollow noopener noreferrer"
-                              className={`px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm ${index === 0
-                                ? "bg-green-600 hover:bg-green-700 text-white"
-                                : "bg-slate-900 hover:bg-slate-800 text-white"
-                                }`}
+                              className="px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md"
                             >
                               Ver
                             </a>
