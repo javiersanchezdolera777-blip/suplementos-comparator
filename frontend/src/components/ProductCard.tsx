@@ -7,6 +7,16 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCompareStore } from '@/store/useCompareStore';
 
+export interface Oferta {
+  id: number;
+  tienda: string;
+  precio: number;
+  precio_anterior?: number | null;
+  precio_por_kg?: number | null;
+  afiliado_url: string;
+  activo: boolean;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -39,6 +49,7 @@ interface Product {
   // El backend ahora puede enviar múltiples sabores por producto
   flavor?: string[] | string | null;
   presentacion?: string;
+  ofertas?: Oferta[];
 }
 
 const decodeHTML = (str: string) => {
@@ -108,16 +119,12 @@ const formatStoreName = (name: string) => {
 
 const AFFILIATE_NETWORKS = ['tradedoubler', 'awin', 'cj', 'impact', 'webgains', 'belboon', 'zanox', 'linkshare', 'tradetracker', 'hsnafiliados', 'hsnaffiliates', 'amazonafiliados', 'zumub'];
 
+
 export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-
-  const trackClick = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${apiUrl}/api/click/${product.id}`, { method: 'POST' }).catch(() => { });
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -193,17 +200,11 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleOpenProduct = () => {
     setIsModalOpen(true);
-    if (product.slug) {
-      window.history.pushState(null, "", `/producto/${product.slug}`);
-    }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setIsExpanded(false);
-    if (typeof window !== "undefined") {
-      window.history.pushState(null, "", "/");
-    }
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
@@ -326,19 +327,13 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Zona Inferior: Información del producto (Limpia y Sobria con Alto Contraste) */}
         <div className="p-3 md:p-5 flex flex-col flex-grow bg-white border-t border-slate-100">
-          <div className="flex flex-col gap-0.5 mb-1.5">
-            <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-900 truncate">
+          <div className="flex flex-col">
+            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-900 truncate mb-1.5">
               {brandName || "Sin marca"}
             </span>
-
-            {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[10px] md:text-[11px] font-normal text-slate-500 truncate mt-0.5 block">
-                Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-              </span>
-            )}
           </div>
 
-          <div className="flex flex-col flex-grow mt-1.5">
+          <div className="flex flex-col flex-grow">
             <h3 className="text-xs md:text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
               {formattedName}
               {product.presentacion && (
@@ -364,13 +359,10 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
 
             <a
-              href={product.affiliate_url || "#"}
+              href={product.slug && sellerStore ? `${apiUrl}/api/out/${sellerStore.toLowerCase()}/${product.slug}` : (product.affiliate_url || "#")}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => {
-                e.stopPropagation();
-                trackClick();
-              }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[10px] md:text-xs px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap self-start sm:self-auto"
             >
               Ver oferta
@@ -427,17 +419,12 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="w-full md:w-1/2 flex flex-col h-full bg-white p-6 md:p-8 relative overflow-hidden">
               {/* Zona Superior Fija */}
               <div className="flex justify-between items-start mb-2 pr-10">
-                <div className="flex flex-col mb-1.5">
+                <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    <span className="text-sm font-black uppercase tracking-widest text-blue-900">
                       {brandName || "Sin marca"}
                     </span>
                   </div>
-                  {sellerStore && !isSameBrandAndStore && (
-                    <span className="text-[12px] font-normal text-slate-500 mt-0.5 block">
-                      Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex items-center">
@@ -468,7 +455,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 </div>
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 leading-snug">{formattedName}</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 mb-3 leading-tight tracking-tight">{formattedName}</h2>
               <div className="flex items-center flex-wrap gap-3 mb-4">
                 <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
                   <span>{currentPrice?.toFixed(2)}</span>
@@ -484,20 +471,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
               {/* Zona Central con Scroll Interno Exclusivo */}
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">
-                <div className={`text-slate-600 text-sm leading-relaxed mb-2 ${isLongDescription && !isExpanded ? 'line-clamp-3' : ''}`}>
-                  {cleanDescription}
-                </div>
-                {isLongDescription && (
-                  <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-600 text-xs font-bold mb-4 hover:text-blue-700 self-start cursor-pointer">
-                    {isExpanded ? 'Leer menos' : 'Leer más...'}
-                  </button>
-                )}
-
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
-                  {sellerStore && (
-                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
-                  )}
                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
                   <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tamaño</span><span className="text-slate-700 font-medium">{product.presentacion || '-'}</span></div>
 
@@ -515,17 +490,65 @@ export default function ProductCard({ product }: { product: Product }) {
                 </div>
               </div>
 
-              {/* Zona Inferior Fija / Anclada */}
+              {/* Zona Inferior Fija / Anclada: TABLA MULTI-TIENDA COMPACTA */}
               <div className="pt-4 border-t border-slate-100 mt-auto">
-                <a
-                  href={product.affiliate_url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={trackClick}
-                  className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
-                >
-                  Ver oferta en la tienda oficial
-                </a>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Ofertas Disponibles
+                </h3>
+
+                {product.ofertas && product.ofertas.filter((o) => o.activo).length > 0 ? (
+                  <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                    {product.ofertas
+                      .filter((o) => o.activo)
+                      .sort((a, b) => a.precio - b.precio)
+                      .map((oferta, index) => (
+                        <div
+                          key={oferta.id}
+                          className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white dark:bg-slate-800"
+                        >
+                          {/* Tienda */}
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                              {oferta.tienda}
+                            </span>
+                          </div>
+
+                          {/* Precio y Cloaker */}
+                          <div className="flex items-center gap-3">
+                            <span className="font-black text-slate-900 dark:text-white">
+                              {oferta.precio.toFixed(2)} €
+                            </span>
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
+                              target="_blank"
+                              rel="nofollow noopener noreferrer"
+                              className="px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md"
+                            >
+                              Ver
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-200 text-xs font-medium">
+                    Actualmente no hay ofertas activas.
+                  </div>
+                )}
+
+                {/* Enlace real a la página SEO */}
+                <div className="mt-4 text-center">
+                  <Link
+                    href={`/producto/${product.slug}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeModal();
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors inline-block pb-1 border-b border-transparent hover:border-blue-800"
+                  >
+                    Ver ficha técnica completa &rarr;
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

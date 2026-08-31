@@ -11,6 +11,7 @@ from sqlalchemy import nulls_last
 from typing import List, Optional
 from datetime import datetime
 from fastapi import Query  # ✅ Correcto
+from fastapi.responses import RedirectResponse
 
 # Importamos nuestras piezas
 import models
@@ -167,7 +168,11 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
                 "marca": p.marca.nombre if p.marca else "HSN",
                 "categoria": p.categoria.nombre if p.categoria else "Suplementos",
                 "imagen_url": p.imagen_url,
-                "precio_minimo": float(p.precio) if p.precio is not None else None,
+                "precio_minimo": (
+                    min([o.precio for o in p.ofertas if o.activo], default=0.0)
+                    if p.ofertas
+                    else None
+                ),
                 "formato": p.formato,
             }
             for p in resultados
@@ -227,6 +232,7 @@ def obtener_productos(
         db.query(models.Producto)
         .join(models.Categoria, isouter=True)
         .join(models.Marca, isouter=True)
+        .outerjoin(models.Oferta)
     )
 
     # 1. Filtros de Categoría
@@ -264,10 +270,30 @@ def obtener_productos(
         query = query.filter(models.Producto.sin_gluten.is_(True))
     if sin_lactosa is True:
         query = query.filter(models.Producto.sin_lactosa.is_(True))
+
     if solo_ofertas:
+        # Ahora el cálculo del descuento tira de models.Oferta
+        descuento_pct = (
+            (models.Oferta.precio_anterior - models.Oferta.precio)
+            / models.Oferta.precio_anterior
+        ) * 100
+
         query = query.filter(
-            models.Producto.precio_anterior.isnot(None),
-            models.Producto.precio_anterior > models.Producto.precio,
+            models.Oferta.precio_anterior.isnot(None),
+            models.Oferta.precio_anterior > models.Oferta.precio,
+            models.Oferta.precio_anterior > 0,
+            or_(
+                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
+                & (descuento_pct >= 30),
+                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
+                & (descuento_pct >= 40),
+                (
+                    ~models.Categoria.nombre.in_(
+                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
+                    )
+                )
+                & (descuento_pct >= 50),
+            ),
         )
 
     if sello_calidad:
@@ -298,7 +324,51 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-    # 7. ORDENACIÓN (Con Alias y Nulls Last)
+    # 4. Filtros Básicos (Formatos, Vegano, Sellos)
+    formato_str = formatos or formato
+    if formato_str:
+        lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
+        if lista_formatos:
+            query = query.filter(models.Producto.formato.in_(lista_formatos))
+
+    if es_vegano is not None:
+        query = query.filter(models.Producto.es_vegano == es_vegano)
+    if sin_gluten is True:
+        query = query.filter(models.Producto.sin_gluten.is_(True))
+    if sin_lactosa is True:
+        query = query.filter(models.Producto.sin_lactosa.is_(True))
+
+    if solo_ofertas:
+        # Ahora el cálculo del descuento tira de models.Oferta
+        descuento_pct = (
+            (models.Oferta.precio_anterior - models.Oferta.precio)
+            / models.Oferta.precio_anterior
+        ) * 100
+
+        query = query.filter(
+            models.Oferta.precio_anterior.isnot(None),
+            models.Oferta.precio_anterior > models.Oferta.precio,
+            models.Oferta.precio_anterior > 0,
+            or_(
+                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
+                & (descuento_pct >= 30),
+                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
+                & (descuento_pct >= 40),
+                (
+                    ~models.Categoria.nombre.in_(
+                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
+                    )
+                )
+                & (descuento_pct >= 50),
+            ),
+        )
+
+    if sello_calidad:
+        query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
+
+    # ... (deja igual los subfiltros y buscador de texto libre) ...
+
+    # 7. ORDENACIÓN (Ahora tira de Oferta)
     sort_final = (
         request.query_params.get("orden_precio")
         or request.query_params.get("ordenar_por")
@@ -307,12 +377,12 @@ def obtener_productos(
     )
 
     if sort_final in ["precio_asc", "price_asc", "asc"]:
-        query = query.order_by(models.Producto.precio.asc())
+        query = query.order_by(models.Oferta.precio.asc())
     elif sort_final in ["precio_desc", "price_desc", "desc"]:
-        query = query.order_by(models.Producto.precio.desc())
+        query = query.order_by(models.Oferta.precio.desc())
     elif sort_final == "descuento":
         query = query.order_by(
-            (models.Producto.precio_anterior - models.Producto.precio).desc()
+            (models.Oferta.precio_anterior - models.Oferta.precio).desc()
         )
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
@@ -322,22 +392,25 @@ def obtener_productos(
             )
             query = query.order_by(
                 text_score.desc(),
-                nulls_last(
-                    models.Producto.clics_count.desc()
-                ),  # <-- Obliga a que los Nulls vayan al final
+                nulls_last(models.Producto.clics_count.desc()),
                 models.Producto.id.asc(),
             )
         else:
             query = query.order_by(
-                nulls_last(
-                    models.Producto.clics_count.desc()
-                ),  # <-- Evita discrepancias Local vs Prod
+                nulls_last(models.Producto.clics_count.desc()),
                 models.Producto.id.asc(),
             )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
-    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON!
-    productos_raw = query.all()
+    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON Y DEDUPLICACIÓN!
+    productos_raw_duplicados = query.all()
+
+    productos_raw = []
+    vistos = set()
+    for p in productos_raw_duplicados:
+        if p.id not in vistos:
+            vistos.add(p.id)
+            productos_raw.append(p)
 
     sabor_str = sabores or sabor
     sabores_lista = (
@@ -391,7 +464,6 @@ def obtener_productos(
     productos = productos_filtrados[offset_real : offset_real + limit]
 
     return {"total_resultados": total_resultados, "productos": productos}
-
 
 
 # ==========================================
@@ -469,18 +541,39 @@ def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
     return producto
 
 
-# --- RUTA DE TRACKING DE CLICS DE AFILIADOS ---
-@app.post("/api/click/{product_id}")
-def track_click(product_id: int, db: Session = Depends(get_db)):
-    # Incrementa el contador de clics del producto
-    producto = (
-        db.query(models.Producto).filter(models.Producto.id == product_id).first()
+# ==========================================
+# --- CLOAKER DE AFILIADOS Y TRACKING ---
+# ==========================================
+@app.get("/api/out/{tienda}/{slug}")
+def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
+    """
+    Registra el clic en la base de datos y redirige al enlace de afiliado real.
+    Invisible para AdBlockers y scripts de terceros.
+    """
+    # 1. Buscar el producto maestro
+    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # 2. Buscar la oferta específica de esa tienda
+    oferta = next(
+        (
+            o
+            for o in producto.ofertas
+            if o.tienda.strip().lower() == tienda.strip().lower() and o.activo
+        ),
+        None,
     )
-    if producto:
-        producto.clics_count = (producto.clics_count or 0) + 1
-        db.commit()
-        return {"status": "ok", "clics": producto.clics_count}
-    raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    if not oferta or not oferta.afiliado_url:
+        raise HTTPException(status_code=404, detail="Oferta no disponible")
+
+    # 3. Registrar analítica (El Clic)
+    producto.clics_count = (producto.clics_count or 0) + 1
+    db.commit()
+
+    # 4. Redirección 302 temporal a la tienda
+    return RedirectResponse(url=oferta.afiliado_url, status_code=302)
 
 
 # ==========================================
@@ -581,6 +674,7 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
             google_data.token,
             google_requests.Request(),
             client_id,  # ✅ Ahora usas la variable dinámica
+            clock_skew_in_seconds=10,
         )
 
         email = idinfo["email"]

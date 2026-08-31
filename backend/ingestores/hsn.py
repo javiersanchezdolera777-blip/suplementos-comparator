@@ -5,7 +5,11 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 2. AHORA SÍ, EMPIEZAN LAS IMPORTACIONES LOCALES
-from ingestores.utils import clasificar_producto, normalizar_descripcion_ui, extraer_presentacion
+from ingestores.utils import (
+    clasificar_producto,
+    normalizar_descripcion_ui,
+    extraer_presentacion,
+)
 from schemas import (
     SaborEnum,
     FormatoEnum,
@@ -226,7 +230,11 @@ def inyectar_en_bd():
 
         print("🧹 Cargando catálogo antiguo de HSN en memoria (Upsert)...")
         productos_bd = {
-            p.slug: p for p in db.query(models.Producto).filter_by(tienda="HSN").all()
+            p.slug: p
+            for p in db.query(models.Producto)
+            .join(models.Oferta)
+            .filter(models.Oferta.tienda == "HSN")
+            .all()
         }
         print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
@@ -704,11 +712,13 @@ def inyectar_en_bd():
                         presentacion_ext = None
                         if datos_producto:
                             weight_info = datos_producto.get("weight")
-                            if isinstance(weight_info, dict) and weight_info.get("value"):
+                            if isinstance(weight_info, dict) and weight_info.get(
+                                "value"
+                            ):
                                 presentacion_ext = f"{weight_info.get('value')} {weight_info.get('unitText', '').capitalize()}".strip()
                             elif isinstance(weight_info, str):
                                 presentacion_ext = weight_info
-                                
+
                             if not presentacion_ext:
                                 offers = datos_producto.get("offers")
                                 if isinstance(offers, dict):
@@ -717,11 +727,15 @@ def inyectar_en_bd():
                                     price_spec = offers[0].get("priceSpecification")
                                     if isinstance(price_spec, dict):
                                         ref_q = price_spec.get("referenceQuantity")
-                                        if isinstance(ref_q, dict) and ref_q.get("value"):
+                                        if isinstance(ref_q, dict) and ref_q.get(
+                                            "value"
+                                        ):
                                             presentacion_ext = f"{ref_q.get('value')} {ref_q.get('unitText', '').capitalize()}".strip()
                         # Fase 2: Intentar extraer del <select id="product_information_select">
                         if not presentacion_ext:
-                            select_info = soup_prod.find("select", id="product_information_select")
+                            select_info = soup_prod.find(
+                                "select", id="product_information_select"
+                            )
                             if select_info:
                                 options = select_info.find_all("option")
                                 for opt in options:
@@ -731,7 +745,7 @@ def inyectar_en_bd():
                                         if pres_opt:
                                             presentacion_ext = pres_opt
                                             break
-                        
+
                         # Fase 3 (Fallback): Usar el título del producto
                         if not presentacion_ext:
                             presentacion_ext = extraer_presentacion(nombre)
@@ -793,7 +807,7 @@ def inyectar_en_bd():
                                 p_existente.nombre = nombre_norm
                                 p_existente.descripcion = descripcion_norm
                                 p_existente.imagen_url = str(imagen) if imagen else None
-                                p_existente.afiliado_url = url_afiliado
+
                                 # 🛡️ ESCUDO UPSERT PARA MARCAS:
                                 # Si el producto ya tenía una marca externa y el scraper devuelve HSN, NO lo pisamos.
                                 if (
@@ -803,6 +817,7 @@ def inyectar_en_bd():
                                     pass  # Respetamos la marca externa
                                 else:
                                     p_existente.marca_id = marca_actual.id
+
                                 p_existente.categoria_id = categoria_id
                                 p_existente.sabor = sabor_norm
                                 p_existente.formato = etiquetas.get("formato")
@@ -831,35 +846,60 @@ def inyectar_en_bd():
                                     "tipo_vitamina"
                                 )
                                 p_existente.peso_gramos = peso_norm
-                                p_existente.precio_por_kg = preciokg_norm
-
-                                if precio_ant_norm is not None:
-                                    p_existente.precio_anterior = precio_ant_norm
-                                    p_existente.precio = precio_norm
-                                else:
-                                    if precio_norm < p_existente.precio:
-                                        p_existente.precio_anterior = float(
-                                            p_existente.precio
-                                        )
-                                        p_existente.precio = precio_norm
-                                    elif precio_norm > p_existente.precio:
-                                        p_existente.precio_anterior = None
-                                        p_existente.precio = precio_norm
 
                                 # Forzar actualización explícita si hay un cambio real en la presentación
-                                if presentacion_ext and p_existente.presentacion != presentacion_ext:
+                                if (
+                                    presentacion_ext
+                                    and p_existente.presentacion != presentacion_ext
+                                ):
                                     p_existente.presentacion = presentacion_ext
                                     db.add(p_existente)
                                     db.commit()
+
+                                # --- NUEVA LÓGICA DE OFERTAS MULTI-TIENDA ---
+                                oferta_hsn = next(
+                                    (
+                                        o
+                                        for o in p_existente.ofertas
+                                        if o.tienda == "HSN"
+                                    ),
+                                    None,
+                                )
+
+                                if oferta_hsn:
+                                    oferta_hsn.afiliado_url = url_afiliado
+                                    oferta_hsn.precio_por_kg = preciokg_norm
+                                    oferta_hsn.activo = True
+
+                                    if precio_ant_norm is not None:
+                                        oferta_hsn.precio_anterior = precio_ant_norm
+                                        oferta_hsn.precio = precio_norm
+                                    else:
+                                        if precio_norm < oferta_hsn.precio:
+                                            oferta_hsn.precio_anterior = float(
+                                                oferta_hsn.precio
+                                            )
+                                            oferta_hsn.precio = precio_norm
+                                        elif precio_norm > oferta_hsn.precio:
+                                            oferta_hsn.precio_anterior = None
+                                            oferta_hsn.precio = precio_norm
+                                else:
+                                    nueva_oferta = models.Oferta(
+                                        tienda="HSN",
+                                        precio=precio_norm,
+                                        precio_anterior=precio_ant_norm,
+                                        precio_por_kg=preciokg_norm,
+                                        afiliado_url=url_afiliado,
+                                        activo=True,
+                                    )
+                                    p_existente.ofertas.append(nueva_oferta)
+
                             else:
+                                # PRODUCTO 100% NUEVO
                                 nuevo_prod = models.Producto(
                                     nombre=nombre_norm,
                                     descripcion=descripcion_norm,
-                                    precio=precio_norm,
-                                    precio_anterior=precio_ant_norm,
                                     imagen_url=str(imagen) if imagen else None,
-                                    afiliado_url=url_afiliado,
-                                    tienda="HSN",
                                     marca_id=marca_actual.id,
                                     categoria_id=categoria_id,
                                     sabor=sabor_norm,
@@ -877,10 +917,20 @@ def inyectar_en_bd():
                                     ),
                                     tipo_vitamina=etiquetas.get("tipo_vitamina"),
                                     peso_gramos=peso_norm,
-                                    precio_por_kg=preciokg_norm,
                                     presentacion=presentacion_ext,
                                     slug=slug_norm,
                                 )
+
+                                nueva_oferta = models.Oferta(
+                                    tienda="HSN",
+                                    precio=precio_norm,
+                                    precio_anterior=precio_ant_norm,
+                                    precio_por_kg=preciokg_norm,
+                                    afiliado_url=url_afiliado,
+                                    activo=True,
+                                )
+                                nuevo_prod.ofertas.append(nueva_oferta)
+
                                 productos_nuevos.append(nuevo_prod)
                                 productos_bd[slug_norm] = nuevo_prod
                             # Ya lo hemos gestionado arriba
