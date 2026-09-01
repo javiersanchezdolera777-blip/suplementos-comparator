@@ -108,6 +108,22 @@ def inyectar_en_bd():
         desc_limpia = limpiar_texto(desc_cruda)
         descripcion_ui = normalizar_descripcion_ui(desc_cruda)
 
+        # ==========================================
+        # CAPA 1: LISTA NEGRA (Falsos Positivos y Veterinaria)
+        # ==========================================
+        nombre_lower = nombre.lower()
+        basura_titulo = [
+            "alfombra", "caballo", "perro", "gato", "mascota", "animal",
+            "serum", "antiarrugas", "antiedad", "estuche", "champú"
+        ]
+        if any(b in nombre_lower for b in basura_titulo):
+            continue
+            
+        # Regla especial para rechazar "crema" a menos que sea crema de untar (alimentación)
+        if "crema" in nombre_lower:
+            if not any(buena in nombre_lower for buena in ["cacahuete", "arroz", "almendra", "avellana", "cacao"]):
+                continue
+
         # FILTRO EXTREMO DE CATEGORÍAS JSON
         categorias_json = [
             (c.get("name") or c.get("tdCategoryName") or "").lower()
