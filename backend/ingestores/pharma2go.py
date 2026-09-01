@@ -141,17 +141,56 @@ def inyectar_en_bd():
         # FILTRO ESTRICTO DE SUPLEMENTACIÓN (Restaura el antiguo 'return None' de clasificar_producto)
         # Si un producto no tiene NINGÚN término clave de suplementación, se rechaza.
         terminos_validos = [
-            "whey", "protein", "proteína", "proteina", "isolate", "aislado", "creatin",
-            "amino", "bcaa", "glutamina", "carnitina", "colágeno", "colageno", "harina",
-            "copos", "mermelada", "avena", "eritritol", "peanut", "crema de",
-            "sirope", "salsa", "barrita", "snack", "flapjack", "magnesio", "vitamina",
-            "omega", "multivitam", "gainer", "mass", "casein", "citrulina", "alanina",
-            "eaa", "kre-alkalyn", "hcl", "hidrolizado", "hydro", "peptopro", "evowhey",
-            "evoisolate", "evocasein", "evoegg", "evomass", "gominola", "gummy"
+            "whey",
+            "protein",
+            "proteína",
+            "proteina",
+            "isolate",
+            "aislado",
+            "creatin",
+            "amino",
+            "bcaa",
+            "glutamina",
+            "carnitina",
+            "colágeno",
+            "colageno",
+            "harina",
+            "copos",
+            "mermelada",
+            "avena",
+            "eritritol",
+            "peanut",
+            "crema de",
+            "sirope",
+            "salsa",
+            "barrita",
+            "snack",
+            "flapjack",
+            "magnesio",
+            "vitamina",
+            "omega",
+            "multivitam",
+            "gainer",
+            "mass",
+            "casein",
+            "citrulina",
+            "alanina",
+            "eaa",
+            "kre-alkalyn",
+            "hcl",
+            "hidrolizado",
+            "hydro",
+            "peptopro",
+            "evowhey",
+            "evoisolate",
+            "evocasein",
+            "evoegg",
+            "evomass",
+            "gominola",
+            "gummy",
         ]
-        
-        texto_busqueda = nombre.lower() + " " + desc_limpia.lower()
-        if not any(t in texto_busqueda for t in terminos_validos):
+
+        if not any(t in nombre.lower() for t in terminos_validos):
             continue
 
         etiquetas = clasificar_producto(nombre, desc_limpia)
