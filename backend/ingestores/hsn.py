@@ -871,6 +871,12 @@ def inyectar_en_bd():
                                     oferta_hsn.precio_por_kg = preciokg_norm
                                     oferta_hsn.activo = True
 
+                                    # Registrar en historial si el precio detectado es distinto al guardado
+                                    if precio_norm != oferta_hsn.precio:
+                                        oferta_hsn.historial_precios.append(
+                                            models.HistorialPrecio(precio=precio_norm)
+                                        )
+
                                     if precio_ant_norm is not None:
                                         oferta_hsn.precio_anterior = precio_ant_norm
                                         oferta_hsn.precio = precio_norm
@@ -891,6 +897,9 @@ def inyectar_en_bd():
                                         precio_por_kg=preciokg_norm,
                                         afiliado_url=url_afiliado,
                                         activo=True,
+                                    )
+                                    nueva_oferta.historial_precios.append(
+                                        models.HistorialPrecio(precio=precio_norm)
                                     )
                                     p_existente.ofertas.append(nueva_oferta)
 
@@ -928,6 +937,9 @@ def inyectar_en_bd():
                                     precio_por_kg=preciokg_norm,
                                     afiliado_url=url_afiliado,
                                     activo=True,
+                                )
+                                nueva_oferta.historial_precios.append(
+                                    models.HistorialPrecio(precio=precio_norm)
                                 )
                                 nuevo_prod.ofertas.append(nueva_oferta)
 

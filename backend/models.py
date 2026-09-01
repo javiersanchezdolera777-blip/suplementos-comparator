@@ -332,3 +332,19 @@ class CheckDiario(Base):
     puntos_ganados = Column(Integer, default=10)
 
     perfil = relationship("Perfil", back_populates="checkins")
+
+
+class HistorialPrecio(Base):
+    """
+    Registro histórico de variaciones de precio de una Oferta.
+    """
+    __tablename__ = "precios_historicos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    oferta_id = Column(
+        Integer, ForeignKey("ofertas.id", ondelete="CASCADE"), nullable=False
+    )
+    precio = Column(Float, nullable=False)
+    fecha = Column(DateTime, default=datetime.utcnow)
+
+    oferta = relationship("Oferta", backref="historial_precios")
