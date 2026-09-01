@@ -32,8 +32,7 @@ export default function MiZonaPage() {
       setLoading(false);
     }
   }, [isLoggedIn]);
-
-  const comprobarEstado = async () => {
+const comprobarEstado = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setNecesitaLogin(true);
@@ -42,7 +41,8 @@ export default function MiZonaPage() {
     }
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/perfil/me", {
+      // Usamos localhost unificado
+      const res = await fetch("http://localhost:8000/api/perfil/me", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -52,15 +52,11 @@ export default function MiZonaPage() {
       } else if (res.status === 404) {
         setNecesitaPerfil(true);
       } else {
-        // 🔥 EL CHIVATO: Ahora nos dirá la verdad en vez de mandarnos al login
-        const errorDetalle = await res.text();
-        console.error("🕵️‍♂️ Error real del backend:", res.status, errorDetalle);
-        alert(`¡Fallo en el Backend! Código ${res.status}. Revisa la terminal negra de FastAPI.`);
-        
+        // Modo silencioso: si falla la sesión, simplemente pedimos login sin asustar al usuario
         setNecesitaLogin(true);
       }
     } catch (error) {
-      console.error("Error de red:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }

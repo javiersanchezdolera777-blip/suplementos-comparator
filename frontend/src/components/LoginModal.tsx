@@ -54,12 +54,7 @@ export default function LoginModal() {
 
       const data = await resLog.json();
       
-      // 🔥 EL PARCHE A PRUEBA DE BALAS
-      console.log("Respuesta exacta del backend al loguear:", data);
-      const tokenReal = data.access_token || data.token; 
-      localStorage.setItem("token", tokenReal);
-      
-      login(tokenReal); // Guardamos la llave correcta, se llame como se llame
+      login(data.access_token); // Guardamos la llave correcta, se llame como se llame
       closeLoginModal(); // Cerramos el modal
       
       // Limpiar campos por seguridad
