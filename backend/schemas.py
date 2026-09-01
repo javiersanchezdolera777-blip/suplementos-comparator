@@ -339,8 +339,12 @@ class PerfilResponse(PerfilBase):
     id: int
     puntos_totales: int
     racha_actual: int
-
+    stacks: List["StackResponse"] = []
     model_config = ConfigDict(from_attributes=True)
+    descripcion: Optional[str] = None
+    foto_perfil: Optional[str] = None
+    seguidores_count: int = 0
+    siguiendo_count: int = 0
 
 
 from datetime import datetime
@@ -363,3 +367,8 @@ class StackResponse(StackBase):
     productos: List[ProductResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+class PerfilUpdate(BaseModel):
+    descripcion: Optional[str] = None
+    objetivo_etapa: Optional[str] = None
+    foto_perfil: Optional[str] = None
+

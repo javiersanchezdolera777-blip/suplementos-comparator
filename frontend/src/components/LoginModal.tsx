@@ -40,6 +40,7 @@ export default function LoginModal() {
       }
 
       // 2. Iniciar Sesión (se ejecuta tanto en Login directo como tras un Registro exitoso)
+// 2. Iniciar Sesión (se ejecuta tanto en Login directo como tras un Registro exitoso)
       const resLog = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +53,8 @@ export default function LoginModal() {
       }
 
       const data = await resLog.json();
-      login(data.access_token); // Guardamos el JWT de Diego
+      
+      login(data.access_token); // Guardamos la llave correcta, se llame como se llame
       closeLoginModal(); // Cerramos el modal
       
       // Limpiar campos por seguridad
