@@ -32,6 +32,13 @@
 - Detección precisa de sabores mediante un diccionario gourmet ampliado, capaz de identificar neutros y variantes complejas.
 - Etiquetado automático de alérgenos y porcentajes de proteína, operando en tiempo de ingesta sin requerir intervención humana.
 
+### 4. Arquitectura Multi-Tienda y Orquestación (Fase 2)
+- **Migración a Arquitectura Multi-Tienda:** El "Monolito Estable" plano ya no existe. El catálogo funciona bajo un modelo relacional (Producto 1:N Oferta). El comparador multi-tienda real ya opera en el núcleo de la base de datos.
+- **Motor de Historial de Precios:** Desarrollado y operativo. La base de datos registra las variaciones en la tabla `precios_historicos` y la API (`schemas.py`) las expone cronológicamente anidadas en cada Oferta.
+- **Orquestador de CRONs y Límites de API:** Se ha eliminado el obsoleto actualizador de precios. Ahora opera un `orquestador.py` inteligente mediante bloques de 6 horas, garantizando 4 actualizaciones diarias para HSN y 2 para TradeDoubler (Farma2Go y Sportlive) para evitar baneos HTTP 429.
+- **Refactorización NLP y Doble Barrera:** Se ha purgado definitivamente la basura de cosmética/veterinaria implementando un Filtro de Doble Barrera (Lista Negra inicial y Lista Blanca restrictiva al título) en los ingestores.
+- **Seguridad Parcheada:** Las vulnerabilidades de claves `SECRET_KEY` hardcodeadas y exposición de secretos han sido parcheadas; el sistema utiliza variables de entorno rotadas y seguras de forma estricta.
+
 ## Tareas Completadas (Checklist Reciente)
 - [x] **[NUEVO] Refactorización DRY de Ingestores:** Lógica de clasificación (NLP, alérgenos, sellos) y cálculo de precio/kg centralizada de forma exclusiva en el cerebro `utils.py`. Los scripts `pharma2go.py`, `sportlive.py` y `hsn.py` ahora actúan como clientes limpios y robustos.
 - [x] **[NUEVO] Upsert Masivo y Seguro:** Los ingestores detectan productos existentes, actualizan todos sus campos dinámicamente con el método seguro `.get()` y validaciones `bool()`, realizando un único `db.commit()` por lote para optimizar transacciones en PostgreSQL.
@@ -77,19 +84,16 @@
 - [x] **[NUEVO] Motor de Gamificación:** Endpoint `POST /api/comunidad/checkin` que premia la constancia diaria mediante Rachas (Streaks) y puntos de Experiencia (XP), con sistema anti-trampas (un solo check por día).
 - [x] **[NUEVO] Fix de Seguridad de Entorno:** Creación de la puerta trasera `/api/login/swagger` compatible con `OAuth2PasswordRequestForm` para permitir el testeo seguro de los endpoints sociales privados.
 
-## Sprint 3: Monolito Estable Restaurado
-- **Estado Actual:** El "Monolito Estable" se ha consolidado en producción de manera impecable.
-- El catálogo funciona en una estructura plana (un Producto incluye su precio y url de afiliado directamente).
-- El sistema de Telegram (chollos), el motor de retargeting y el recolector de emails (Newsletter) operan perfectamente bajo este esquema.
-
+## Sprint 3: Monolito Estable Restaurado (Legado)
+- **Estado Histórico:** El "Monolito Estable" se consolidó exitosamente, sirviendo de base para la posterior migración a la Fase 2 (Multi-Tienda).
 
 ## Backlog / Roadmap Técnico Pendiente
-- **Migración a Multi-Tienda (Sprint 4):** Acometer en el futuro usando exclusivamente **Alembic** para gestionar las migraciones de base de datos de forma segura. El intento previo desestabilizó la base de datos local y la UI (Agotado masivo).
-- **Algoritmo Antimonopolio:** Modificar la ordenación por defecto de `/api/productos` para evitar que HSN u otras monopolice las primeras páginas del catálogo, fomentando la diversidad de marcas.
+- **Frontend - UI Historial de Precios:** Consumir el array `historial_precios` desde Next.js para renderizar componentes visuales (gráficas interactivas) en la ficha de cada producto.
+- **Arquitectura SEO y Rutas Dinámicas:** Migrar la dependencia actual de parámetros de búsqueda (`/?categoria=proteinas`) hacia páginas SSR/ISR reales (`/proteinas/whey`, `/marcas/hsn`, `/comparar/hsn-vs-myprotein`) para potenciar el indexado en Google.
+- **Sistema de Medición y Analytics (Funnel):** Implementar tracking avanzado en Next.js conectado a GA4 para trazar el flujo completo del usuario (desde la vista de categoría hasta el clic de afiliado `CLICK_AFFILIATE`).
+- **Algoritmo de Ranking Antimonopolio:** Refinar la ordenación de `/api/productos` creando un SCORE combinado (relevancia + calidad + precio + clics) para evitar que una sola tienda monopolice las primeras páginas.
 
 ## Backlog de Negocio
-- **Motor de Historial de Precios Propio:** Desarrollar un sistema para registrar el histórico de precios independiente de los feeds de afiliados. Esto es imperativo para compensar la falta de precio base (MSRP) fiable en plataformas como Tradedoubler (Farma2Go) y garantizar el cálculo real de ofertas a largo plazo.
-- **Capado de Ofertas (Farma2Go):** Hasta que exista el Motor de Historial, se ha decidido utilizar temporalmente solo el precio final como precio base, evitando inyectar falsos chollos al sistema.
 - **Alternativa al Precio/Kg:** Dado que el parseo de Precio/Kg es inconsistente por el formato de las tiendas, priorizar mostrar el "Formato" (ej. "3,50€ - 50g" vs "63€ - 3kg") como fallback confiable en la UI.
 ## Historial de Actualizaciones / Anexos
 
