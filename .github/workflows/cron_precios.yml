@@ -35,4 +35,4 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
         run: |
-          python backend/actualizador_precios.py
+          python backend/scripts/orquestador.py

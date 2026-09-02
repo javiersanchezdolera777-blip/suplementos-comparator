@@ -204,6 +204,11 @@ def inyectar_en_bd():
                     oferta_sl.precio_por_kg = metricas["precio_por_kg"]
                     oferta_sl.activo = True
 
+                    if precio != oferta_sl.precio:
+                        oferta_sl.historial_precios.append(
+                            models.HistorialPrecio(precio=precio)
+                        )
+
                     if precio_anterior is not None:
                         oferta_sl.precio_anterior = precio_anterior
                         oferta_sl.precio = precio
@@ -223,6 +228,7 @@ def inyectar_en_bd():
                         afiliado_url=afiliado_url,
                         activo=True,
                     )
+                    nueva_oferta.historial_precios.append(models.HistorialPrecio(precio=precio))
                     p_existente.ofertas.append(nueva_oferta)
 
                 db.add(p_existente)
@@ -256,6 +262,7 @@ def inyectar_en_bd():
                     afiliado_url=afiliado_url,
                     activo=True,
                 )
+                nueva_oferta.historial_precios.append(models.HistorialPrecio(precio=precio))
                 nuevo_producto.ofertas.append(nueva_oferta)
 
                 productos_nuevos.append(nuevo_producto)
