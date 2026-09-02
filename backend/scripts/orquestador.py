@@ -80,21 +80,23 @@ def generar_alertas(db):
 
 
 def ejecutar_orquestador():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Iniciando Orquestador Maestro...")
+    # 1. Capturamos la hora EXACTA en el milisegundo que arranca el script (antes de que HSN consuma tiempo)
+    hora_arranque_utc = datetime.now(timezone.utc).hour
     
-    # HSN se ejecuta SIEMPRE
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Iniciando Orquestador Maestro...")
+    print(f"🕒 Hora de arranque UTC capturada: {hora_arranque_utc}")
+    
+    # 2. HSN se ejecuta SIEMPRE (4 veces al día)
     try:
         print("\n--- Ejecutando HSN ---")
         inyectar_hsn()
     except Exception as e:
         print(f"❌ Error crítico en ingestor HSN: {e}")
 
-    # Evaluar hora UTC para TradeDoubler (Farma2Go y Sportlive)
-    hora_actual_utc = datetime.now(timezone.utc).hour
-    print(f"\n🕒 Hora actual UTC: {hora_actual_utc}")
-    
-    if hora_actual_utc in [0, 12]:
-        print("🎯 Ventana TradeDoubler activa. Ejecutando Farma2Go y Sportlive...")
+    # 3. Lógica de Bloques Horarios (Ventanas impenetrables de 6 horas)
+    # Bloque 1: de 00:00 a 05:59 UTC | Bloque 3: de 12:00 a 17:59 UTC
+    if (0 <= hora_arranque_utc < 6) or (12 <= hora_arranque_utc < 18):
+        print("🎯 Ventana TradeDoubler activa (Bloque 00h-05h o 12h-17h). Ejecutando Farma2Go y Sportlive...")
         try:
             print("\n--- Ejecutando Farma2Go ---")
             inyectar_pharma2go()
@@ -107,9 +109,9 @@ def ejecutar_orquestador():
         except Exception as e:
             print(f"❌ Error crítico en ingestor Sportlive: {e}")
     else:
-        print("⏸️ Fuera de la ventana TradeDoubler (Solo a las 00:xx y 12:xx UTC). Saltando Farma2Go y Sportlive.")
+        print("⏸️ Fuera de la ventana TradeDoubler (Bloque 06h-11h o 18h-23h). Saltando Farma2Go y Sportlive.")
 
-    # Generar alertas después de la ingesta
+    # 4. Generar alertas después de la ingesta
     db = SessionLocal()
     try:
         generar_alertas(db)
