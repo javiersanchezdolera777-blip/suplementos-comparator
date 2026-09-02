@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Dict, Any, List, Optional
 from enum import Enum
+from datetime import datetime
 
 
 # ==========================================
@@ -152,6 +153,13 @@ class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class HistorialPrecioResponse(BaseModel):
+    precio: float
+    fecha: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OfertaResponse(BaseModel):
     id: int
     tienda: str
@@ -160,6 +168,15 @@ class OfertaResponse(BaseModel):
     precio_por_kg: Optional[float] = None
     afiliado_url: str
     activo: bool = True
+
+    # NUEVO: Historial empaquetado dentro de cada oferta
+    historial_precios: List[HistorialPrecioResponse] = Field(default_factory=list)
+
+    @field_validator("historial_precios", mode="after")
+    @classmethod
+    def ordenar_historial(cls, v):
+        # Garantizar que el frontend recibe la serie temporal ordenada de más antigua a más reciente
+        return sorted(v, key=lambda x: x.fecha)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -342,8 +359,6 @@ class PerfilResponse(PerfilBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-from datetime import datetime
 
 
 class StackBase(BaseModel):
