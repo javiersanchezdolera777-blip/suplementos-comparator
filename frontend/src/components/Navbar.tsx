@@ -13,113 +13,160 @@ export default function Navbar() {
   const router = useRouter();
   const { compareIds } = useCompareStore();
   const isSoloOfertas = searchParams ? searchParams.get('solo_ofertas') === 'true' : false;
-  
+
   const handleVersusClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!isLoggedIn) openLoginModal();
+    else router.push('/versus');
+  };
+
+  const handleFavClick = (e: React.MouseEvent) => {
     if (!isLoggedIn) {
+      e.preventDefault();
       openLoginModal();
-    } else {
-      router.push('/versus');
     }
   };
 
+  // Botón Social Inteligente (Escritorio y Móvil)
+  const handleSocialClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isLoggedIn) router.push('/mi-zona');
+    else router.push('/comunidad');
+  };
+
   return (
-    <nav className="w-full py-3 px-4 md:px-8 lg:px-12 flex flex-wrap md:flex-nowrap items-center justify-between z-40 border-b border-slate-100 bg-white sticky top-0 transition-all duration-300 gap-y-3 md:gap-4">
-      
-      <Link href="/" className="order-1 flex items-center gap-2.5 group cursor-pointer focus:outline-none select-none flex-shrink-0">
-        <Image
-          src="/Logo_icon2.png"
-          alt="Tus Suplementos"
-          width={44}
-          height={44}
-          style={{ width: 'auto', height: 'auto' }}
-          className="w-10 h-10 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform duration-200"
-          priority
-        />
-        <div className="flex items-baseline text-lg sm:text-xl md:text-2xl tracking-tight">
-          <span className="font-semibold text-slate-700">Tus</span>
-          <span className="font-black text-slate-900 ml-1">Suplementos</span>
-          <span className="text-blue-600 font-extrabold text-2xl leading-none ml-0.5">.</span>
-        </div>
-      </Link>
-
-      <div className="order-3 md:order-2 w-full md:flex-1 md:max-w-md lg:max-w-lg md:mx-4">
-        <SearchOmnibox />
-      </div>
-
-      <div className="order-2 md:order-3 flex items-center gap-2 md:gap-4 lg:gap-6 text-sm font-medium text-slate-600 flex-shrink-0">
-        
-        {/* Enlaces de Texto Limpios */}
-        <div className="hidden lg:flex items-center gap-2">
-          <Link href="/#catalogo" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-medium transition-all">
-            Catálogo
-          </Link>
-          <Link href="/comunidad" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-medium transition-all">
-            Comunidad
-          </Link>
-          <Link
-            href="/?solo_ofertas=true#catalogo"
-            className={
-              isSoloOfertas
-                ? "bg-slate-900 text-white border border-slate-900 px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all shadow-sm"
-                : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-sm transition-all"
-            }
-          >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-            </svg>
-            <span>Top Ofertas</span>
-          </Link>
-        </div>
-
-        {/* Botonera de Iconos Compacta */}
-        <div className="flex items-center gap-1.5">
+    <>
+      {/* =========================================
+          CABECERA SUPERIOR (TOP BAR)
+      ========================================= */}
+      <nav className="w-full bg-white sticky top-0 z-40 border-b border-slate-100 transition-all duration-300">
+        <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 lg:px-12 py-3 gap-3 md:gap-4">
           
-          <button onClick={handleVersusClick} className="flex items-center justify-center sm:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:bg-blue-50 md:hover:bg-blue-100 md:border md:border-blue-100 text-blue-700 transition-all group relative" title="Comparador Versus">
-            <span className="font-black text-sm tracking-tighter">VS</span>
+          {/* 1. ZONA IZQUIERDA: LOGO */}
+          <div className="order-1 flex items-center justify-between w-full md:w-auto">
+            <Link href="/" className="flex items-center gap-2.5 group cursor-pointer focus:outline-none select-none flex-shrink-0">
+              <Image src="/Logo_icon2.png" alt="Tus Suplementos" width={44} height={44} style={{ width: 'auto', height: 'auto' }} className="w-10 h-10 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform duration-200" priority />
+              <div className="flex items-baseline text-lg sm:text-xl md:text-2xl tracking-tight">
+                <span className="font-semibold text-slate-700">Tus</span>
+                <span className="font-black text-slate-900 ml-1">Suplementos</span>
+                <span className="text-blue-600 font-extrabold text-2xl leading-none ml-0.5">.</span>
+              </div>
+            </Link>
+          </div>
+
+          {/* 2. ZONA CENTRAL: BUSCADOR */}
+          <div className="order-3 md:order-2 w-full md:flex-1 md:max-w-md lg:max-w-xl">
+            <SearchOmnibox />
+          </div>
+
+          {/* 3. ZONA DERECHA: ENLACES Y BOTONES */}
+          <div className="order-2 md:order-3 flex items-center justify-end gap-3 lg:gap-5 flex-shrink-0">
+            
+            {/* Enlaces Limpios */}
+            <div className="hidden lg:flex items-center gap-1.5">
+              <Link href="/#catalogo" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-sm font-medium transition-all">
+                Catálogo
+              </Link>
+              <Link href="/?solo_ofertas=true#catalogo" className={isSoloOfertas ? "bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all shadow-sm" : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-all"}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                <span>Ofertas</span>
+              </Link>
+              
+              {/* Botón Social Inteligente */}
+              <button onClick={handleSocialClick} className="group/social relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-all cursor-pointer">
+                <span>Social</span>
+                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]"></span>
+                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-md opacity-0 group-hover/social:opacity-100 transition-opacity pointer-events-none shadow-lg z-50">
+                  New
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                </div>
+              </button>
+            </div>
+
+            <div className="hidden lg:block w-px h-6 bg-slate-200 mx-1"></div>
+
+            {/* Iconos Funcionales */}
+            <div className="flex items-center gap-2 relative">
+              <button onClick={handleVersusClick} className="group relative flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-all cursor-pointer">
+                <span className="font-black text-[11px] tracking-tighter">VS</span>
+                {compareIds && compareIds.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold shadow-sm">{compareIds.length}</span>
+                )}
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
+                  Comparador
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                </div>
+              </button>
+
+              <Link href="/favoritos" onClick={handleFavClick} className="group relative flex items-center justify-center w-9 h-9 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-rose-500 transition-all">
+                <svg className="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                {favoriteIds && favoriteIds.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold shadow-sm">{favoriteIds.length}</span>
+                )}
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
+                  Mis Favoritos
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                </div>
+              </Link>
+
+              {/* Botón Acceder / Salir Directo */}
+              {isLoggedIn ? (
+                <button onClick={logout} className="group relative flex items-center justify-center w-9 h-9 ml-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-all cursor-pointer">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
+                    Salir
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                  </div>
+                </button>
+              ) : (
+                <button onClick={openLoginModal} className="ml-1.5 flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm transition-all shadow-sm">
+                  Acceder
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* =========================================
+          BARRA INFERIOR (BOTTOM NAV) - SOLO MÓVIL
+      ========================================= */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+        <div className="flex items-center justify-around h-16 px-2">
+          
+          <Link href="/" className="flex flex-col items-center justify-center w-16 h-full gap-1 text-slate-500 hover:text-blue-600 active:scale-95 transition-transform">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <span className="text-[10px] font-bold tracking-tight">Inicio</span>
+          </Link>
+
+          <button onClick={handleVersusClick} className="relative flex flex-col items-center justify-center w-16 h-full gap-1 text-slate-500 hover:text-blue-600 active:scale-95 transition-transform">
+            <span className="font-black text-sm leading-5">VS</span>
+            <span className="text-[10px] font-bold tracking-tight">Versus</span>
             {compareIds && compareIds.length > 0 && (
-              <span className="absolute -top-1 right-0 md:relative md:top-auto md:right-auto bg-blue-600 text-white text-[9px] md:text-[10px] px-1 md:px-1.5 py-0 md:py-0.2 rounded-md font-bold min-w-[14px] md:min-w-[18px] text-center shadow-sm md:ml-1">
-                {compareIds.length}
-              </span>
+              <span className="absolute top-1 right-2 bg-blue-600 text-white text-[8px] px-1 rounded-full font-bold">{compareIds.length}</span>
             )}
           </button>
 
-          {/* BOTÓN MI ZONA (AHORA SIEMPRE VISIBLE) */}
-          <Link href="/mi-zona" className="flex items-center justify-center sm:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:bg-slate-100 md:hover:bg-slate-200 text-slate-800 transition-all group">
-            <svg className="w-6 h-6 md:w-4 md:h-4 text-slate-600 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span className="hidden md:inline text-xs font-bold uppercase tracking-tight text-slate-800 group-hover:text-blue-600 transition-colors">Mi Zona</span>
+          <Link href="/favoritos" onClick={handleFavClick} className="relative flex flex-col items-center justify-center w-16 h-full gap-1 text-slate-500 hover:text-rose-500 active:scale-95 transition-transform">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+            <span className="text-[10px] font-bold tracking-tight">Favoritos</span>
+            {favoriteIds && favoriteIds.length > 0 && (
+              <span className="absolute top-1 right-2 bg-slate-900 text-white text-[8px] px-1 rounded-full font-bold">{favoriteIds.length}</span>
+            )}
           </Link>
 
-          {isLoggedIn ? (
-            <>
-              <Link className="flex items-center justify-center sm:gap-1.5 px-2 py-1 md:px-3.5 md:py-1.5 rounded-lg md:bg-slate-100 md:hover:bg-slate-200 text-slate-800 transition-all group relative" href="/favoritos">
-                <svg className="w-6 h-6 md:w-4 md:h-4 text-slate-600 group-hover:text-rose-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span className="hidden md:inline text-xs font-bold uppercase tracking-tight text-slate-800 group-hover:font-bold transition-all">Favs</span>
-                {favoriteIds && favoriteIds.length > 0 && (
-                  <span className="absolute -top-1 right-0 md:relative md:top-auto md:right-auto bg-slate-900 text-white text-[9px] md:text-[10px] px-1 md:px-1.5 py-0 md:py-0.2 rounded-md font-bold min-w-[14px] md:min-w-[18px] text-center shadow-sm">
-                    {favoriteIds.length}
-                  </span>
-                )}
-              </Link>
-
-              <button onClick={logout} className="flex items-center justify-center sm:gap-1.5 px-2 py-1 md:px-3.5 md:py-1.5 md:bg-slate-100/80 md:hover:bg-slate-200/80 text-slate-700 rounded-lg md:border md:border-slate-200/60 transition-colors cursor-pointer" title="Salir">
-                <svg className="w-6 h-6 md:w-4 md:h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-              </button>
-            </>
-          ) : (
-            <button onClick={openLoginModal} className="flex items-center justify-center sm:gap-1.5 px-2 py-1 md:px-3.5 md:py-1.5 md:bg-slate-100/80 md:hover:bg-slate-200/80 text-slate-700 rounded-lg md:border md:border-slate-200/60 transition-colors cursor-pointer">
-              <svg className="w-6 h-6 md:w-4 md:h-4 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z" />
+          <button onClick={handleSocialClick} className="flex flex-col items-center justify-center w-16 h-full gap-1 text-slate-500 hover:text-blue-600 active:scale-95 transition-transform">
+            <div className="relative">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span className="hidden md:inline text-xs font-bold uppercase tracking-tight md:normal-case md:tracking-normal">Acceder</span>
-            </button>
-          )}
+              <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            </div>
+            <span className="text-[10px] font-bold tracking-tight">Social</span>
+          </button>
+
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
