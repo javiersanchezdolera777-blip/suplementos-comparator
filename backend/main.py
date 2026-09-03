@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import case, desc, or_, func
@@ -750,6 +750,31 @@ def crear_perfil(
     return nuevo_perfil
 
 
+@app.put("/api/perfil/me", response_model=schemas.PerfilResponse)
+def actualizar_mi_perfil(
+    perfil_update: schemas.PerfilUpdate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+):
+    """Actualiza la información del perfil del usuario logueado."""
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(
+            status_code=404, detail="Aún no has configurado tu perfil social."
+        )
+
+    if perfil_update.descripcion is not None:
+        mi_perfil.descripcion = perfil_update.descripcion
+    if perfil_update.objetivo_etapa is not None:
+        mi_perfil.objetivo_etapa = perfil_update.objetivo_etapa
+    if perfil_update.foto_perfil is not None:
+        mi_perfil.foto_perfil = perfil_update.foto_perfil
+
+    db.commit()
+    db.refresh(mi_perfil)
+    return mi_perfil
+
+
 @app.get("/api/perfil/me", response_model=schemas.PerfilResponse)
 def obtener_mi_perfil(usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
     """Devuelve el perfil social del usuario que tiene la sesión iniciada."""
@@ -776,6 +801,109 @@ def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
 # ==========================================
 # --- RUTAS DE COMUNIDAD: SEGUIDORES ---
 # ==========================================
+
+
+@app.get("/api/comunidad/buscar")
+def buscar_usuarios(
+    q: str, 
+    db: Session = Depends(get_db),
+    # Token opcional para saber si los sigo
+    token: Optional[str] = Header(None, alias="Authorization")
+):
+    """Busca usuarios por username y devuelve si los sigo."""
+    if len(q) < 2:
+        return []
+
+    # Buscamos perfiles que contengan 'q' (case-insensitive)
+    perfiles = (
+        db.query(models.Perfil)
+        .filter(models.Perfil.username.ilike(f"%{q}%"))
+        .limit(10)
+        .all()
+    )
+
+    # Comprobamos si estamos logueados para devolver 'is_following'
+    usuario_actual = None
+    if token:
+        try:
+            scheme, _, token_str = token.partition(" ")
+            if scheme.lower() == "bearer" and token_str:
+                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                email: str = payload.get("sub")
+                if email:
+                    usuario_actual = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+        except Exception:
+            pass
+
+    resultados = []
+    for p in perfiles:
+        is_following = False
+        if usuario_actual and usuario_actual.perfil:
+            # Comprobar si usuario_actual sigue a 'p'
+            is_following = db.query(models.seguidores).filter(
+                models.seguidores.c.seguidor_id == usuario_actual.perfil.id,
+                models.seguidores.c.seguido_id == p.id
+            ).first() is not None
+
+        resultados.append({
+            "username": p.username,
+            "foto_perfil": p.foto_perfil,
+            "objetivo": p.objetivo_etapa or "Mantenimiento",
+            "xp": p.puntos_totales,
+            "is_following": is_following
+        })
+
+    return resultados
+
+
+@app.get("/api/comunidad/leaderboard")
+def obtener_leaderboard(db: Session = Depends(get_db)):
+    """Devuelve los 5 mejores atletas por puntos totales."""
+    top_perfiles = (
+        db.query(models.Perfil)
+        .order_by(models.Perfil.puntos_totales.desc())
+        .limit(5)
+        .all()
+    )
+    
+    resultados = []
+    for p in top_perfiles:
+        resultados.append({
+            "username": p.username,
+            "foto_perfil": p.foto_perfil,
+            "objetivo": p.objetivo_etapa or "Mantenimiento",
+            "xp": p.puntos_totales,
+            "racha": p.racha_actual
+        })
+    return resultados
+
+
+@app.get("/api/comunidad/descubrir-stacks")
+def descubrir_stacks(db: Session = Depends(get_db)):
+    """Devuelve los últimos 6 stacks públicos de la comunidad."""
+    stacks = (
+        db.query(models.Stack)
+        .filter(models.Stack.es_publico == True)
+        .order_by(models.Stack.id.desc())
+        .limit(6)
+        .all()
+    )
+    
+    # Format directly to match the frontend expectations
+    # Notice we use schema validation or direct formatting.
+    resultados = []
+    for s in stacks:
+        # Re-use the StackResponse logic or build a simple dict
+        try:
+            stack_data = schemas.StackResponse.model_validate(s).model_dump()
+            stack_data["autor_username"] = s.perfil.username if s.perfil else "Atleta Desconocido"
+            stack_data["autor_foto"] = s.perfil.foto_perfil if s.perfil else None
+            resultados.append(stack_data)
+        except Exception:
+            # Skip invalid stacks safely
+            pass
+            
+    return resultados
 
 
 @app.post("/api/comunidad/seguir/{username}")
