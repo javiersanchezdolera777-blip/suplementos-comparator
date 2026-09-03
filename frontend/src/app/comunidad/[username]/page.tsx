@@ -44,7 +44,7 @@ export default function PerfilPublico() {
 
   const seguirUsuario = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("suparator_token");
       if (!token) {
         alert("Debes iniciar sesión para seguir a otros usuarios.");
         return;
