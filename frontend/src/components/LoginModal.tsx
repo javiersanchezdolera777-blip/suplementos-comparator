@@ -71,10 +71,23 @@ export default function LoginModal() {
   // Manejo del Login con Google
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
+      // Decodificar el JWT de Google localmente para extraer info y autocompletar el perfil luego
+      const tokenStr = credentialResponse.credential;
+      if (tokenStr) {
+        try {
+          const payloadBase64 = tokenStr.split('.')[1];
+          const decodedPayload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+          if (decodedPayload.name) localStorage.setItem('google_name', decodedPayload.name);
+          if (decodedPayload.picture) localStorage.setItem('google_avatar', decodedPayload.picture);
+        } catch (e) {
+          console.error("Error decodificando token de google", e);
+        }
+      }
+
       const res = await fetch(`${apiUrl}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credentialResponse.credential }),
+        body: JSON.stringify({ token: tokenStr }),
       });
 
       if (res.ok) {

@@ -152,33 +152,83 @@ export default function PerfilPublico() {
             <GymMascota xpTotales={perfil.puntos_totales} objetivo={perfil.objetivo_etapa || "Mantenimiento"} />
           </div>
 
-          <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Rutinas de {perfil.username}</h2>
-            <p className="text-gray-500 text-sm mb-6">Descubre y copia los suplementos que usa en su día a día.</p>
+          <div className="md:col-span-2 flex flex-col gap-4">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">Stacks de {perfil.username}</h2>
+                <p className="text-slate-500 text-sm mt-1">Descubre su suplementación y el presupuesto invertido.</p>
+              </div>
+              <div className="text-4xl hidden sm:block">💊</div>
+            </div>
             
             {stacksPublicos.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {stacksPublicos.map((stack: any) => (
-                  <div 
-                    key={stack.id} 
-                    onClick={() => setStackSeleccionado(stack)}
-                    className="border border-gray-100 bg-gray-50 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">{stack.nombre}</h3>
-                      <span className="text-gray-400 group-hover:text-blue-500 transition-colors">↗️</span>
+              <div className="grid grid-cols-1 gap-5">
+                {stacksPublicos.map((stack: any) => {
+                  const numProductos = stack.productos?.length || 0;
+                  const precioTotal = stack.productos?.reduce((acc: number, p: any) => {
+                    return acc + (p.precio_actual || p.precio_anterior || 0);
+                  }, 0) || 0;
+                  const categoriasUnicas = Array.from(new Set(stack.productos?.map((p: any) => p.categoria?.nombre).filter(Boolean)));
+
+                  return (
+                    <div 
+                      key={stack.id} 
+                      onClick={() => setStackSeleccionado(stack)}
+                      className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer group flex flex-col sm:flex-row gap-6 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent opacity-50 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+                      
+                      <div className="flex-1 z-10">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-black text-xl text-slate-900 group-hover:text-blue-600 transition-colors">{stack.nombre}</h3>
+                        </div>
+                        {stack.descripcion && <p className="text-slate-500 text-sm mt-2 max-w-md">{stack.descripcion}</p>}
+                        
+                        <div className="flex flex-wrap items-center gap-2 mt-4">
+                          <div className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                            {numProductos} Productos
+                          </div>
+                          {precioTotal > 0 && (
+                            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                              ~{precioTotal.toFixed(2)}€
+                            </div>
+                          )}
+                          {categoriasUnicas.slice(0, 2).map((cat: any, idx: number) => (
+                            <div key={idx} className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase tracking-wider">
+                              {cat}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {numProductos > 0 && (
+                        <div className="flex items-center gap-2 z-10 sm:w-1/3 justify-start sm:justify-end">
+                          {stack.productos.slice(0, 3).map((p: any, idx: number) => (
+                            <div key={idx} className="w-12 h-12 rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden flex-shrink-0 -ml-4 first:ml-0 relative group-hover:border-blue-300 transition-colors z-20 hover:z-30 hover:scale-110">
+                              {p.imagen_url ? (
+                                <img src={p.imagen_url} alt="Prod" className="w-full h-full object-contain p-1" />
+                              ) : (
+                                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-xs">💊</div>
+                              )}
+                            </div>
+                          ))}
+                          {numProductos > 3 && (
+                            <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-500 text-xs font-bold flex items-center justify-center -ml-4 z-10">
+                              +{numProductos - 3}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                     </div>
-                    {stack.descripcion && <p className="text-gray-500 text-sm mt-1">{stack.descripcion}</p>}
-                    <div className="mt-4 text-sm font-semibold text-blue-600 bg-blue-100/50 inline-block px-3 py-1 rounded-full">
-                      {stack.productos?.length || 0} Productos
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-200">
-                <span className="text-4xl">📭</span>
-                <p className="text-gray-500 mt-3 font-medium">Este usuario aún no ha publicado ninguna rutina.</p>
+              <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-slate-200">
+                <span className="text-5xl opacity-50 block mb-4">📭</span>
+                <h4 className="text-lg font-bold text-slate-800">No hay Stacks públicos</h4>
+                <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">Este atleta aún no ha compartido su suplementación con la comunidad.</p>
               </div>
             )}
           </div>

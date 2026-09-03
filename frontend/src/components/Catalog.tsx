@@ -390,6 +390,29 @@ useEffect(() => {
         {/* ESCAPARATE DE PRODUCTOS */}
         <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
 
+          {/* Banner de Añadir a Stack */}
+          {searchParams?.get("add_to_stack") && (
+            <div className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-start sm:items-center justify-between text-blue-900 shadow-sm animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="text-3xl hidden sm:block">✨</div>
+                <div>
+                   <h4 className="font-bold text-sm sm:text-base text-blue-950">¡Tu Stack está creado!</h4>
+                   <p className="text-xs sm:text-sm text-blue-800/90 mt-0.5">Busca el suplemento que quieras y pulsa el botón (+) en su tarjeta para añadirlo.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  params.delete("add_to_stack");
+                  router.push(`/?${params.toString()}#catalogo`);
+                }}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-white hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-4"
+              >
+                Terminar
+              </button>
+            </div>
+          )}
+
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-6 bg-white border border-slate-200 rounded-xl md:rounded-2xl p-2.5 md:p-4 shadow-sm gap-2 sm:gap-0">
             <div className="text-slate-600 text-xs md:text-sm">
