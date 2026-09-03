@@ -250,54 +250,53 @@ useEffect(() => {
     : productos;
 
   return (
-    <div className="w-full flex flex-col gap-2 md:gap-4">
+    <div className="w-full flex flex-col gap-1 md:gap-4">
 
-      {/* HERO BANNER PREMUM ULTRA-COMPACTO SOBRIO */}
-      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-1 sm:pt-2 pb-1 sm:pb-2 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-        {/* 1. Titular Principal H1 con Acento Tipográfico Elegante */}
-        <h1 className="text-2xl sm:text-4xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-0 md:mb-1.5">
+      {/* HERO BANNER — Comprimido en móvil, completo en desktop */}
+      <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-1 md:pt-2 pb-0 md:pb-2 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+        {/* 1. Titular Principal H1 */}
+        <h1 className="text-2xl md:text-[2.65rem] font-black text-slate-900 tracking-tight text-center max-w-4xl mx-auto leading-tight mb-3 md:mb-1.5">
           Compara precios y <span className="text-blue-600">ahorra</span> en tu suplementación
         </h1>
 
         {/* 2. Subtexto Claro (Oculto en móvil) */}
-        <p className="hidden md:block text-sm sm:text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
+        <p className="hidden md:block text-base text-slate-600 text-center max-w-lg mx-auto mt-0.5 mb-2.5 font-normal leading-normal">
           Analizamos las mejores tiendas en tiempo real para que encuentres tu proteína, creatina o vitamina ideal al precio más bajo.
         </p>
 
-        {/* 3. Trío de Pilares de Valor (Texto Fino Sobrio) */}
-        <div className="flex items-center justify-center gap-3 md:gap-5 text-[11px] md:text-xs text-slate-500 font-medium flex-wrap my-2 md:my-3">
-          <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* 3. Trío de Pilares de Valor */}
+        <div className="flex items-center justify-center gap-1.5 md:gap-5 text-xs text-slate-500 font-medium flex-wrap mb-4 md:mb-3">
+          <div className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5 md:w-3.5 md:h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <span><strong className="text-slate-700 font-semibold">Comparativa</strong> en tiempo real</span>
           </div>
-          <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-base leading-none">📦</span>
-            <span><strong className="text-slate-700 font-semibold">Más de 1500</strong> productos</span>
+          <div className="w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-slate-300"></div>
+          <div className="flex items-center gap-1">
+            <span className="text-sm md:text-base leading-none">📦</span>
+            <span><strong className="text-slate-700 font-semibold">+1500</strong> productos</span>
           </div>
-          <div className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></div>
-          <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-slate-300"></div>
+          <div className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5 md:w-3.5 md:h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
             </svg>
-            <span><strong className="text-slate-700 font-semibold">100% Gratuito</strong> sin costes extra</span>
+            <span><strong className="text-slate-700 font-semibold">100% Gratis</strong></span>
           </div>
         </div>
 
-        {/* 5. Bar de Tiendas Interactivas (Clicables con Scroll) */}
-        <div className="w-full max-w-3xl mx-auto my-2 md:my-0">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 text-center">
+        {/* 4. Bar de Tiendas Interactivas */}
+        <div className="w-full max-w-3xl mx-auto mt-0.5 md:my-0">
+          <p className="hidden md:block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 text-center">
             INTEGRADO CON EL CATÁLOGO DE
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
+          <div className="flex flex-row justify-center items-center gap-3 md:gap-6">
             {[
-              { name: "HSN", displayName: "HSN", style: "text-lg sm:text-xl font-black italic uppercase" },
-              { name: "NOW Foods", displayName: "NOW FOODS", style: "text-base sm:text-lg font-bold uppercase tracking-wide" },
-              { name: "Swanson", displayName: "SWANSON", style: "text-base sm:text-lg font-semibold uppercase tracking-widest" },
-              { name: "Solgar", displayName: "SOLGAR", style: "text-base sm:text-lg font-extrabold uppercase tracking-tight" },
-              { name: "Drasanvi", displayName: "DRASANVI", style: "text-base sm:text-lg font-black uppercase tracking-wider" },
+              { name: "HSN", displayName: "HSN", style: "text-lg md:text-xl font-black italic uppercase" },
+              { name: "NOW Foods", displayName: "NOW FOODS", style: "text-base md:text-lg font-bold uppercase tracking-wide" },
+              { name: "Swanson", displayName: "SWANSON", style: "text-base md:text-lg font-semibold uppercase tracking-widest" },
+              { name: "Drasanvi", displayName: "DRASANVI", style: "text-base md:text-lg font-black uppercase tracking-wider" },
             ].map((brand) => {
               const isSelected = selectedBrands.includes(brand.name);
               return (
@@ -328,13 +327,13 @@ useEffect(() => {
       <div id="catalogo" className="scroll-mt-24 flex flex-col md:flex-row gap-8 items-start w-full relative z-10 pt-3 md:pt-5">
 
         {/* Botón Flotante para Móviles (FAB) */}
-        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="md:hidden fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50">
           <button
             onClick={() => setIsMobileFilterOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-xl shadow-blue-600/30 transition-all tracking-wide whitespace-nowrap"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-5 rounded-full shadow-md shadow-blue-600/30 transition-all text-base font-semibold whitespace-nowrap"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            Filtrar Catálogo
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            Filtros
           </button>
         </div>
 
@@ -392,8 +391,8 @@ useEffect(() => {
         <div className="w-full md:flex-1 flex flex-col min-h-[500px]">
 
           {/* Cabecera del Grid */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm gap-4 sm:gap-0">
-            <div className="text-slate-600 text-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-6 bg-white border border-slate-200 rounded-xl md:rounded-2xl p-2.5 md:p-4 shadow-sm gap-2 sm:gap-0">
+            <div className="text-slate-600 text-xs md:text-sm">
               Mostrando <span className="font-semibold text-slate-900">
                 {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
               </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> productos
@@ -411,22 +410,22 @@ useEffect(() => {
                   }
                   router.push(`/?${params.toString()}#catalogo`);
                 }}
-                className={`md:hidden flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg border text-[11px] font-bold uppercase tracking-widest transition-all ${
+                className={`md:hidden flex items-center justify-center gap-1 h-8 px-2.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all ${
                   soloOfertas
                     ? "bg-slate-900 text-white border-slate-900 shadow-md"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <span className="mt-px">Ofertas</span>
+                <span>Ofertas</span>
               </button>
 
               <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block ml-2">Ordenar por</label>
               
               {/* Selector Minimalista (Dropdown Nativo Optimizado) */}
-              <div className="relative w-full sm:w-auto h-10">
+              <div className="relative w-full sm:w-auto h-8 md:h-10">
                 <select
                   value={ordenPrecio}
                   onChange={(e) => setOrdenPrecio(e.target.value)}

@@ -315,13 +315,13 @@ export default function ProductCard({ product }: { product: Product }) {
             {formattedName}
           </h3>
 
-          <div className="flex items-center justify-between mt-auto pt-4 gap-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-auto pt-3 md:pt-4 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
-              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              <span className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">
                 {currentPrice?.toFixed(2)} €
               </span>
               {hasOffer && (
-                <span className="text-sm font-semibold text-slate-400 line-through ml-1">
+                <span className="text-xs md:text-sm font-semibold text-slate-400 line-through ml-1">
                   {previousPrice?.toFixed(2)} €
                 </span>
               )}
@@ -340,7 +340,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 e.stopPropagation();
                 trackClick();
               }}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap text-center"
             >
               Ver oferta
             </a>

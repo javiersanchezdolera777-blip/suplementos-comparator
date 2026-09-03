@@ -30,8 +30,7 @@ export default function Navbar() {
   // Botón Social Inteligente (Escritorio y Móvil)
   const handleSocialClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isLoggedIn) router.push('/mi-zona');
-    else router.push('/comunidad');
+    router.push('/mi-zona');
   };
 
   return (
@@ -39,8 +38,8 @@ export default function Navbar() {
       {/* =========================================
           CABECERA SUPERIOR (TOP BAR)
       ========================================= */}
-      <nav className="w-full bg-white sticky top-0 z-40 border-b border-slate-100 transition-all duration-300">
-        <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 lg:px-12 py-3 gap-3 md:gap-4">
+      <nav className="w-full bg-white sticky top-0 z-40 border-b border-slate-200 shadow-sm transition-all duration-300">
+        <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 lg:px-12 py-3 pb-2 md:pb-3 gap-2 md:gap-4">
           
           {/* 1. ZONA IZQUIERDA: LOGO */}
           <div className="order-1 flex items-center justify-between w-full md:w-auto">
@@ -52,6 +51,19 @@ export default function Navbar() {
                 <span className="text-blue-600 font-extrabold text-2xl leading-none ml-0.5">.</span>
               </div>
             </Link>
+
+            {/* Auth en Móvil (Fila 1 alineada con el Logo) */}
+            <div className="md:hidden flex items-center">
+              {isLoggedIn ? (
+                <button onClick={logout} className="group relative flex items-center justify-center w-9 h-9 rounded-lg bg-slate-50 text-slate-600 transition-all cursor-pointer">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </button>
+              ) : (
+                <button onClick={openLoginModal} className="flex items-center px-3 py-1.5 bg-slate-900 text-white rounded-lg font-bold text-xs transition-all shadow-sm">
+                  Acceder
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 2. ZONA CENTRAL: BUSCADOR */}
@@ -60,7 +72,7 @@ export default function Navbar() {
           </div>
 
           {/* 3. ZONA DERECHA: ENLACES Y BOTONES */}
-          <div className="order-2 md:order-3 flex items-center justify-end gap-3 lg:gap-5 flex-shrink-0">
+          <div className="hidden md:flex order-2 md:order-3 items-center justify-end gap-3 lg:gap-5 flex-shrink-0">
             
             {/* Enlaces Limpios */}
             <div className="hidden lg:flex items-center gap-1.5">
@@ -86,7 +98,7 @@ export default function Navbar() {
             <div className="hidden lg:block w-px h-6 bg-slate-200 mx-1"></div>
 
             {/* Iconos Funcionales */}
-            <div className="flex items-center gap-2 relative">
+            <div className="hidden md:flex items-center gap-2 relative">
               <button onClick={handleVersusClick} className="group relative flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-all cursor-pointer">
                 <span className="font-black text-[11px] tracking-tighter">VS</span>
                 {compareIds && compareIds.length > 0 && (
