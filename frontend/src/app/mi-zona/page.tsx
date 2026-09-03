@@ -41,8 +41,8 @@ const comprobarEstado = async () => {
     }
 
     try {
-      // Usamos localhost unificado
-      const res = await fetch("http://localhost:8000/api/perfil/me", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/perfil/me`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -67,7 +67,8 @@ const comprobarEstado = async () => {
     setErrorForm("");
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:8000/api/perfil", {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const res = await fetch(`${API_URL}/api/perfil`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -209,7 +210,8 @@ const comprobarEstado = async () => {
             <button 
               onClick={async () => {
                 try {
-                  const res = await fetch("http://localhost:8000/api/comunidad/checkin", {
+                  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                  const res = await fetch(`${API_URL}/api/comunidad/checkin`, {
                     method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                   });
                   const data = await res.json();

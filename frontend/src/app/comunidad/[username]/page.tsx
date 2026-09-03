@@ -19,7 +19,8 @@ export default function PerfilPublico() {
   useEffect(() => {
     const cargarPerfilPublico = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/perfil/${username}`);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API_URL}/api/perfil/${username}`);
         
         if (res.ok) {
           const data = await res.json();
@@ -49,7 +50,8 @@ export default function PerfilPublico() {
         return;
       }
 
-      const res = await fetch(`http://localhost:8000/api/comunidad/seguir/${username}`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/comunidad/seguir/${username}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
