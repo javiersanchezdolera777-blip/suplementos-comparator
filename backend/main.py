@@ -1,16 +1,14 @@
 import os
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request, Header
+from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import case, desc, or_, func
-from sqlalchemy import nulls_last
+from sqlalchemy import or_, func, nulls_last
 from typing import List, Optional
 from datetime import datetime
-from fastapi import Query  # ✅ Correcto
 from fastapi.responses import RedirectResponse
 
 # Importamos nuestras piezas
@@ -32,7 +30,7 @@ origins = [
     "https://www.tussuplementos.es",
     "https://tussuplementos.es",
     "https://suplementos-comparator.vercel.app",
-    "http://192.168.64.1:3000" 
+    "http://192.168.64.1:3000"
     "http://localhost:3000",
     "http://localhost:8000",
     "*"
@@ -102,8 +100,9 @@ def obtener_filtros(db: Session = Depends(get_db)):
 
     # NUEVO: Sabores dinámicos (Solo devuelve los que tienen > 0 productos)
     sabores_db = (
-        db.query(models.Producto.sabor).filter(models.Producto.sabor.isnot(None)).all()
-    )
+        db.query(
+            models.Producto.sabor).filter(
+            models.Producto.sabor.isnot(None)).all())
     sabores_activos = set()
     for s in sabores_db:
         if s[0] and isinstance(s[0], list):
@@ -111,8 +110,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
                 sabores_activos.add(sabor_individual)
 
     flavors_dinamicos = [
-        sabor.value for sabor in schemas.SaborEnum if sabor.value in sabores_activos
-    ]
+        sabor.value for sabor in schemas.SaborEnum if sabor.value in sabores_activos]
 
     return {
         "brands": [m.nombre for m in marcas_activas],
@@ -129,7 +127,8 @@ def obtener_filtros(db: Session = Depends(get_db)):
 
 
 @app.get("/api/productos/live-search")
-def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+def live_search(q: str = Query(..., min_length=1),
+                db: Session = Depends(get_db)):
     grupos_tokens = expandir_terminos_busqueda(q)
     if not grupos_tokens:
         return {"productos": []}
@@ -152,7 +151,9 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
             query = query.filter(or_(*condiciones_token))
 
         # Añadimos puntuación semántica para ordenación
-        text_score = func.similarity(models.Producto.nombre, q).label("text_score")
+        text_score = func.similarity(
+            models.Producto.nombre,
+            q).label("text_score")
         resultados = (
             query.order_by(
                 text_score.desc(),
@@ -194,7 +195,8 @@ def live_search(q: str = Query(..., min_length=1), db: Session = Depends(get_db)
 def obtener_productos(
     request: Request,
     skip: int = 0,
-    # Soportamos tanto el parámetro antiguo (singular) como el de multiselección (plural)
+    # Soportamos tanto el parámetro antiguo (singular) como el de
+    # multiselección (plural)
     categoria: Optional[str] = None,
     categorias: Optional[str] = Query(None),
     marca: Optional[str] = None,
@@ -257,12 +259,14 @@ def obtener_productos(
 
     # 3. Filtro Porcentaje Proteína
     if porcentaje_proteina is not None:
-        query = query.filter(models.Producto.porcentaje_proteina >= porcentaje_proteina)
+        query = query.filter(
+            models.Producto.porcentaje_proteina >= porcentaje_proteina)
 
     # 4. Filtros Básicos (Formatos, Vegano, Sellos)
     formato_str = formatos or formato
     if formato_str:
-        lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
+        lista_formatos = [f.strip()
+                          for f in formato_str.split(",") if f.strip()]
         if lista_formatos:
             query = query.filter(models.Producto.formato.in_(lista_formatos))
 
@@ -299,19 +303,27 @@ def obtener_productos(
         )
 
     if sello_calidad:
-        query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
+        query = query.filter(
+            models.Producto.sello_calidad.ilike(
+                f"%{sello_calidad}%"))
 
     # 5. Sub-filtros
     if tipo_proteina:
-        query = query.filter(models.Producto.tipo_proteina.ilike(f"%{tipo_proteina}%"))
+        query = query.filter(
+            models.Producto.tipo_proteina.ilike(
+                f"%{tipo_proteina}%"))
     if tipo_creatina:
-        query = query.filter(models.Producto.tipo_creatina.ilike(f"%{tipo_creatina}%"))
+        query = query.filter(
+            models.Producto.tipo_creatina.ilike(
+                f"%{tipo_creatina}%"))
     if perfil_aminoacidos:
         query = query.filter(
             models.Producto.perfil_aminoacidos.ilike(f"%{perfil_aminoacidos}%")
         )
     if tipo_vitamina:
-        query = query.filter(models.Producto.tipo_vitamina.ilike(f"%{tipo_vitamina}%"))
+        query = query.filter(
+            models.Producto.tipo_vitamina.ilike(
+                f"%{tipo_vitamina}%"))
 
     # 6. Buscador de texto libre con Expansión Semántica
     busqueda_final = busqueda or q
@@ -329,7 +341,8 @@ def obtener_productos(
     # 4. Filtros Básicos (Formatos, Vegano, Sellos)
     formato_str = formatos or formato
     if formato_str:
-        lista_formatos = [f.strip() for f in formato_str.split(",") if f.strip()]
+        lista_formatos = [f.strip()
+                          for f in formato_str.split(",") if f.strip()]
         if lista_formatos:
             query = query.filter(models.Producto.formato.in_(lista_formatos))
 
@@ -366,7 +379,9 @@ def obtener_productos(
         )
 
     if sello_calidad:
-        query = query.filter(models.Producto.sello_calidad.ilike(f"%{sello_calidad}%"))
+        query = query.filter(
+            models.Producto.sello_calidad.ilike(
+                f"%{sello_calidad}%"))
 
     # ... (deja igual los subfiltros y buscador de texto libre) ...
 
@@ -389,9 +404,9 @@ def obtener_productos(
     else:
         # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
         if busqueda_final:
-            text_score = func.similarity(models.Producto.nombre, busqueda_final).label(
-                "text_score"
-            )
+            text_score = func.similarity(
+                models.Producto.nombre,
+                busqueda_final).label("text_score")
             query = query.order_by(
                 text_score.desc(),
                 nulls_last(models.Producto.clics_count.desc()),
@@ -433,7 +448,8 @@ def obtener_productos(
         if sabores_lista:
             valor_sabor = getattr(producto, "sabor", None)
             if isinstance(valor_sabor, list):
-                if not any(str(item).lower() in sabores_lista for item in valor_sabor):
+                if not any(
+                        str(item).lower() in sabores_lista for item in valor_sabor):
                     return False
             elif isinstance(valor_sabor, str):
                 if not any(s in valor_sabor.lower() for s in sabores_lista):
@@ -445,7 +461,8 @@ def obtener_productos(
         if objetivos_lista:
             valor_obj = getattr(producto, "objetivo", None)
             if isinstance(valor_obj, list):
-                if not any(str(item).lower() in objetivos_lista for item in valor_obj):
+                if not any(
+                        str(item).lower() in objetivos_lista for item in valor_obj):
                     return False
             elif isinstance(valor_obj, str):
                 if not any(o in valor_obj.lower() for o in objetivos_lista):
@@ -456,14 +473,15 @@ def obtener_productos(
         return True
 
     if sabores_lista or objetivos_lista:
-        productos_filtrados = [p for p in productos_raw if cumple_filtros_arrays(p)]
+        productos_filtrados = [
+            p for p in productos_raw if cumple_filtros_arrays(p)]
     else:
         productos_filtrados = productos_raw
 
     # 9. Paginación Final
     total_resultados = len(productos_filtrados)
     offset_real = skip if skip > 0 else (page - 1) * limit
-    productos = productos_filtrados[offset_real : offset_real + limit]
+    productos = productos_filtrados[offset_real: offset_real + limit]
 
     return {"total_resultados": total_resultados, "productos": productos}
 
@@ -471,7 +489,8 @@ def obtener_productos(
 # ==========================================
 # --- RUTA DE COMPARADOR MULTITIENDA ---
 # ==========================================
-@app.get("/api/productos/comparar", response_model=List[schemas.ProductResponse])
+@app.get("/api/productos/comparar",
+         response_model=List[schemas.ProductResponse])
 def comparar_productos(
     ids: str = Query(
         ...,
@@ -492,10 +511,11 @@ def comparar_productos(
         )
     except ValueError:
         raise HTTPException(
-            status_code=400, detail="Formato de IDs inválido. Deben ser números."
-        )
+            status_code=400,
+            detail="Formato de IDs inválido. Deben ser números.")
 
-    # 2. Barrera de Seguridad (Máximo 4 productos para no saturar la UI ni la DB)
+    # 2. Barrera de Seguridad (Máximo 4 productos para no saturar la UI ni la
+    # DB)
     if not lista_ids:
         raise HTTPException(
             status_code=400, detail="Debes proporcionar al menos un ID válido."
@@ -508,8 +528,9 @@ def comparar_productos(
 
     # 3. Consulta súper optimizada usando el operador in_() de SQLAlchemy
     productos = (
-        db.query(models.Producto).filter(models.Producto.id.in_(lista_ids)).all()
-    )
+        db.query(
+            models.Producto).filter(
+            models.Producto.id.in_(lista_ids)).all())
 
     if not productos:
         raise HTTPException(
@@ -517,18 +538,25 @@ def comparar_productos(
             detail="No se encontró ninguno de los productos solicitados.",
         )
 
-    # 4. Opcional pero recomendado: Ordenamos los resultados para que coincidan con el orden de los IDs solicitados
-    productos.sort(key=lambda p: lista_ids.index(p.id) if p.id in lista_ids else 99)
+    # 4. Opcional pero recomendado: Ordenamos los resultados para que
+    # coincidan con el orden de los IDs solicitados
+    productos.sort(
+        key=lambda p: lista_ids.index(
+            p.id) if p.id in lista_ids else 99)
 
     return productos
 
 
 # --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
-@app.get("/api/productos/{producto_id}", response_model=schemas.ProductResponse)
-def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db)):
+@app.get("/api/productos/{producto_id}",
+         response_model=schemas.ProductResponse)
+def obtener_producto_individual(
+        producto_id: int,
+        db: Session = Depends(get_db)):
     producto = (
-        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    )
+        db.query(
+            models.Producto).filter(
+            models.Producto.id == producto_id).first())
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
@@ -537,7 +565,9 @@ def obtener_producto_individual(producto_id: int, db: Session = Depends(get_db))
 # --- RUTA DE PRODUCTO INDIVIDUAL POR SLUG ---
 @app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse)
 def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
-    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
+    producto = db.query(
+        models.Producto).filter(
+        models.Producto.slug == slug).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
@@ -553,7 +583,9 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
     Invisible para AdBlockers y scripts de terceros.
     """
     # 1. Buscar el producto maestro
-    producto = db.query(models.Producto).filter(models.Producto.slug == slug).first()
+    producto = db.query(
+        models.Producto).filter(
+        models.Producto.slug == slug).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
@@ -584,12 +616,16 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/registro", response_model=schemas.UsuarioResponse)
-def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+def registrar_usuario(
+        usuario: schemas.UsuarioCreate,
+        db: Session = Depends(get_db)):
     usuario_existente = (
-        db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
-    )
+        db.query(
+            models.Usuario).filter(
+            models.Usuario.email == usuario.email).first())
     if usuario_existente:
-        raise HTTPException(status_code=400, detail="Este email ya está registrado")
+        raise HTTPException(status_code=400,
+                            detail="Este email ya está registrado")
 
     password_cifrada = security.obtener_password_hash(usuario.password)
     nuevo_usuario = models.Usuario(
@@ -602,27 +638,30 @@ def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_
 
 
 @app.post("/api/login", response_model=schemas.Token)
-def iniciar_sesion(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+def iniciar_sesion(
+        usuario: schemas.UsuarioCreate,
+        db: Session = Depends(get_db)):
     user_db = (
-        db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
-    )
+        db.query(
+            models.Usuario).filter(
+            models.Usuario.email == usuario.email).first())
     if not user_db or not security.verificar_password(
         usuario.password, user_db.hashed_password
     ):
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+        raise HTTPException(status_code=401,
+                            detail="Email o contraseña incorrectos")
 
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/swagger")
-from fastapi.security import OAuth2PasswordRequestForm
 
 
 @app.post("/api/login/swagger", include_in_schema=False)
 def login_exclusivo_swagger(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
-):
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: Session = Depends(get_db)):
     """Esta es una puerta trasera oculta solo para que funcione el candado verde de Swagger"""
     user_db = (
         db.query(models.Usuario)
@@ -632,7 +671,8 @@ def login_exclusivo_swagger(
     if not user_db or not security.verificar_password(
         form_data.password, user_db.hashed_password
     ):
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+        raise HTTPException(status_code=401,
+                            detail="Email o contraseña incorrectos")
 
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -656,7 +696,8 @@ def obtener_usuario_actual(
     except security.jwt.JWTError:
         raise credenciales_exception
 
-    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.email == email).first()
     if usuario is None:
         raise credenciales_exception
     return usuario
@@ -680,10 +721,13 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
         )
 
         email = idinfo["email"]
-        usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+        usuario = db.query(
+            models.Usuario).filter(
+            models.Usuario.email == email).first()
 
         if not usuario:
-            usuario = models.Usuario(email=email, hashed_password="login_google")
+            usuario = models.Usuario(
+                email=email, hashed_password="login_google")
             db.add(usuario)
             db.commit()
             db.refresh(usuario)
@@ -707,16 +751,20 @@ def crear_perfil(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
 ):
-    # 1. Comprobar si el usuario ya tiene un perfil (Solo se permite 1 por cuenta)
+    # 1. Comprobar si el usuario ya tiene un perfil (Solo se permite 1 por
+    # cuenta)
     if usuario_actual.perfil:
-        raise HTTPException(status_code=400, detail="Ya tienes un perfil creado.")
+        raise HTTPException(
+            status_code=400,
+            detail="Ya tienes un perfil creado.")
 
-    # 2. Limpiamos el username (quitamos espacios y pasamos a minúsculas para evitar duplicados como "Pepe" y "pepe")
+    # 2. Limpiamos el username (quitamos espacios y pasamos a minúsculas para
+    # evitar duplicados como "Pepe" y "pepe")
     username_limpio = perfil_in.username.strip().lower()
     if not username_limpio:
         raise HTTPException(
-            status_code=400, detail="El nombre de usuario no puede estar vacío."
-        )
+            status_code=400,
+            detail="El nombre de usuario no puede estar vacío.")
 
     # 3. Comprobar si el username ya está pillado por otra persona
     perfil_existente = (
@@ -730,7 +778,8 @@ def crear_perfil(
             detail="Este nombre de usuario ya está en uso. ¡Prueba con otro!",
         )
 
-    # 4. Crear el perfil y vincularlo mágicamente al usuario que ha iniciado sesión
+    # 4. Crear el perfil y vincularlo mágicamente al usuario que ha iniciado
+    # sesión
     nuevo_perfil = models.Perfil(
         usuario_id=usuario_actual.id,
         username=username_limpio,
@@ -741,7 +790,8 @@ def crear_perfil(
 
     # IMPORTANTE: Preservamos cómo el usuario escribió su nombre (ej: "FitBoy99")
     # pero guardamos la versión minúscula en la BD si queremos hacer búsquedas más seguras,
-    # aunque en este caso guardaremos su versión original y usaremos .lower() en las búsquedas.
+    # aunque en este caso guardaremos su versión original y usaremos .lower()
+    # en las búsquedas.
     nuevo_perfil.username = perfil_in.username.strip()
 
     db.add(nuevo_perfil)
@@ -776,7 +826,8 @@ def actualizar_mi_perfil(
 
 
 @app.get("/api/perfil/me", response_model=schemas.PerfilResponse)
-def obtener_mi_perfil(usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
+def obtener_mi_perfil(
+        usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
     """Devuelve el perfil social del usuario que tiene la sesión iniciada."""
     if not usuario_actual.perfil:
         raise HTTPException(
@@ -805,7 +856,7 @@ def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
 
 @app.get("/api/comunidad/buscar")
 def buscar_usuarios(
-    q: str, 
+    q: str,
     db: Session = Depends(get_db),
     # Token opcional para saber si los sigo
     token: Optional[str] = Header(None, alias="Authorization")
@@ -828,10 +879,14 @@ def buscar_usuarios(
         try:
             scheme, _, token_str = token.partition(" ")
             if scheme.lower() == "bearer" and token_str:
-                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                payload = security.jwt.decode(
+                    token_str, security.SECRET_KEY, algorithms=[
+                        security.ALGORITHM])
                 email: str = payload.get("sub")
                 if email:
-                    usuario_actual = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+                    usuario_actual = db.query(
+                        models.Usuario).filter(
+                        models.Usuario.email == email).first()
         except Exception:
             pass
 
@@ -865,7 +920,7 @@ def obtener_leaderboard(db: Session = Depends(get_db)):
         .limit(5)
         .all()
     )
-    
+
     resultados = []
     for p in top_perfiles:
         resultados.append({
@@ -883,12 +938,12 @@ def descubrir_stacks(db: Session = Depends(get_db)):
     """Devuelve los últimos 6 stacks públicos de la comunidad."""
     stacks = (
         db.query(models.Stack)
-        .filter(models.Stack.es_publico == True)
+        .filter(models.Stack.es_publico.is_(True))
         .order_by(models.Stack.id.desc())
         .limit(6)
         .all()
     )
-    
+
     # Format directly to match the frontend expectations
     # Notice we use schema validation or direct formatting.
     resultados = []
@@ -902,7 +957,7 @@ def descubrir_stacks(db: Session = Depends(get_db)):
         except Exception:
             # Skip invalid stacks safely
             pass
-            
+
     return resultados
 
 
@@ -931,14 +986,15 @@ def seguir_usuario(
     # Evitar que se siga a sí mismo (eso es muy triste)
     if mi_perfil.id == perfil_objetivo.id:
         raise HTTPException(
-            status_code=400, detail="No puedes seguirte a ti mismo, narcisista."
-        )
+            status_code=400,
+            detail="No puedes seguirte a ti mismo, narcisista.")
 
     # Comprobar si ya le sigue
     if perfil_objetivo in mi_perfil.seguidos:
         return {"mensaje": f"Ya sigues a {perfil_objetivo.username}."}
 
-    # La magia de SQLAlchemy: Añadir a la lista es suficiente para actualizar la base de datos
+    # La magia de SQLAlchemy: Añadir a la lista es suficiente para actualizar
+    # la base de datos
     mi_perfil.seguidos.append(perfil_objetivo)
     db.commit()
 
@@ -1024,10 +1080,10 @@ def anadir_producto_a_stack(
 
     # 1. Comprobamos que el stack existe y que es TUYO
     stack = (
-        db.query(models.Stack)
-        .filter(models.Stack.id == stack_id, models.Stack.perfil_id == mi_perfil.id)
-        .first()
-    )
+        db.query(
+            models.Stack) .filter(
+            models.Stack.id == stack_id,
+            models.Stack.perfil_id == mi_perfil.id) .first())
     if not stack:
         raise HTTPException(
             status_code=404, detail="Stack no encontrado o no te pertenece."
@@ -1035,8 +1091,9 @@ def anadir_producto_a_stack(
 
     # 2. Comprobamos que el producto que quieres añadir existe en el catálogo
     producto = (
-        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    )
+        db.query(
+            models.Producto).filter(
+            models.Producto.id == producto_id).first())
     if not producto:
         raise HTTPException(
             status_code=404, detail="El producto no existe en el catálogo."
@@ -1050,7 +1107,10 @@ def anadir_producto_a_stack(
     stack.productos.append(producto)
     db.commit()
 
-    return {"mensaje": f"{producto.nombre} añadido a tu stack '{stack.nombre}'"}
+    return {
+        "mensaje": f"{
+            producto.nombre} añadido a tu stack '{
+            stack.nombre}'"}
 
 
 @app.delete("/api/stacks/{stack_id}/productos/{producto_id}")
@@ -1068,18 +1128,19 @@ def quitar_producto_de_stack(
         )
 
     stack = (
-        db.query(models.Stack)
-        .filter(models.Stack.id == stack_id, models.Stack.perfil_id == mi_perfil.id)
-        .first()
-    )
+        db.query(
+            models.Stack) .filter(
+            models.Stack.id == stack_id,
+            models.Stack.perfil_id == mi_perfil.id) .first())
     if not stack:
         raise HTTPException(
             status_code=404, detail="Stack no encontrado o no te pertenece."
         )
 
     producto = (
-        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    )
+        db.query(
+            models.Producto).filter(
+            models.Producto.id == producto_id).first())
     if producto not in stack.productos:
         raise HTTPException(
             status_code=400, detail="El producto no está en este Stack."
@@ -1151,7 +1212,8 @@ def hacer_checkin_diario(
     # ¡BONUS! Si alcanza un múltiplo de 7 días seguidos (una semana entera), le damos un premio gordo
     if mi_perfil.racha_actual > 0 and mi_perfil.racha_actual % 7 == 0:
         puntos_base += 50
-        mensaje = f"¡INCREÍBLE! Has completado {mi_perfil.racha_actual} días seguidos. Toma 50 XP extra. 🔥"
+        mensaje = f"¡INCREÍBLE! Has completado {
+            mi_perfil.racha_actual} días seguidos. Toma 50 XP extra. 🔥"
     else:
         mensaje = "¡Check-in completado con éxito! Sigue así. 💪"
 
@@ -1166,7 +1228,8 @@ def hacer_checkin_diario(
     db.commit()
     db.refresh(mi_perfil)
 
-    # Devolvemos el estado actual para que el frontend pinte los numeritos actualizados al instante
+    # Devolvemos el estado actual para que el frontend pinte los numeritos
+    # actualizados al instante
     return {
         "mensaje": mensaje,
         "puntos_ganados": puntos_base,
@@ -1270,8 +1333,8 @@ def suscribir_newsletter(
     if registro:
         if registro.activo:
             raise HTTPException(
-                status_code=400, detail="Este email ya está suscrito a la newsletter"
-            )
+                status_code=400,
+                detail="Este email ya está suscrito a la newsletter")
         else:
             registro.activo = True
             db.commit()
@@ -1307,8 +1370,9 @@ def registrar_vista_producto(
     from datetime import datetime
 
     producto = (
-        db.query(models.Producto).filter(models.Producto.id == producto_id).first()
-    )
+        db.query(
+            models.Producto).filter(
+            models.Producto.id == producto_id).first())
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
@@ -1334,64 +1398,16 @@ def registrar_vista_producto(
 
 
 # ==========================================
-# --- RUTA DE COMPARADOR MULTITIENDA ---
-# ==========================================
-@app.get("/api/productos/comparar", response_model=List[schemas.ProductResponse])
-def comparar_productos(
-    ids: str = Query(
-        ...,
-        description="IDs de los productos a comparar, separados por comas (ej. 10,45,102)",
-    ),
-    db: Session = Depends(get_db),
-):
-    try:
-        lista_ids = list(
-            set(
-                [
-                    int(id_str.strip())
-                    for id_str in ids.split(",")
-                    if id_str.strip().isdigit()
-                ]
-            )
-        )
-    except ValueError:
-        raise HTTPException(
-            status_code=400, detail="Formato de IDs inválido. Deben ser números."
-        )
-
-    if not lista_ids:
-        raise HTTPException(
-            status_code=400, detail="Debes proporcionar al menos un ID válido."
-        )
-    if len(lista_ids) > 4:
-        raise HTTPException(
-            status_code=400,
-            detail="Solo puedes comparar un máximo de 4 productos a la vez.",
-        )
-
-    productos = (
-        db.query(models.Producto).filter(models.Producto.id.in_(lista_ids)).all()
-    )
-
-    if not productos:
-        raise HTTPException(
-            status_code=404,
-            detail="No se encontró ninguno de los productos solicitados.",
-        )
-
-    productos.sort(key=lambda p: lista_ids.index(p.id) if p.id in lista_ids else 99)
-    return productos
-
-
-# ==========================================
 # --- ARRANQUE DEL SERVIDOR (RENDER) ---
 # ==========================================
 if __name__ == "__main__":
+    # pyrefly: ignore [missing-import]
     import uvicorn
-    import os
 
-    # Render inyecta su propio puerto dinámico. Si no lo encuentra, usa el 8000.
+    # Render inyecta su propio puerto dinámico. Si no lo encuentra, usa el
+    # 8000.
     port = int(os.environ.get("PORT", 8000))
 
-    # Pasamos el objeto 'app' directamente. El host "0.0.0.0" es obligatorio para Render.
+    # Pasamos el objeto 'app' directamente. El host "0.0.0.0" es obligatorio
+    # para Render.
     uvicorn.run(app, host="0.0.0.0", port=port)

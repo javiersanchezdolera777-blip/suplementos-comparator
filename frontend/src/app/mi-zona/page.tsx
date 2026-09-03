@@ -326,7 +326,7 @@ const comprobarEstado = async () => {
         {/* --- GESTOR DE STACKS --- */}
         <div id="gestor-stacks" className="transition-all duration-500 rounded-3xl">
           <GestorStacks 
-            stacks={perfil.stacks} 
+            perfil={perfil} 
             recargarPerfil={comprobarEstado} 
           />
         </div>

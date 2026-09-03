@@ -281,16 +281,6 @@ class Perfil(Base):
         return len(self.siguiendo) if hasattr(self, 'siguiendo') and self.siguiendo else 0
     
 
-    @property
-    def seguidores_count(self):
-        # Cuenta cuánta gente hay en la lista de seguidores (si existe la relación)
-        return len(self.seguidores) if hasattr(self, 'seguidores') and self.seguidores else 0
-
-    @property
-    def siguiendo_count(self):
-        # Cuenta a cuánta gente sigue este usuario
-        return len(self.siguiendo) if hasattr(self, 'siguiendo') and self.siguiendo else 0
-    
 
 
 class Stack(Base):
