@@ -42,11 +42,12 @@ export default function ModalEditarPerfil({ isOpen, onClose, perfilActual, onAct
     setGuardando(true);
     
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/perfil/me", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/perfil/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          "Authorization": `Bearer ${localStorage.getItem("suparator_token")}`
         },
         body: JSON.stringify({
           descripcion: descripcion,

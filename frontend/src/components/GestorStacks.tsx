@@ -22,8 +22,9 @@ export default function GestorStacks({ perfil, recargarPerfil }: Props) {
     setMensaje("");
     
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://127.0.0.1:8000/api/stacks", {
+      const token = localStorage.getItem("suparator_token");
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/stacks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

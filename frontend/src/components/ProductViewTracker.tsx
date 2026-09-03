@@ -7,7 +7,7 @@ export default function ProductViewTracker({ productId }: { productId: number })
     const trackView = async () => {
       try {
         // Obtenemos el token de donde lo tengas guardado (ajusta la key si se llama distinto)
-        const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+        const token = localStorage.getItem('access_token') || localStorage.getItem('suparator_token');
         if (!token) return;
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

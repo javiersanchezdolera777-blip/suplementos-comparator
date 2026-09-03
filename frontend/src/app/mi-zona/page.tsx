@@ -33,7 +33,7 @@ export default function MiZonaPage() {
     }
   }, [isLoggedIn]);
 const comprobarEstado = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("suparator_token");
     if (!token) {
       setNecesitaLogin(true);
       setLoading(false);
@@ -65,7 +65,7 @@ const comprobarEstado = async () => {
   const crearPerfil = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorForm("");
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("suparator_token");
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const res = await fetch(`${API_URL}/api/perfil`, {
@@ -212,7 +212,7 @@ const comprobarEstado = async () => {
                 try {
                   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
                   const res = await fetch(`${API_URL}/api/comunidad/checkin`, {
-                    method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                    method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("suparator_token")}` }
                   });
                   const data = await res.json();
                   if(res.ok) comprobarEstado(); else alert(data.detail);
