@@ -21,7 +21,8 @@ export default function ComunidadHub() {
 
       setBuscando(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/comunidad/buscar?q=${busqueda}`);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API_URL}/api/comunidad/buscar?q=${busqueda}`);
         if (res.ok) {
           const data = await res.json();
           setSugerencias(data);
@@ -55,10 +56,10 @@ export default function ComunidadHub() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-10 px-4 sm:pt-20 relative">
       <div className="w-full max-w-2xl relative z-10">
-        
+
         {/* Buscador Central y Títulos */}
         <div className="text-center relative">
-          
+
           {/* BARRA DE NAVEGACIÓN NUEVA INTEGRADA */}
           <NavbarSocial />
 
@@ -76,8 +77,8 @@ export default function ComunidadHub() {
                 className="w-full text-lg py-5 pl-16 pr-32 rounded-full border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 focus:outline-none transition-all"
                 autoComplete="off"
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="absolute inset-y-2 right-2 bg-slate-900 text-white font-bold px-8 rounded-full hover:bg-slate-800 transition-colors"
               >
                 Buscar
