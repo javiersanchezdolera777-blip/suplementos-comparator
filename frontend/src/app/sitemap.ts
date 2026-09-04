@@ -53,25 +53,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 2. Rutas Dinámicas (Productos)
   let dynamicRoutes: MetadataRoute.Sitemap = [];
   try {
-    // Solicitamos un límite holgado (hasta 5000 productos) para incluirlos todos.
-    const res = await fetch(`${apiUrl}/api/productos?limit=5000`, { 
-      // Usamos revalidación para no ahogar al backend en cada petición del sitemap
-      next: { revalidate: 3600 } 
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      const productos = data.items || [];
-      
-      dynamicRoutes = productos.map((prod: any) => ({
-        url: `${baseUrl}/producto/${prod.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      }));
+    let allProducts: any[] = [];
+    let hasMore = true;
+    let page = 1;
+    const limit = 200;
+
+    while (hasMore) {
+      try {
+        const res = await fetch(`${apiUrl}/api/productos?limit=${limit}&page=${page}`, { 
+          next: { revalidate: 3600 } 
+        });
+        
+        if (!res.ok) {
+          console.error(`Sitemap fetch error en la página ${page}: status ${res.status}`);
+          break; // Stop fetching on error, but keep accumulated products
+        }
+
+        const data = await res.json();
+        const productos = data.productos || [];
+        
+        if (productos.length > 0) {
+          allProducts = [...allProducts, ...productos];
+        }
+
+        // If we received fewer products than the limit, we've reached the end
+        if (productos.length < limit) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } catch (err) {
+        console.error(`Sitemap network error en la página ${page}:`, err);
+        break; // Stop fetching on network error
+      }
     }
+      
+    dynamicRoutes = allProducts.map((prod: any) => ({
+      url: `${baseUrl}/producto/${prod.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    }));
   } catch (error) {
-    console.error("Error generando rutas dinámicas para el sitemap:", error);
+    console.error("Error crítico generando rutas dinámicas para el sitemap:", error);
   }
 
   return [...staticRoutes, ...dynamicRoutes];
