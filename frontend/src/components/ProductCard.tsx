@@ -234,10 +234,12 @@ export default function ProductCard({ product }: { product: Product }) {
       >
         <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
-            <img
+            <Image
               src={product.image_url}
               alt={formattedName}
               onError={() => setImageError(true)}
+              width={400}
+              height={400}
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
@@ -298,11 +300,7 @@ export default function ProductCard({ product }: { product: Product }) {
               {brandName || "Sin marca"}
             </span>
 
-            {sellerStore && !isSameBrandAndStore && (
-              <span className="text-[12px] font-normal text-slate-500 truncate">
-                Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-              </span>
-            )}
+
           </div>
 
           <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
@@ -319,11 +317,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   {previousPrice?.toFixed(2)} €
                 </span>
               )}
-              {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-md ml-2 my-auto">
-                  {product.price_per_kg.toFixed(2)} € / kg
-                </span>
-              )}
+
             </div>
 
             <a
@@ -369,7 +363,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="w-full md:w-1/2 h-48 md:h-full bg-slate-50 p-6 md:p-8 flex items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
               {showImage ? (
-                <img src={product.image_url} alt={formattedName} onError={() => setImageError(true)} className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md" />
+                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} width={500} height={500} className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md" />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
                   <span className="text-slate-400 font-black tracking-[0.2em] text-base uppercase mb-1">Tus Suplementos</span>
@@ -384,11 +378,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
                     {brandName || "Sin marca"}
                   </span>
-                  {sellerStore && !isSameBrandAndStore && (
-                    <span className="text-[12px] font-normal text-slate-500">
-                      Vendido por <span className="font-semibold text-slate-700">{sellerStore}</span>
-                    </span>
-                  )}
+
                 </div>
 
                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
@@ -418,11 +408,7 @@ export default function ProductCard({ product }: { product: Product }) {
                     {previousPrice?.toFixed(2)} €
                   </span>
                 )}
-                {typeof product.price_per_kg === 'number' && product.price_per_kg > 0 && (
-                  <span className="inline-flex items-center bg-slate-100 border border-slate-200/60 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-md my-auto">
-                    {product.price_per_kg.toFixed(2)} € / kg
-                  </span>
-                )}
+
               </div>
 
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">

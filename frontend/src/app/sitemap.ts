@@ -50,6 +50,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // 1.5. Rutas Dinámicas (Categorías y Marcas)
+  const categorias = ['proteinas', 'creatinas', 'vitaminas', 'aminoacidos', 'pre-entrenos'];
+  const marcas = ['hsn', 'farma2go', 'myprotein', 'optimum-nutrition', 'zumub', 'amix', 'prozis', 'scitec'];
+
+  const categoryRoutes: MetadataRoute.Sitemap = categorias.map((cat) => ({
+    url: `${baseUrl}/categoria/${cat}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.9,
+  }));
+
+  const brandRoutes: MetadataRoute.Sitemap = marcas.map((marca) => ({
+    url: `${baseUrl}/marca/${marca}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.9,
+  }));
+
   // 2. Rutas Dinámicas (Productos)
   let dynamicRoutes: MetadataRoute.Sitemap = [];
   try {
@@ -98,5 +116,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error crítico generando rutas dinámicas para el sitemap:", error);
   }
 
-  return [...staticRoutes, ...dynamicRoutes];
+  return [...staticRoutes, ...categoryRoutes, ...brandRoutes, ...dynamicRoutes];
 }

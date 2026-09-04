@@ -1,21 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import ProductCard from "./ProductCard";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 import EmptyState from "./EmptyState";
 import FilterSidebar from "./FilterSidebar";
 import Pagination from "./Pagination";
 
-export default function Catalog() {
+interface CatalogProps {
+  initialProducts?: any[];
+  initialTotal?: number;
+  preselectedCategory?: string;
+  preselectedBrand?: string;
+}
+
+export default function Catalog({
+  initialProducts,
+  initialTotal,
+  preselectedCategory,
+  preselectedBrand,
+}: CatalogProps = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const soloOfertas = searchParams ? searchParams.get("solo_ofertas") === "true" : false;
 
-  const [productos, setProductos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [productos, setProductos] = useState<any[]>(initialProducts || []);
+  const [loading, setLoading] = useState(initialProducts ? false : true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   useEffect(() => {
@@ -29,13 +42,14 @@ export default function Catalog() {
     };
   }, [isMobileFilterOpen]);
 
-  const [totalResultados, setTotalResultados] = useState<number>(0);
+  const [totalResultados, setTotalResultados] = useState<number>(initialTotal || 0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const BATCH_SIZE = 36;
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todas");
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState(preselectedCategory || "Todas");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(preselectedBrand ? [preselectedBrand] : []);
+  const isFirstRender = useRef(true);
   const [ordenPrecio, setOrdenPrecio] = useState("relevancia");
 
   const [selectedFormat, setSelectedFormat] = useState("Todos");
@@ -168,6 +182,12 @@ export default function Catalog() {
   };
 
 useEffect(() => {
+    // Si tenemos initialProducts, omitimos la primera carga
+    if (isFirstRender.current && initialProducts) {
+      isFirstRender.current = false;
+      return;
+    }
+
     // 1. CREAMOS LA BANDERA MÁGICA
     let peticionActiva = true; 
     
@@ -300,23 +320,16 @@ useEffect(() => {
             ].map((brand) => {
               const isSelected = selectedBrands.includes(brand.name);
               return (
-                <button
+                <Link
                   key={brand.name}
-                  onClick={() => {
-                    if (isSelected) {
-                      setSelectedBrands(selectedBrands.filter((b) => b !== brand.name));
-                    } else {
-                      setSelectedBrands([brand.name]);
-                    }
-                    document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  href={`/marca/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
                     ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
                     : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
                     } ${brand.style}`}
                 >
                   {brand.displayName}
-                </button>
+                </Link>
               );
             })}
           </div>
