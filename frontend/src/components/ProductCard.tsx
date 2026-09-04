@@ -173,7 +173,6 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setIsExpanded(false);
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
@@ -264,8 +263,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
               <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm w-[34px] h-[34px] flex items-center justify-center ${isFavorite
-                  ? "bg-red-50 border-red-200 scale-105"
-                  : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
+                ? "bg-red-50 border-red-200 scale-105"
+                : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
                 }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
                 <svg className={`w-4 h-4 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -275,8 +274,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="group/vs cursor-pointer active:scale-125 transition-transform duration-200" onClick={handleCompare}>
               <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm w-[34px] h-[34px] flex items-center justify-center ${isCompared
-                  ? "bg-blue-50 border-blue-200 scale-105"
-                  : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
+                ? "bg-blue-50 border-blue-200 scale-105"
+                : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
                 }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
                 <span className={`text-[10px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
               </div>
@@ -394,8 +393,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
                   <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${isFavorite
-                      ? "bg-red-50 border-red-200 scale-105"
-                      : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
+                    ? "bg-red-50 border-red-200 scale-105"
+                    : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
                     }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
                     <svg
                       className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`}
