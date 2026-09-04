@@ -173,7 +173,6 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setIsExpanded(false);
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
