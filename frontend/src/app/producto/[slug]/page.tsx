@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import TrackedAffiliateLink from '@/components/TrackedAffiliateLink';
 import ProductViewTracker from '@/components/ProductViewTracker';
 
@@ -25,7 +26,7 @@ async function getProduct(slug: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${apiUrl}/api/productos/slug/${slug}`, {
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
 
     if (!res.ok) {
@@ -63,6 +64,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title,
       description,
@@ -94,6 +98,37 @@ export default async function ProductDetailPage({ params }: Props) {
   const brandName = product.brand?.name || "Sin marca";
   const proteinPercent = product.protein_percentage ?? product.porcentaje_proteina;
 
+  let offersSchema: any = {
+    "@type": "AggregateOffer",
+    "url": `https://www.tussuplementos.com/producto/${slug}`,
+    "priceCurrency": "EUR",
+    "lowPrice": product.price || 0,
+    "highPrice": product.price || 0,
+    "offerCount": 1
+  };
+
+  if (product.ofertas && product.ofertas.length > 0) {
+    const activeOffers = product.ofertas.filter((o: any) => o.activo);
+    if (activeOffers.length > 0) {
+      const prices = activeOffers.map((o: any) => o.precio);
+      offersSchema = {
+        "@type": "AggregateOffer",
+        "url": `https://www.tussuplementos.com/producto/${slug}`,
+        "priceCurrency": "EUR",
+        "lowPrice": Math.min(...prices),
+        "highPrice": Math.max(...prices),
+        "offerCount": activeOffers.length,
+        "offers": activeOffers.map((o: any) => ({
+          "@type": "Offer",
+          "price": o.precio,
+          "priceCurrency": "EUR",
+          "seller": { "@type": "Organization", "name": o.tienda },
+          "url": `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${o.tienda.toLowerCase()}/${product.slug}`
+        }))
+      };
+    }
+  }
+
   const jsonLd = {
     "@context": "https://schema.org/",
     "@type": "Product",
@@ -104,14 +139,7 @@ export default async function ProductDetailPage({ params }: Props) {
       "@type": "Brand",
       "name": brandName
     },
-    "offers": {
-      "@type": "AggregateOffer",
-      "url": `https://www.tussuplementos.com/producto/${slug}`,
-      "priceCurrency": "EUR",
-      "lowPrice": product.price || 0,
-      "highPrice": product.price || 0,
-      "offerCount": 1
-    }
+    "offers": offersSchema
   };
 
   return (
@@ -163,11 +191,16 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
 
             {hasImage ? (
-              <img
-                src={product.image_url}
-                alt={cleanName}
-                className="w-full h-auto max-h-[380px] object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
-              />
+              <div className="relative w-full max-w-[350px] aspect-square mt-8 sm:mt-4">
+                <Image
+                  src={product.image_url}
+                  alt={cleanName}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
+                />
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center text-slate-300">
                 <span className="font-black tracking-[0.3em] text-2xl uppercase">Tus Suplementos</span>
