@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func, nulls_last
+from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
@@ -837,10 +837,13 @@ def obtener_mi_perfil(
     return usuario_actual.perfil
 
 
-@app.get("/api/perfil/{username}", response_model=schemas.PerfilResponse)
-def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
+@app.get("/api/perfil/{username}")
+def obtener_perfil_publico(
+    username: str, 
+    db: Session = Depends(get_db),
+    token: Optional[str] = Header(None, alias="Authorization")
+):
     """Visitar el perfil de otra persona (ej: tussuplementos.com/comunidad/pepe)"""
-    # Buscamos ignorando mayúsculas y minúsculas gracias a ilike
     perfil = (
         db.query(models.Perfil)
         .filter(models.Perfil.username.ilike(username.strip()))
@@ -848,7 +851,46 @@ def obtener_perfil_publico(username: str, db: Session = Depends(get_db)):
     )
     if not perfil:
         raise HTTPException(status_code=404, detail="Perfil no encontrado.")
-    return perfil
+        
+    usuario_actual = None
+    if token:
+        try:
+            scheme, _, token_str = token.partition(" ")
+            if scheme.lower() == "bearer" and token_str:
+                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                email: str = payload.get("sub")
+                if email:
+                    usuario_actual = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+        except Exception:
+            pass
+
+    # Calcular is_following
+    is_following = False
+    mi_perfil_id = None
+    if usuario_actual and usuario_actual.perfil:
+        mi_perfil_id = usuario_actual.perfil.id
+        # Verificar si lo sigo
+        is_following = db.query(models.seguidores).filter_by(
+            seguidor_id=mi_perfil_id, 
+            seguido_id=perfil.id
+        ).first() is not None
+
+    # Convertir a dict para añadir is_following y manipular stacks
+    perfil_data = schemas.PerfilResponse.model_validate(perfil).model_dump()
+    perfil_data["is_following"] = is_following
+    
+    # Procesar stacks para calcular is_liked_by_me y likes_count si no está en el dump
+    for i, stack in enumerate(perfil.stacks):
+        # likes_count ya está mapeado por property pero is_liked_by_me no
+        is_liked = False
+        if mi_perfil_id:
+            is_liked = db.query(models.stack_likes).filter_by(
+                stack_id=stack.id, 
+                perfil_id=mi_perfil_id
+            ).first() is not None
+        perfil_data["stacks"][i]["is_liked_by_me"] = is_liked
+
+    return perfil_data
 
 # ==========================================
 # --- RUTAS DE COMUNIDAD: SEGUIDORES ---
@@ -935,31 +977,118 @@ def obtener_leaderboard(db: Session = Depends(get_db)):
 
 
 @app.get("/api/comunidad/descubrir-stacks")
-def descubrir_stacks(db: Session = Depends(get_db)):
-    """Devuelve los últimos 6 stacks públicos de la comunidad."""
-    stacks = (
-        db.query(models.Stack)
+def descubrir_stacks(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Header(None, alias="Authorization")
+):
+    """Devuelve los últimos 6 stacks públicos de la comunidad, ordenados por popularidad."""
+    stacks_with_likes = (
+        db.query(
+            models.Stack,
+            func.count(models.stack_likes.c.perfil_id).label('total_likes')
+        )
+        .outerjoin(models.stack_likes, models.Stack.id == models.stack_likes.c.stack_id)
         .filter(models.Stack.es_publico.is_(True))
-        .order_by(models.Stack.id.desc())
+        .group_by(models.Stack.id)
+        .order_by(desc('total_likes'), models.Stack.id.desc())
         .limit(6)
         .all()
     )
 
-    # Format directly to match the frontend expectations
-    # Notice we use schema validation or direct formatting.
+    # Identificar al usuario actual para ver si ya le dio like
+    usuario_actual = None
+    if token:
+        try:
+            scheme, _, token_str = token.partition(" ")
+            if scheme.lower() == "bearer" and token_str:
+                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                email: str = payload.get("sub")
+                if email:
+                    usuario_actual = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+        except Exception:
+            pass
+
+    mi_perfil_id = usuario_actual.perfil.id if usuario_actual and usuario_actual.perfil else None
+
     resultados = []
-    for s in stacks:
-        # Re-use the StackResponse logic or build a simple dict
+    for s, total_likes in stacks_with_likes:
         try:
             stack_data = schemas.StackResponse.model_validate(s).model_dump()
             stack_data["autor_username"] = s.perfil.username if s.perfil else "Atleta Desconocido"
             stack_data["autor_foto"] = s.perfil.foto_perfil if s.perfil else None
+            stack_data["likes_count"] = total_likes
+            
+            is_liked_by_me = False
+            if mi_perfil_id:
+                # Comprobar si mi_perfil_id está en los likers de este stack
+                # SQLAlchemy carga la relación, pero para no saturar memoria es mejor una subquery.
+                # Como son solo 6 stacks, podemos chequear la DB directamente.
+                is_liked_by_me = db.query(models.stack_likes).filter_by(
+                    stack_id=s.id, perfil_id=mi_perfil_id
+                ).first() is not None
+                
+            stack_data["is_liked_by_me"] = is_liked_by_me
             resultados.append(stack_data)
         except Exception:
-            # Skip invalid stacks safely
             pass
 
     return resultados
+
+
+@app.post("/api/stacks/{stack_id}/like")
+def toggle_like_stack(
+    stack_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        raise HTTPException(status_code=400, detail="Debes crear tu perfil social primero.")
+        
+    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    if not stack:
+        raise HTTPException(status_code=404, detail="Stack no encontrado.")
+        
+    # Check if already liked
+    already_liked = db.query(models.stack_likes).filter_by(
+        stack_id=stack_id, perfil_id=mi_perfil.id
+    ).first()
+    
+    if already_liked:
+        # Unlike
+        db.execute(
+            models.stack_likes.delete().where(
+                (models.stack_likes.c.stack_id == stack_id) & 
+                (models.stack_likes.c.perfil_id == mi_perfil.id)
+            )
+        )
+        mensaje = "Like removido"
+        liked = False
+    else:
+        # Like
+        db.execute(
+            models.stack_likes.insert().values(
+                stack_id=stack_id, perfil_id=mi_perfil.id
+            )
+        )
+        mensaje = "Like añadido"
+        liked = True
+        
+        # Notificar al dueño del stack (si no es él mismo)
+        if stack.perfil_id != mi_perfil.id:
+            nueva_notificacion = models.Notificacion(
+                perfil_id=stack.perfil_id,
+                tipo="like_stack",
+                mensaje=f"¡A @{mi_perfil.username} le gusta tu stack '{stack.nombre}'!"
+            )
+            db.add(nueva_notificacion)
+            
+    db.commit()
+    
+    # Obtener el nuevo count
+    nuevo_count = db.query(func.count(models.stack_likes.c.perfil_id)).filter_by(stack_id=stack_id).scalar()
+    
+    return {"mensaje": mensaje, "liked": liked, "likes_count": nuevo_count}
 
 
 @app.post("/api/comunidad/seguir/{username}")
@@ -997,9 +1126,65 @@ def seguir_usuario(
     # La magia de SQLAlchemy: Añadir a la lista es suficiente para actualizar
     # la base de datos
     mi_perfil.seguidos.append(perfil_objetivo)
+    
+    # Crear notificación para el perfil objetivo
+    nueva_notificacion = models.Notificacion(
+        perfil_id=perfil_objetivo.id,
+        tipo="nuevo_seguidor",
+        mensaje=f"¡@{mi_perfil.username} ha empezado a seguirte!"
+    )
+    db.add(nueva_notificacion)
+    
     db.commit()
 
     return {"mensaje": f"¡Ahora sigues a {perfil_objetivo.username}!"}
+
+
+@app.get("/api/comunidad/notificaciones")
+def obtener_notificaciones(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+):
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        return []
+        
+    notificaciones = (
+        db.query(models.Notificacion)
+        .filter(models.Notificacion.perfil_id == mi_perfil.id)
+        .order_by(models.Notificacion.id.desc())
+        .limit(20)
+        .all()
+    )
+    
+    return [
+        {
+            "id": n.id,
+            "tipo": n.tipo,
+            "mensaje": n.mensaje,
+            "leida": n.leida,
+            "fecha": n.fecha.isoformat()
+        } for n in notificaciones
+    ]
+
+
+@app.post("/api/comunidad/notificaciones/marcar-leidas")
+def marcar_notificaciones_leidas(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+):
+    mi_perfil = usuario_actual.perfil
+    if not mi_perfil:
+        return {"status": "error"}
+        
+    db.query(models.Notificacion).filter(
+        models.Notificacion.perfil_id == mi_perfil.id,
+        models.Notificacion.leida.is_(False)
+    ).update({"leida": True})
+    db.commit()
+    
+    return {"status": "ok"}
+
 
 
 @app.delete("/api/comunidad/seguir/{username}")
