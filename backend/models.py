@@ -56,6 +56,24 @@ stack_producto = Table(
     ),
 )
 
+# Tabla invisible para los Likes de los Stacks
+stack_likes = Table(
+    "stack_likes",
+    Base.metadata,
+    Column(
+        "perfil_id",
+        Integer,
+        ForeignKey("perfiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "stack_id",
+        Integer,
+        ForeignKey("stacks.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 # ==========================================
 # --- MODELOS PRINCIPALES (CATÁLOGO) ---
 # ==========================================
@@ -239,6 +257,8 @@ class Perfil(Base):
     suplemento_favorito = Column(
         String, nullable=True
     )  # Ej: "Creatina Creapure", "Whey de Vainilla"
+    descripcion = Column(String, nullable=True)
+    foto_perfil = Column(String, nullable=True) # Guardaremos la imagen en formato texto (Base64)
 
     # Gamificación global
     puntos_totales = Column(Integer, default=0)
@@ -258,6 +278,9 @@ class Perfil(Base):
     checkins = relationship(
         "CheckDiario", back_populates="perfil", cascade="all, delete-orphan"
     )
+    notificaciones = relationship(
+        "Notificacion", back_populates="perfil", cascade="all, delete-orphan"
+    )
 
     # Sistema de seguidores (Self-referential Many-to-Many)
     seguidos = relationship(
@@ -267,6 +290,18 @@ class Perfil(Base):
         secondaryjoin=id == seguidores.c.seguido_id,
         backref="seguidores_asociados",
     )
+
+    @property
+    def seguidores_count(self):
+        # Cuenta cuánta gente hay en la lista de seguidores (si existe la relación)
+        return len(self.seguidores_asociados) if hasattr(self, 'seguidores_asociados') and self.seguidores_asociados else 0
+
+    @property
+    def siguiendo_count(self):
+        # Cuenta a cuánta gente sigue este usuario
+        return len(self.seguidos) if hasattr(self, 'seguidos') and self.seguidos else 0
+    
+
 
 
 class Stack(Base):
@@ -290,6 +325,13 @@ class Stack(Base):
     creador = relationship("Perfil", back_populates="stacks")
     # Los productos que están dentro de este Stack
     productos = relationship("Producto", secondary=stack_producto)
+    
+    # Likes
+    likes = relationship("Perfil", secondary=stack_likes, backref="stacks_likados")
+
+    @property
+    def likes_count(self):
+        return len(self.likes) if hasattr(self, 'likes') and self.likes else 0
 
 
 class ResenaSabor(Base):
@@ -348,3 +390,19 @@ class HistorialPrecio(Base):
     fecha = Column(DateTime, default=datetime.utcnow)
 
     oferta = relationship("Oferta", backref="historial_precios")
+
+
+class Notificacion(Base):
+    """
+    Alertas sociales: 'nuevo_seguidor', 'mensaje', etc.
+    """
+    __tablename__ = "notificaciones"
+
+    id = Column(Integer, primary_key=True, index=True)
+    perfil_id = Column(Integer, ForeignKey("perfiles.id", ondelete="CASCADE"), nullable=False)
+    tipo = Column(String, nullable=False)  # ej. "nuevo_seguidor"
+    mensaje = Column(String, nullable=False)
+    leida = Column(Boolean, default=False)
+    fecha = Column(DateTime, default=datetime.utcnow)
+
+    perfil = relationship("Perfil", back_populates="notificaciones")

@@ -32,6 +32,20 @@ def ensure_schema_compatibility():
             if not exists:
                 conn.execute(text("ALTER TABLE productos ADD COLUMN precio_anterior DOUBLE PRECISION"))
                 print("✅ Columna precio_anterior añadida a productos")
+                
+            result_presentacion = conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'productos'
+                      AND column_name = 'presentacion'
+                )
+            """))
+            exists_presentacion = result_presentacion.scalar()
+            if not exists_presentacion:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN presentacion VARCHAR"))
+                print("✅ Columna presentacion añadida a productos")
 
             if conn.dialect.name == "postgresql":
                 for table, pk in [("marcas", "id"), ("categorias", "id"), ("productos", "id"), ("usuarios", "id"), ("favoritos", "id")]:

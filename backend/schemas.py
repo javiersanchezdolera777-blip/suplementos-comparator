@@ -356,8 +356,13 @@ class PerfilResponse(PerfilBase):
     id: int
     puntos_totales: int
     racha_actual: int
-
+    stacks: List["StackResponse"] = []
     model_config = ConfigDict(from_attributes=True)
+    descripcion: Optional[str] = None
+    foto_perfil: Optional[str] = None
+    seguidores_count: int = 0
+    siguiendo_count: int = 0
+    is_following: bool = False
 
 
 
@@ -376,5 +381,12 @@ class StackResponse(StackBase):
     fecha_creacion: datetime
     # Reutilizamos tu súper esquema de productos para devolver los botes dentro del Stack
     productos: List[ProductResponse] = []
+    likes_count: int = 0
+    is_liked_by_me: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+class PerfilUpdate(BaseModel):
+    descripcion: Optional[str] = None
+    objetivo_etapa: Optional[str] = None
+    foto_perfil: Optional[str] = None
+

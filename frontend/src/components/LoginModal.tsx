@@ -40,6 +40,7 @@ export default function LoginModal() {
       }
 
       // 2. Iniciar Sesión (se ejecuta tanto en Login directo como tras un Registro exitoso)
+// 2. Iniciar Sesión (se ejecuta tanto en Login directo como tras un Registro exitoso)
       const resLog = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +53,8 @@ export default function LoginModal() {
       }
 
       const data = await resLog.json();
-      login(data.access_token); // Guardamos el JWT de Diego
+      
+      login(data.access_token); // Guardamos la llave correcta, se llame como se llame
       closeLoginModal(); // Cerramos el modal
       
       // Limpiar campos por seguridad
@@ -69,10 +71,23 @@ export default function LoginModal() {
   // Manejo del Login con Google
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
+      // Decodificar el JWT de Google localmente para extraer info y autocompletar el perfil luego
+      const tokenStr = credentialResponse.credential;
+      if (tokenStr) {
+        try {
+          const payloadBase64 = tokenStr.split('.')[1];
+          const decodedPayload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+          if (decodedPayload.name) localStorage.setItem('google_name', decodedPayload.name);
+          if (decodedPayload.picture) localStorage.setItem('google_avatar', decodedPayload.picture);
+        } catch (e) {
+          console.error("Error decodificando token de google", e);
+        }
+      }
+
       const res = await fetch(`${apiUrl}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credentialResponse.credential }),
+        body: JSON.stringify({ token: tokenStr }),
       });
 
       if (res.ok) {
