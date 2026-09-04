@@ -85,19 +85,60 @@ export default function ComunidadHub() {
     }
   };
 
+  const toggleLikeStack = async (e: React.MouseEvent, stackId: number) => {
+    e.stopPropagation(); // Evitar navegar al perfil al hacer click en Like
+    
+    const token = localStorage.getItem("suparator_token");
+    if (!token) {
+      alert("Debes iniciar sesión para dar like.");
+      return;
+    }
+
+    // Optimistic Update
+    setStacksDescubrimiento(prev => prev.map(stack => {
+      if (stack.id === stackId) {
+        const isLiked = !stack.is_liked_by_me;
+        return {
+          ...stack,
+          is_liked_by_me: isLiked,
+          likes_count: isLiked ? (stack.likes_count || 0) + 1 : Math.max(0, (stack.likes_count || 0) - 1)
+        };
+      }
+      return stack;
+    }));
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/stacks/${stackId}/like`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        // Revertir si falla (opcional)
+        console.error("Error al dar like");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center pt-8 px-4 sm:px-6 relative pb-20">
       <div className="w-full max-w-5xl relative z-10 space-y-8">
 
         {/* NAVEGACIÓN Y CABECERA (HERO BUSCADOR) */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-100 flex flex-col items-center text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-          
-          <div className="w-full max-w-4xl mx-auto mb-6">
-            <NavbarSocial />
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 relative">
+          {/* Fondo decorativo encapsulado para no recortar los menús desplegables */}
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20"></div>
           </div>
+          
+          <div className="relative z-10 p-6 sm:p-10 flex flex-col items-center text-center">
+            <div className="w-full max-w-4xl mx-auto mb-6">
+              <NavbarSocial />
+            </div>
 
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mt-4">Hub de Atletas</h1>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight mt-4">Hub de Atletas</h1>
           <p className="text-slate-500 mb-8 text-sm sm:text-base max-w-lg mx-auto">Encuentra a tus amigos, compite en el ranking y descubre los mejores stacks de suplementación.</p>
 
           <div className="relative w-full max-w-xl mx-auto z-20">
@@ -165,6 +206,7 @@ export default function ComunidadHub() {
                 )}
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -250,17 +292,38 @@ export default function ComunidadHub() {
                     >
                       <div className="absolute -right-4 -bottom-4 text-8xl opacity-[0.03] transform group-hover:scale-110 transition-transform pointer-events-none">⚡</div>
                       
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400 font-bold text-xs">
-                          {stack.autor_foto ? (
-                            <img src={stack.autor_foto} alt="Autor" className="w-full h-full object-cover" />
-                          ) : (
-                            stack.autor_username.charAt(0).toUpperCase()
-                          )}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400 font-bold text-xs">
+                            {stack.autor_foto ? (
+                              <img src={stack.autor_foto} alt="Autor" className="w-full h-full object-cover" />
+                            ) : (
+                              stack.autor_username.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="text-xs font-bold text-slate-500 group-hover:text-blue-500 transition-colors truncate">
+                            @{stack.autor_username}
+                          </div>
                         </div>
-                        <div className="text-xs font-bold text-slate-500 group-hover:text-blue-500 transition-colors truncate">
-                          @{stack.autor_username}
-                        </div>
+
+                        {/* LIKE BUTTON */}
+                        <button 
+                          onClick={(e) => toggleLikeStack(e, stack.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all relative z-20 ${
+                            stack.is_liked_by_me 
+                              ? 'bg-red-50 text-red-600 border border-red-100' 
+                              : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-red-50 hover:text-red-500 hover:border-red-100'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox={stack.is_liked_by_me ? "0 0 20 20" : "0 0 24 24"} fill={stack.is_liked_by_me ? "currentColor" : "none"} stroke="currentColor" strokeWidth={stack.is_liked_by_me ? "0" : "2"}>
+                            {stack.is_liked_by_me ? (
+                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            )}
+                          </svg>
+                          <span>{stack.likes_count || 0}</span>
+                        </button>
                       </div>
 
                       <h3 className="text-lg font-black text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1">{stack.nombre}</h3>

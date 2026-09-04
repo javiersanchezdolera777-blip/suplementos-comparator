@@ -19,12 +19,19 @@ export default function PerfilPublico() {
   useEffect(() => {
     const cargarPerfilPublico = async () => {
       try {
+        const token = localStorage.getItem("suparator_token");
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${API_URL}/api/perfil/${username}`);
+        const res = await fetch(`${API_URL}/api/perfil/${username}`, { headers });
         
         if (res.ok) {
           const data = await res.json();
           setPerfil(data);
+          setSiguiendo(data.is_following || false);
         } else if (res.status === 404) {
           setError(`No hemos encontrado a ningún usuario llamado @${username}`);
         } else {
@@ -71,6 +78,45 @@ export default function PerfilPublico() {
       }
     } catch (error) {
       alert("Error de conexión al intentar seguir al usuario.");
+    }
+  };
+
+  const toggleLikeStack = async (e: React.MouseEvent, stackId: number) => {
+    e.stopPropagation();
+    
+    const token = localStorage.getItem("suparator_token");
+    if (!token) {
+      alert("Debes iniciar sesión para dar like.");
+      return;
+    }
+
+    // Optimistic Update
+    setPerfil((prev: any) => {
+      const newStacks = prev.stacks.map((stack: any) => {
+        if (stack.id === stackId) {
+          const isLiked = !stack.is_liked_by_me;
+          return {
+            ...stack,
+            is_liked_by_me: isLiked,
+            likes_count: isLiked ? (stack.likes_count || 0) + 1 : Math.max(0, (stack.likes_count || 0) - 1)
+          };
+        }
+        return stack;
+      });
+      return { ...prev, stacks: newStacks };
+    });
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/stacks/${stackId}/like`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        console.error("Error al dar like");
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -181,6 +227,25 @@ export default function PerfilPublico() {
                       <div className="flex-1 z-10">
                         <div className="flex justify-between items-start">
                           <h3 className="font-black text-xl text-slate-900 group-hover:text-blue-600 transition-colors">{stack.nombre}</h3>
+                          
+                          {/* LIKE BUTTON */}
+                          <button 
+                            onClick={(e) => toggleLikeStack(e, stack.id)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all relative z-20 ${
+                              stack.is_liked_by_me 
+                                ? 'bg-red-50 text-red-600 border border-red-100' 
+                                : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-red-50 hover:text-red-500 hover:border-red-100'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox={stack.is_liked_by_me ? "0 0 20 20" : "0 0 24 24"} fill={stack.is_liked_by_me ? "currentColor" : "none"} stroke="currentColor" strokeWidth={stack.is_liked_by_me ? "0" : "2"}>
+                              {stack.is_liked_by_me ? (
+                                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                              ) : (
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              )}
+                            </svg>
+                            <span>{stack.likes_count || 0}</span>
+                          </button>
                         </div>
                         {stack.descripcion && <p className="text-slate-500 text-sm mt-2 max-w-md">{stack.descripcion}</p>}
                         
