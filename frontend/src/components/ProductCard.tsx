@@ -240,6 +240,7 @@ export default function ProductCard({ product }: { product: Product }) {
               onError={() => setImageError(true)}
               width={400}
               height={400}
+              unoptimized
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
@@ -363,7 +364,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="w-full md:w-1/2 h-48 md:h-full bg-slate-50 p-6 md:p-8 flex items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
               {showImage ? (
-                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} width={500} height={500} className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md" />
+                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} width={500} height={500} unoptimized className="w-full h-full object-contain max-h-full max-w-full drop-shadow-md" />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
                   <span className="text-slate-400 font-black tracking-[0.2em] text-base uppercase mb-1">Tus Suplementos</span>
