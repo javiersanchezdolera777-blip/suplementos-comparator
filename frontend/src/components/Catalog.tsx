@@ -318,11 +318,11 @@ useEffect(() => {
               { name: "Swanson", displayName: "SWANSON", style: "text-base md:text-lg font-semibold uppercase tracking-widest" },
               { name: "Drasanvi", displayName: "DRASANVI", style: "text-base md:text-lg font-black uppercase tracking-wider" },
             ].map((brand) => {
-              const isSelected = selectedBrands.includes(brand.name);
+              const isSelected = selectedBrands.some(b => b.toLowerCase() === brand.name.toLowerCase());
               return (
                 <Link
                   key={brand.name}
-                  href={`/marca/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  href={isSelected ? "/#catalogo" : `/marca/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
                     ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
                     : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
