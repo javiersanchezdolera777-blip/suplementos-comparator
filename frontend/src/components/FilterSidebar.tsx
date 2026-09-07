@@ -2,6 +2,7 @@
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { trackFilter } from "@/utils/analytics";
 
 interface FilterSidebarProps {
   isMobileFilterOpen: boolean;
@@ -133,7 +134,10 @@ export default function FilterSidebar({
           <div className="pt-0.5">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                trackFilter('categoria', e.target.value);
+              }}
               className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none cursor-pointer outline-none transition-all font-semibold"
             >
               {categories.map((c) => (
@@ -176,7 +180,10 @@ export default function FilterSidebar({
               </label>
               <select
                 value={selectedFormat}
-                onChange={(e) => setSelectedFormat(e.target.value)}
+                onChange={(e) => {
+                  setSelectedFormat(e.target.value);
+                  trackFilter('formato', e.target.value);
+                }}
                 className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
               >
                 {formats.map((f) => (
@@ -196,7 +203,10 @@ export default function FilterSidebar({
                   </label>
                   <select
                     value={selectedProteinType}
-                    onChange={(e) => setSelectedProteinType(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedProteinType(e.target.value);
+                      trackFilter('tipo_proteina', e.target.value);
+                    }}
                     className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     {proteinTypes.map((p) => (
@@ -213,7 +223,10 @@ export default function FilterSidebar({
                   </label>
                   <select
                     value={selectedProteinPercentage}
-                    onChange={(e) => setSelectedProteinPercentage(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedProteinPercentage(e.target.value);
+                      trackFilter('porcentaje_proteina', e.target.value);
+                    }}
                     className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     <option value="Todos">Todos los porcentajes</option>
@@ -233,7 +246,10 @@ export default function FilterSidebar({
                 </label>
                 <select
                   value={selectedCreatineType}
-                  onChange={(e) => setSelectedCreatineType(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCreatineType(e.target.value);
+                    trackFilter('tipo_creatina', e.target.value);
+                  }}
                   className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                 >
                   {creatineTypes.map((c) => (
@@ -255,7 +271,10 @@ export default function FilterSidebar({
                   </label>
                   <select
                     value={selectedVitaminType}
-                    onChange={(e) => setSelectedVitaminType(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedVitaminType(e.target.value);
+                      trackFilter('tipo_vitamina', e.target.value);
+                    }}
                     className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                   >
                     {vitaminTypes.map((v) => (
@@ -275,7 +294,10 @@ export default function FilterSidebar({
                 </label>
                 <select
                   value={selectedAminoProfile}
-                  onChange={(e) => setSelectedAminoProfile(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedAminoProfile(e.target.value);
+                    trackFilter('perfil_aminoacidos', e.target.value);
+                  }}
                   className="w-full bg-white border border-blue-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
                 >
                   {aminoProfiles.map((a) => (
@@ -294,7 +316,10 @@ export default function FilterSidebar({
               </label>
               <select
                 value={selectedFlavor}
-                onChange={(e) => setSelectedFlavor(e.target.value)}
+                onChange={(e) => {
+                  setSelectedFlavor(e.target.value);
+                  trackFilter('sabor', e.target.value);
+                }}
                 className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
               >
                 {flavors.map((fl) => (
@@ -312,7 +337,10 @@ export default function FilterSidebar({
               </label>
               <select
                 value={selectedQualitySeal}
-                onChange={(e) => setSelectedQualitySeal(e.target.value)}
+                onChange={(e) => {
+                  setSelectedQualitySeal(e.target.value);
+                  trackFilter('sello_calidad', e.target.value);
+                }}
                 className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-2 py-1 text-xs appearance-none cursor-pointer outline-none focus:border-blue-500 font-semibold"
               >
                 {qualitySeals.map((q) => (
@@ -328,7 +356,10 @@ export default function FilterSidebar({
               <input
                 type="checkbox"
                 checked={sinGluten === true}
-                onChange={(e) => setSinGluten(e.target.checked ? true : null)}
+                onChange={(e) => {
+                  setSinGluten(e.target.checked ? true : null);
+                  if (e.target.checked) trackFilter('checkbox', 'sin_gluten');
+                }}
                 className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-orange-500 focus:ring-orange-500 cursor-pointer"
               />
               <span className="text-[11px] font-bold text-slate-700">Sin Gluten</span>
@@ -339,7 +370,10 @@ export default function FilterSidebar({
               <input
                 type="checkbox"
                 checked={sinLactosa === true}
-                onChange={(e) => setSinLactosa(e.target.checked ? true : null)}
+                onChange={(e) => {
+                  setSinLactosa(e.target.checked ? true : null);
+                  if (e.target.checked) trackFilter('checkbox', 'sin_lactosa');
+                }}
                 className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-blue-500 focus:ring-blue-500 cursor-pointer"
               />
               <span className="text-[11px] font-bold text-slate-700">Sin Lactosa</span>
@@ -350,7 +384,10 @@ export default function FilterSidebar({
               <input
                 type="checkbox"
                 checked={isVegan === true}
-                onChange={(e) => setIsVegan(e.target.checked ? true : null)}
+                onChange={(e) => {
+                  setIsVegan(e.target.checked ? true : null);
+                  if (e.target.checked) trackFilter('checkbox', 'vegano');
+                }}
                 className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500 cursor-pointer"
               />
               <span className="text-[11px] font-bold text-slate-700">Opción Vegana</span>
@@ -461,9 +498,11 @@ export default function FilterSidebar({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {
+                            const newChecked = !isChecked;
                             setSelectedBrands((prev) =>
-                              isChecked ? prev.filter((b) => b !== brand) : [...prev, brand]
+                              newChecked ? [...prev, brand] : prev.filter((b) => b !== brand)
                             );
+                            if (newChecked) trackFilter('marca', brand);
                           }}
                           className="w-3 h-3 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
                         />
