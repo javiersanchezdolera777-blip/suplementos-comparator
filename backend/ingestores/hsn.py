@@ -872,9 +872,9 @@ def inyectar_en_bd():
                                     oferta_hsn.activo = True
 
                                     # Registrar en historial si el precio detectado es distinto al guardado
-                                    if precio_norm != oferta_hsn.precio:
+                                    if round(precio_norm, 2) != round(oferta_hsn.precio, 2):
                                         oferta_hsn.historial_precios.append(
-                                            models.HistorialPrecio(precio=precio_norm)
+                                            models.HistorialPrecio(precio=round(precio_norm, 2))
                                         )
 
                                     if precio_ant_norm is not None:
