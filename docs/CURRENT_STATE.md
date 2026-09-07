@@ -39,7 +39,13 @@
 - **Refactorización NLP y Doble Barrera:** Se ha purgado definitivamente la basura de cosmética/veterinaria implementando un Filtro de Doble Barrera (Lista Negra inicial y Lista Blanca restrictiva al título) en los ingestores.
 - **Seguridad Parcheada:** Las vulnerabilidades de claves `SECRET_KEY` hardcodeadas y exposición de secretos han sido parcheadas; el sistema utiliza variables de entorno rotadas y seguras de forma estricta.
 
+### 5. Sistema de Medición Avanzado (GA4 Full-Funnel)
+Implementación nativa de Google Analytics 4 en Next.js. El frontend ahora registra de forma granular intenciones de búsqueda, uso del sidebar de filtros, interacciones de usuario (favoritos, modo versus) y el evento de conversión final (click_affiliate) a través de componentes híbridos (SSR/CSR).
+
 ## Tareas Completadas (Checklist Reciente)
+- [x] **[ANALÍTICA]** Implementación completa de GA4 en el App Router e instrumentación de eventos Top/Middle/Bottom of Funnel.
+- [x] **[DEUDA TÉCNICA]** Eliminación del componente obsoleto TrackedAffiliateLink.tsx y llamadas a endpoints inexistentes (Fix Auditoría).
+- [x] **[BACKEND FIX]** Parche de precisión (coma flotante) en los ingestores para evitar falsos históricos de precio y creación del script de sanitización limpiar_historicos_duplicados.py.
 - [x] **[NUEVO] Refactorización DRY de Ingestores:** Lógica de clasificación (NLP, alérgenos, sellos) y cálculo de precio/kg centralizada de forma exclusiva en el cerebro `utils.py`. Los scripts `pharma2go.py`, `sportlive.py` y `hsn.py` ahora actúan como clientes limpios y robustos.
 - [x] **[NUEVO] Upsert Masivo y Seguro:** Los ingestores detectan productos existentes, actualizan todos sus campos dinámicamente con el método seguro `.get()` y validaciones `bool()`, realizando un único `db.commit()` por lote para optimizar transacciones en PostgreSQL.
 - [x] **[NUEVO] Sincronización Oficial de BD:** Despliegue de `backend/scripts/reprocesar_nlp.py` como herramienta oficial para re-etiquetar todo el catálogo rápidamente sin necesidad de re-scrapear la web, conservando datos críticos como tamaños (`presentacion`).
@@ -97,7 +103,6 @@
 ## Backlog / Roadmap Técnico Pendiente
 - **Frontend - UI Historial de Precios:** Consumir el array `historial_precios` desde Next.js para renderizar componentes visuales (gráficas interactivas) en la ficha de cada producto.
 - **Arquitectura SEO y Rutas Dinámicas:** Migrar la dependencia actual de parámetros de búsqueda (`/?categoria=proteinas`) hacia páginas SSR/ISR reales (`/proteinas/whey`, `/marcas/hsn`, `/comparar/hsn-vs-myprotein`) para potenciar el indexado en Google.
-- **Sistema de Medición y Analytics (Funnel):** Implementar tracking avanzado en Next.js conectado a GA4 para trazar el flujo completo del usuario (desde la vista de categoría hasta el clic de afiliado `CLICK_AFFILIATE`).
 - **Algoritmo de Ranking Antimonopolio:** Refinar la ordenación de `/api/productos` creando un SCORE combinado (relevancia + calidad + precio + clics) para evitar que una sola tienda monopolice las primeras páginas.
 
 ## Backlog de Negocio
