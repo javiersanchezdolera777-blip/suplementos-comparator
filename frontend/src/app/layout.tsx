@@ -78,7 +78,7 @@ export default function RootLayout({
           <Toaster position="bottom-right" />
           {children}
         </Providers>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-GMZDENG5MM"} />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID as string} />
         <Script
           id="tradetracker-verification"
           strategy="afterInteractive"

@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import ModalAñadirStack from './ModalAñadirStack';
 // Usamos la ruta correcta para la tienda de Javi
 import { useCompareStore } from '@/store/useCompareStore';
+import { trackAffiliateClick } from '@/utils/analytics';
 
 // Definimos qué es una Oferta para que TypeScript deje de quejarse
 interface Oferta {
@@ -327,7 +328,7 @@ export default function ProductCard({ product }: { product: Product }) {
               rel="noopener noreferrer"
               onClick={(e) => {
                 e.stopPropagation();
-                trackClick();
+                trackAffiliateClick(product.name, sellerStore || 'Desconocida', product.category?.name || 'Desconocida');
               }}
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer whitespace-nowrap text-center"
             >
@@ -463,7 +464,7 @@ export default function ProductCard({ product }: { product: Product }) {
                               href={product.slug && oferta.tienda ? `${apiUrl}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}` : (product.affiliate_url || "#")}
                               target="_blank"
                               rel="nofollow noopener noreferrer"
-                              onClick={(e) => { e.stopPropagation(); trackClick(); }}
+                              onClick={(e) => { e.stopPropagation(); trackAffiliateClick(product.name, oferta.tienda || 'Desconocida', product.category?.name || 'Desconocida'); }}
                               className="px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md cursor-pointer"
                             >
                               Ver
@@ -477,7 +478,7 @@ export default function ProductCard({ product }: { product: Product }) {
                     href={product.affiliate_url || "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={trackClick}
+                    onClick={(e) => { e.stopPropagation(); trackAffiliateClick(product.name, sellerStore || 'Desconocida', product.category?.name || 'Desconocida'); }}
                     className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
                   >
                     Ver oferta en la tienda oficial
