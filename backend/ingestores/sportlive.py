@@ -204,9 +204,9 @@ def inyectar_en_bd():
                     oferta_sl.precio_por_kg = metricas["precio_por_kg"]
                     oferta_sl.activo = True
 
-                    if precio != oferta_sl.precio:
+                    if round(precio, 2) != round(oferta_sl.precio, 2):
                         oferta_sl.historial_precios.append(
-                            models.HistorialPrecio(precio=precio)
+                            models.HistorialPrecio(precio=round(precio, 2))
                         )
 
                     if precio_anterior is not None:

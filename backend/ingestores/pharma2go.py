@@ -307,9 +307,9 @@ def inyectar_en_bd():
                 oferta_farma.precio_por_kg = metricas["precio_por_kg"]
                 oferta_farma.activo = True
 
-                if precio != oferta_farma.precio:
+                if round(precio, 2) != round(oferta_farma.precio, 2):
                     oferta_farma.historial_precios.append(
-                        models.HistorialPrecio(precio=precio)
+                        models.HistorialPrecio(precio=round(precio, 2))
                     )
 
                 if precio_anterior is not None:
