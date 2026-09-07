@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import TrackedAffiliateLink from '@/components/TrackedAffiliateLink';
+import AffiliateButton from '@/components/AffiliateButton';
 import ProductViewTracker from '@/components/ProductViewTracker';
 
 interface Props {
@@ -265,15 +265,15 @@ export default async function ProductDetailPage({ params }: Props) {
                             </span>
                           </div>
 
-                          <a
+                          <AffiliateButton
                             href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                            className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${index === 0 ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" : "bg-slate-900 hover:bg-slate-800 text-white"
-                              }`}
+                            className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${index === 0 ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                            productName={cleanName}
+                            storeName={oferta.tienda}
+                            categoryName={categoryName}
                           >
                             Ver oferta
-                          </a>
+                          </AffiliateButton>
                         </div>
                       </div>
                     ))}
