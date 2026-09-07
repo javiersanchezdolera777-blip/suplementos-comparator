@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import ModalAñadirStack from './ModalAñadirStack';
 // Usamos la ruta correcta para la tienda de Javi
 import { useCompareStore } from '@/store/useCompareStore';
-import { trackAffiliateClick } from '@/utils/analytics';
+import { trackAffiliateClick, trackViewItem, trackInteraction } from '@/utils/analytics';
 
 // Definimos qué es una Oferta para que TypeScript deje de quejarse
 interface Oferta {
@@ -169,6 +169,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name);
 
   const handleOpenProduct = () => {
+    trackViewItem(formattedName, product.category?.name || 'Desconocida');
     setIsModalOpen(true);
   };
 
@@ -185,12 +186,14 @@ export default function ProductCard({ product }: { product: Product }) {
     }
     try {
       if (isFavorite) {
+        trackInteraction('remove_favorite', formattedName);
         removeFavoriteId(product.id);
         setToastMsg("Eliminado de tus favoritos");
         setTimeout(() => setToastMsg(null), 2000);
         const res = await fetch(`${apiUrl}/api/favoritos/${product.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         if (!res.ok) addFavoriteId(product.id);
       } else {
+        trackInteraction('add_favorite', formattedName);
         addFavoriteId(product.id);
         setToastMsg("Guardado en tus favoritos");
         setTimeout(() => setToastMsg(null), 2000);
@@ -209,9 +212,11 @@ export default function ProductCard({ product }: { product: Product }) {
   const handleCompare = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isCompared) {
+      trackInteraction('remove_compare', formattedName);
       removeId(product.id);
       setToastMsg("Quitado de la comparativa");
     } else {
+      trackInteraction('add_compare', formattedName);
       addId(product.id);
       setToastMsg("Añadido a la comparativa");
     }
@@ -224,6 +229,7 @@ export default function ProductCard({ product }: { product: Product }) {
       openLoginModal();
       return;
     }
+    trackInteraction('add_stack', formattedName);
     setIsStackModalOpen(true);
   };
 

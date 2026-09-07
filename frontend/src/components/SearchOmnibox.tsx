@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { trackSearch } from "@/utils/analytics";
 
 interface ProductoLive {
   id: number;
@@ -92,12 +93,14 @@ export default function SearchOmnibox() {
       return;
     }
     setIsOpen(false);
+    trackSearch(query.trim());
     router.push(`/?q=${encodeURIComponent(query.trim())}`);
   };
 
   const handleSelectProduct = (prod: ProductoLive) => {
     setIsOpen(false);
     setQuery("");
+    trackSearch(prod.nombre);
     router.push(`/?q=${encodeURIComponent(prod.nombre)}`);
   };
 

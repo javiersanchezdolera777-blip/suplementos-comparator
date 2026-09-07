@@ -9,6 +9,7 @@ import ProductCardSkeleton from "./ProductCardSkeleton";
 import EmptyState from "./EmptyState";
 import FilterSidebar from "./FilterSidebar";
 import Pagination from "./Pagination";
+import { trackFilter } from "@/utils/analytics";
 
 interface CatalogProps {
   initialProducts?: any[];
@@ -322,6 +323,7 @@ useEffect(() => {
               return (
                 <Link
                   key={brand.name}
+                  onClick={() => trackFilter('brand_hero', brand.name)}
                   href={isSelected ? "/#catalogo" : `/marca/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
                     ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
