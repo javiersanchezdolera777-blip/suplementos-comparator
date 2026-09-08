@@ -390,3 +390,21 @@ class PerfilUpdate(BaseModel):
     objetivo_etapa: Optional[str] = None
     foto_perfil: Optional[str] = None
 
+
+class ResenaSaborBase(BaseModel):
+    sabor_probado: str
+    nota: int
+    comentario: Optional[str] = None
+
+class ResenaSaborCreate(ResenaSaborBase):
+    producto_id: int
+
+class ResenaSaborResponse(ResenaSaborBase):
+    id: int
+    producto_id: int
+    perfil_id: int
+    fecha: datetime
+    autor_username: str
+    autor_foto: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

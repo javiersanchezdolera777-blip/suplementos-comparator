@@ -32,31 +32,8 @@ Y aunque esto se arreglara, hay un segundo bug: el código lee `data.items`, per
 
 **Fix:** bajar el límite a bloques de 200 con paginación en el propio `sitemap.ts` (loop de `page=1..N`), y corregir `data.items` → `data.productos`.
 
-### 1.2 🔴 Newsletter semanal y retargeting llevan (probablemente) meses fallando en silencio
-`backend/newsletter_semanal.py`:
-```python
-base_query = db.query(models.Producto).filter(
-    models.Producto.precio_anterior != None,
-    models.Producto.precio_anterior > models.Producto.precio,
-)
-```
-`backend/retargeting_vistas.py`:
-```python
-precio = prod.precio if prod.precio else 0.0
-```
-
-El modelo `Producto` en `models.py` **ya no tiene columnas `precio` ni `precio_anterior`** — se migraron a la tabla `Oferta` cuando pasasteis a arquitectura multi-tienda (`Producto` 1:N `Oferta`). Acceder a `models.Producto.precio_anterior` como atributo de clase lanza `AttributeError` en el momento de construir la query.
-
-Ambos scripts tienen el error capturado por un `try/except` genérico, así que **no verás un crash ruidoso** — solo un log `❌ Error crítico...` que nadie revisa en un runner de GitHub Actions que "verde ✅" (el workflow no falla porque el script no propaga la excepción hacia arriba con exit code ≠ 0).
-
-**Contraste que lo confirma:** `backend/scripts/orquestador.py` y `backend/send_telegram_deals.py` **sí fueron actualizados** correctamente para usar `models.Oferta.precio` — es decir, la migración se hizo a medias, dos scripts se quedaron atrás.
-
-**Efecto real:**
-- El workflow `.github/workflows/newsletter.yml` (domingos 08:00 UTC) probablemente **no ha enviado ni un solo email del "Top 5 Chollos"** desde la migración multi-tienda.
-- El workflow `.github/workflows/retargeting.yml` (diario 17:00 UTC) probablemente **no ha recuperado ni un solo usuario con carrito abandonado / producto visto** desde entonces.
-- Esto es doble: pierdes reactivación de usuarios logueados Y no tienes forma de saberlo porque el error se traga silenciosamente.
-
-**Fix inmediato:** cambiar ambos scripts para consultar `Oferta` (tal y como ya hace `orquestador.py`) y, muy importante, **quitar los `try/except` silenciosos de los flujos de negocio críticos** o al menos añadir una alerta (Telegram/email a ti mismo) cuando fallen, para que un fallo de este tipo no vuelva a pasar desapercibido durante meses.
+### 1.2 ~~🔴 Newsletter semanal y retargeting llevan (probablemente) meses fallando en silencio~~ (✅ RESUELTO)
+`backend/newsletter_semanal.py` y `backend/retargeting_vistas.py` han sido migrados para utilizar `Oferta.precio` dinámicamente en lugar del obsoleto `Producto.precio`. Ahora funcionan correctamente.
 
 ### 1.3 🟠 Tracking de clics roto: `/api/click/{id}` no existe
 `frontend/src/components/TrackedAffiliateLink.tsx` llama a:
@@ -94,8 +71,8 @@ Si tu objetivo es "el mayor comparador nacional" con decenas de miles de product
 ### 1.6 🟡 Doble filtro duplicado (copy-paste) en `main.py`
 Dentro de `obtener_productos`, el bloque "4. Filtros Básicos (Formatos, Vegano, Sellos)" y el bloque `solo_ofertas` están **literalmente pegados dos veces** en la función (una vez antes de la búsqueda de texto, otra después). No rompe nada porque aplicar el mismo `.filter()` dos veces es inofensivo en SQLAlchemy, pero es una señal de mantenimiento descuidado: si mañana alguien cambia la lógica de "ofertas reales" en un sitio y no en el otro, tendrás comportamiento inconsistente sin previo aviso. Limpiar y dejar una sola copia.
 
-### 1.7 🟡 Endpoints duplicados
-`comparar_productos` (`GET /api/productos/comparar`) está **definido dos veces** en `main.py`, idéntico. FastAPI se queda con la última definición (funciona), pero indica descuido en merges de git. Revisar el historial de commits para detectar si hay más duplicaciones escondidas de este tipo.
+### 1.7 ~~🟡 Endpoints duplicados~~ (✅ RESUELTO)
+`comparar_productos` (`GET /api/productos/comparar`) estaba duplicado pero el historial de Git refleja que ya fue limpiado de `main.py`.
 
 ---
 
@@ -103,9 +80,9 @@ Dentro de `obtener_productos`, el bloque "4. Filtros Básicos (Formatos, Vegano,
 
 Esto es interesante: tenéis **infraestructura de producto ya construida en base de datos que nunca llega al usuario**.
 
-- **Reseñas de sabor (`ResenaSabor`)**: existe la tabla, existe la relación `producto.resenas`, pero **no hay ni un solo endpoint** (`GET`/`POST /api/resenas`) en `main.py`, ni schema Pydantic para exponerlo, ni componente de UI. Es una función de prueba social (¡justo lo que un comparador necesita para diferenciarse de la ficha fría de la tienda!) que está a medio camino y no visible.
-- **Stacks (rutinas compartibles)**: puedes crear un stack y añadirle productos (`POST /api/stacks`, `POST /api/stacks/{id}/productos/{id}`), pero **no existe ningún endpoint para listarlos ni verlos** (ni `GET /api/stacks/{id}`, ni están incluidos en `PerfilResponse`, que no tiene campo `stacks`). Es decir: se puede escribir, pero no se puede leer. La función social "estilo Instagram de suplementos" que mencionáis en la documentación como hito conseguido, en la práctica es inalcanzable desde el frontend/API.
-- **Gamificación (`GymMascota.tsx`)**: el componente existe y calcula niveles/XP, pero no veo ninguna página que lo monte con datos reales del perfil (`/api/perfil/me`). Verificar si realmente está enlazado en algún sitio o es un componente huérfano.
+- ~~**Reseñas de sabor (`ResenaSabor`)**~~: (✅ RESUELTO - Endpoints `GET` y `POST /api/resenas` añadidos, listos para integrarse en UI).
+- ~~**Stacks (rutinas compartibles)**~~: (✅ RESUELTO - Endpoint `GET /api/stacks/{id}` creado. Stacks interactivos expuestos).
+- ~~**Gamificación (`GymMascota.tsx`)**~~: (✅ RESUELTO - Integrado en `/mi-zona` y páginas de perfil público).
 
 **Recomendación:** antes de construir features nuevas, cerrar el círculo de las que ya están al 80%. Cuestan menos terminar que features desde cero y ahora mismo representan trabajo de ingeniería "hundido" sin retorno.
 

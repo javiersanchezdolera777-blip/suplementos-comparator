@@ -1584,6 +1584,88 @@ def registrar_vista_producto(
 
 
 # ==========================================
+# --- UGC: RESEÑAS Y STACKS INDIVIDUALES ---
+# ==========================================
+@app.get("/api/stacks/{stack_id}", response_model=schemas.StackResponse)
+def obtener_stack_individual(
+    stack_id: int, 
+    db: Session = Depends(get_db),
+    token: Optional[str] = Header(None, alias="Authorization")
+):
+    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    if not stack:
+        raise HTTPException(status_code=404, detail="Stack no encontrado")
+        
+    stack_data = schemas.StackResponse.model_validate(stack).model_dump()
+    stack_data["autor_username"] = stack.creador.username if stack.creador else "Desconocido"
+    stack_data["autor_foto"] = stack.creador.foto_perfil if stack.creador else None
+    stack_data["likes_count"] = stack.likes_count
+    
+    is_liked_by_me = False
+    if token:
+        try:
+            scheme, _, token_str = token.partition(" ")
+            if scheme.lower() == "bearer" and token_str:
+                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                email: str = payload.get("sub")
+                if email:
+                    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+                    if usuario and usuario.perfil:
+                        like_exists = db.query(models.stack_likes).filter_by(
+                            stack_id=stack.id, perfil_id=usuario.perfil.id
+                        ).first()
+                        if like_exists:
+                            is_liked_by_me = True
+        except Exception:
+            pass
+            
+    stack_data["is_liked_by_me"] = is_liked_by_me
+    return stack_data
+
+
+@app.get("/api/resenas", response_model=List[schemas.ResenaSaborResponse])
+def listar_resenas(producto_id: int = Query(...), db: Session = Depends(get_db)):
+    resenas = db.query(models.ResenaSabor).filter(models.ResenaSabor.producto_id == producto_id).order_by(models.ResenaSabor.fecha.desc()).all()
+    
+    resultados = []
+    for r in resenas:
+        data = schemas.ResenaSaborResponse.model_validate(r).model_dump()
+        data["autor_username"] = r.perfil.username if r.perfil else "Usuario"
+        data["autor_foto"] = r.perfil.foto_perfil if r.perfil else None
+        resultados.append(data)
+    return resultados
+
+
+@app.post("/api/resenas", response_model=schemas.ResenaSaborResponse)
+def crear_resena(
+    resena: schemas.ResenaSaborCreate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+):
+    if not usuario_actual.perfil:
+        raise HTTPException(status_code=400, detail="Debes crear un perfil primero para dejar una reseña.")
+        
+    prod = db.query(models.Producto).filter(models.Producto.id == resena.producto_id).first()
+    if not prod:
+        raise HTTPException(status_code=404, detail="Producto no encontrado.")
+        
+    nueva_resena = models.ResenaSabor(
+        perfil_id=usuario_actual.perfil.id,
+        producto_id=resena.producto_id,
+        sabor_probado=resena.sabor_probado,
+        nota=resena.nota,
+        comentario=resena.comentario
+    )
+    db.add(nueva_resena)
+    db.commit()
+    db.refresh(nueva_resena)
+    
+    data = schemas.ResenaSaborResponse.model_validate(nueva_resena).model_dump()
+    data["autor_username"] = usuario_actual.perfil.username
+    data["autor_foto"] = usuario_actual.perfil.foto_perfil
+    return data
+
+# ==========================================
 # --- ARRANQUE DEL SERVIDOR (RENDER) ---
 # ==========================================
 if __name__ == "__main__":

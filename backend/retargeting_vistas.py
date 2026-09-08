@@ -19,7 +19,11 @@ def generar_html_retargeting(productos, frontend_url):
     html_productos = ""
     for prod in productos:
         producto_url = f"{frontend_url}/producto/{prod.slug}"
-        precio = prod.precio if prod.precio else 0.0
+        
+        # Encontrar la mejor oferta activa
+        ofertas_activas = [o for o in prod.ofertas if o.activo]
+        mejor_oferta = min(ofertas_activas, key=lambda x: x.precio) if ofertas_activas else None
+        precio = mejor_oferta.precio if mejor_oferta else 0.0
 
         # Miniatura de la foto del producto
         img_thumb = (
@@ -129,7 +133,10 @@ def ejecutar_retargeting():
                 f"🔍 DEBUG: Evaluando {len(productos_unicos)} productos únicos para {usuario.email}"
             )
             for p in productos_unicos:
-                precio_debug = p.precio if p.precio else "0.0 (None)"
+                ofertas_activas = [o for o in p.ofertas if o.activo]
+                mejor_oferta = min(ofertas_activas, key=lambda x: x.precio) if ofertas_activas else None
+                precio_debug = mejor_oferta.precio if mejor_oferta else 0.0
+                
                 print(
                     f"   -> Producto: '{p.nombre}' | Precio: {precio_debug} | Slug: '{p.slug}'"
                 )
