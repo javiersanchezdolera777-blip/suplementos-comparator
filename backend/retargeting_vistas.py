@@ -175,6 +175,17 @@ def ejecutar_retargeting():
         print(f"✅ Proceso finalizado. Emails enviados: {enviados}")
     except Exception as e:
         print(f"❌ Error crítico en retargeting: {e}")
+        try:
+            import os, requests
+            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            chat_id = os.getenv("TELEGRAM_CHAT_ID")
+            if token and chat_id:
+                msg = f"🚨 <b>ERROR CRÍTICO EN CRON (Retargeting)</b>\n\nFalló la ejecución de <code>retargeting_vistas.py</code>:\n<pre>{e}</pre>"
+                requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+                    "chat_id": chat_id, "text": msg, "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
     finally:
         db.close()
         print("🏁 Conexión a base de datos cerrada.")

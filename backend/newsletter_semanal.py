@@ -246,6 +246,17 @@ def main():
 
     except Exception as e:
         print(f"❌ Error crítico en el proceso principal: {e}")
+        try:
+            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            chat_id = os.getenv("TELEGRAM_CHAT_ID")
+            if token and chat_id:
+                import requests
+                msg = f"🚨 <b>ERROR CRÍTICO EN CRON (Newsletter)</b>\n\nFalló la ejecución de <code>newsletter_semanal.py</code>:\n<pre>{e}</pre>"
+                requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+                    "chat_id": chat_id, "text": msg, "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
     finally:
         db.close()
         print("🏁 Proceso finalizado. Conexión cerrada.")
