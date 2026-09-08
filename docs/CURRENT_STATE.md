@@ -96,6 +96,9 @@ Implementación nativa de Google Analytics 4 en Next.js. El frontend ahora regis
   3. Dashboard interactivo -> Renderizado del Tamagotchi y botón de Check-in conectado.
 - [x] **[BACKEND] Fix de CORS:** Configuración exitosa de `CORSMiddleware` en FastAPI (`main.py`) para permitir peticiones preflight (`OPTIONS`) desde `localhost:3000` y `127.0.0.1:3000`.
 - [x] **[BBDD] Migración Manual Neon DB:** Inyección directa de SQL (`ALTER TABLE perfiles ADD COLUMN objetivo_etapa...`) para sincronizar el esquema de producción con los nuevos modelos de SQLAlchemy sin arriesgar la estabilidad con Alembic.
+- [x] **[FIX AUDITORÍA] CRONs Silenciosos Rotos:** Migración completa de `newsletter_semanal.py` y `retargeting_vistas.py` a la nueva arquitectura `Oferta.precio` para evitar fallos de lectura y pérdida de emails.
+- [x] **[FIX AUDITORÍA] Endpoints UGC (User Generated Content):** Exposición de las lógicas ocultas de base de datos creando los endpoints de lectura/escritura de reseñas (`GET`/`POST /api/resenas`) y Stacks interactivos (`GET /api/stacks/{id}`).
+- [x] **[FRONTEND FIX] Modal UI:** Resolución del bug visual de la superposición (Z-index/Opacity) en el pop-up de `ModalAñadirStack`.
 
 ## Sprint 3: Monolito Estable Restaurado (Legado)
 - **Estado Histórico:** El "Monolito Estable" se consolidó exitosamente, sirviendo de base para la posterior migración a la Fase 2 (Multi-Tienda).
