@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
