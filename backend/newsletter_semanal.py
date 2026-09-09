@@ -175,11 +175,11 @@ def enviar_newsletter_telegram(chollos):
         porcentaje = int(
             round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100)
         )
-        url = f"{frontend_url}/producto/{prod.slug}"
+        url = f"{frontend_url}/producto/{prod.producto.slug}"
         medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
         
         # Recorte de seguridad para nombres extra largos (protección límite 1024 chars)
-        nombre_corto = prod.nombre[:65] + "..." if len(prod.nombre) > 65 else prod.nombre
+        nombre_corto = prod.producto.nombre[:65] + "..." if len(prod.producto.nombre) > 65 else prod.producto.nombre
 
         mensaje += f"{medalla} <b><a href='{url}'>{nombre_corto}</a></b>\n"
         mensaje += f"💰 <s>{prod.precio_anterior:.2f}€</s> ➡️ <b>{prod.precio:.2f}€</b> (-{porcentaje}%)\n\n"
@@ -187,7 +187,7 @@ def enviar_newsletter_telegram(chollos):
     mensaje += "⚡️ <i>Las ofertas destacadas suelen agotarse rápido.</i>"
 
     # Inyección Visual: Usamos la imagen del chollo #1 como portada del mensaje
-    imagen_portada = chollos[0].imagen_url if chollos[0].imagen_url else "https://www.tussuplementos.com/Logo_icon2.png"
+    imagen_portada = chollos[0].producto.imagen_url if chollos[0].producto.imagen_url else "https://www.tussuplementos.com/Logo_icon2.png"
 
     # Cambiamos el endpoint a sendPhoto en lugar de sendMessage
     url_api = f"https://api.telegram.org/bot{token}/sendPhoto"

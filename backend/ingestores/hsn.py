@@ -876,6 +876,7 @@ def inyectar_en_bd():
                                         oferta_hsn.historial_precios.append(
                                             models.HistorialPrecio(precio=round(precio_norm, 2))
                                         )
+                                        oferta_hsn.publicado_telegram = False
 
                                     if precio_ant_norm is not None:
                                         oferta_hsn.precio_anterior = precio_ant_norm

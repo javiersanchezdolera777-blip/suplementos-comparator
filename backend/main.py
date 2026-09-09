@@ -820,6 +820,7 @@ def crear_perfil(
     perfil_in: schemas.PerfilCreate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     # 1. Comprobar si el usuario ya tiene un perfil (Solo se permite 1 por
     # cuenta)
@@ -875,6 +876,7 @@ def actualizar_mi_perfil(
     perfil_update: schemas.PerfilUpdate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Actualiza la información del perfil del usuario logueado."""
     mi_perfil = usuario_actual.perfil
@@ -1243,6 +1245,7 @@ def obtener_notificaciones(
 def marcar_notificaciones_leidas(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     mi_perfil = usuario_actual.perfil
     if not mi_perfil:
@@ -1630,6 +1633,7 @@ def registrar_vista_producto(
     producto_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     from datetime import datetime
 
