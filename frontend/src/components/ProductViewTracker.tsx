@@ -6,17 +6,17 @@ export default function ProductViewTracker({ productId }: { productId: number })
   useEffect(() => {
     const trackView = async () => {
       try {
-        // Obtenemos el token de donde lo tengas guardado (ajusta la key si se llama distinto)
-        const token = localStorage.getItem('access_token') || localStorage.getItem('suparator_token');
-        if (!token) return;
+        // La validación se hace por cookie HttpOnly, ya no necesitamos extraer del localStorage
+        const token = "dummy"; // Dummy fallback to avoid refactoring entire effect logic if not strictly needed. Wait, actually I can just use checkAuth or assume user is logged in
+        // However, I can just remove token usage.
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         
         await fetch(`${apiUrl}/api/historial/${productId}`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json'
           }
         });
       } catch (error) {

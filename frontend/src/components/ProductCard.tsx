@@ -110,7 +110,7 @@ export default function ProductCard({ product }: { product: Product }) {
     setMounted(true);
   }, []);
 
-  const { isLoggedIn, openLoginModal, token, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
+  const { isLoggedIn, openLoginModal, favoriteIds, addFavoriteId, removeFavoriteId } = useAuth();
 
   // 👇 AQUÍ ESTABA EL ERROR: Hemos descomentado las variables de Javi
   const { addId, removeId, compareIds } = useCompareStore();
@@ -190,7 +190,7 @@ export default function ProductCard({ product }: { product: Product }) {
         removeFavoriteId(product.id);
         setToastMsg("Eliminado de tus favoritos");
         setTimeout(() => setToastMsg(null), 2000);
-        const res = await fetch(`${apiUrl}/api/favoritos/${product.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${apiUrl}/api/favoritos/${product.id}`, { method: 'DELETE', credentials: 'include' });
         if (!res.ok) addFavoriteId(product.id);
       } else {
         trackInteraction('add_favorite', formattedName);
@@ -199,7 +199,8 @@ export default function ProductCard({ product }: { product: Product }) {
         setTimeout(() => setToastMsg(null), 2000);
         const res = await fetch(`${apiUrl}/api/favoritos`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ producto_id: product.id })
         });
         if (!res.ok) removeFavoriteId(product.id);

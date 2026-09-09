@@ -29,13 +29,12 @@ export default function GestorStacks({ perfil, recargarPerfil }: Props) {
     setMensaje("");
     
     try {
-      const token = localStorage.getItem("suparator_token");
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/stacks`, {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           nombre: nombre,

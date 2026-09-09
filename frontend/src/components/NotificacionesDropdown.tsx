@@ -15,14 +15,9 @@ export default function NotificacionesDropdown() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotificaciones = async () => {
-    const token = localStorage.getItem("suparator_token");
-    if (!token) return;
-
     try {
       const res = await fetch("http://localhost:8000/api/comunidad/notificaciones", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -34,15 +29,10 @@ export default function NotificacionesDropdown() {
   };
 
   const marcarComoLeidas = async () => {
-    const token = localStorage.getItem("suparator_token");
-    if (!token) return;
-
     try {
       await fetch("http://localhost:8000/api/comunidad/notificaciones/marcar-leidas", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       // Actualizamos estado local
       setNotificaciones(notificaciones.map(n => ({ ...n, leida: true })));
