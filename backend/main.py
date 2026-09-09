@@ -911,6 +911,7 @@ def obtener_mi_perfil(
 @app.get("/api/perfil/{username}", tags=["Comunidad - Perfiles"])
 def obtener_perfil_publico(
     username: str, 
+    request: Request,
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
@@ -924,10 +925,14 @@ def obtener_perfil_publico(
         raise HTTPException(status_code=404, detail="Perfil no encontrado.")
         
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
                 email: str = payload.get("sub")
                 if email:
@@ -971,6 +976,7 @@ def obtener_perfil_publico(
 @app.get("/api/comunidad/buscar", tags=["Comunidad - Social"])
 def buscar_usuarios(
     q: str,
+    request: Request,
     db: Session = Depends(get_db),
     # Token opcional para saber si los sigo
     token: Optional[str] = Header(None, alias="Authorization")
@@ -989,10 +995,14 @@ def buscar_usuarios(
 
     # Comprobamos si estamos logueados para devolver 'is_following'
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(
                     token_str, security.SECRET_KEY, algorithms=[
                         security.ALGORITHM])
@@ -1049,6 +1059,7 @@ def obtener_leaderboard(db: Session = Depends(get_db)):
 
 @app.get("/api/comunidad/descubrir-stacks", tags=["Comunidad - Stacks"])
 def descubrir_stacks(
+    request: Request,
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
@@ -1068,10 +1079,14 @@ def descubrir_stacks(
 
     # Identificar al usuario actual para ver si ya le dio like
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
                 email: str = payload.get("sub")
                 if email:
@@ -1671,6 +1686,7 @@ def registrar_vista_producto(
 @app.get("/api/stacks/{stack_id}", response_model=schemas.StackResponse, tags=["Comunidad - Stacks"])
 def obtener_stack_individual(
     stack_id: int, 
+    request: Request,
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
