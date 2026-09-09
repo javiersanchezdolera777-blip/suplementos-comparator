@@ -39,6 +39,9 @@
 - **Refactorización NLP y Doble Barrera:** Se ha purgado definitivamente la basura de cosmética/veterinaria implementando un Filtro de Doble Barrera (Lista Negra inicial y Lista Blanca restrictiva al título) en los ingestores.
 - **Seguridad Parcheada:** Las vulnerabilidades de claves `SECRET_KEY` hardcodeadas y exposición de secretos han sido parcheadas; el sistema utiliza variables de entorno rotadas y seguras de forma estricta.
 
+### 5. Sistema de Medición Avanzado (GA4 Full-Funnel)
+Implementación nativa de Google Analytics 4 en Next.js. El frontend ahora registra de forma granular intenciones de búsqueda, uso del sidebar de filtros, interacciones de usuario (favoritos, modo versus) y el evento de conversión final (click_affiliate) a través de componentes híbridos (SSR/CSR).
+
 ## Tareas Completadas (Checklist Reciente)
 - [x] **[SEGURIDAD] Migración JWT a Cookies:** Autenticación de frontend migrada a patrón BFF con cookies HttpOnly, eliminando el uso de `localStorage` y añadiendo protección CSRF en los endpoints de mutación del backend.
 - [x] **[FIX] Orquestador y Notificaciones:** Corrección del modelo de datos (`Oferta` vs `Producto`) en el CRON de la newsletter y retargeting, además de solucionar el spam persistente de Telegram restaurando la validación del flag `publicado_telegram`.
@@ -92,6 +95,9 @@
   3. Dashboard interactivo -> Renderizado del Tamagotchi y botón de Check-in conectado.
 - [x] **[BACKEND] Fix de CORS:** Configuración exitosa de `CORSMiddleware` en FastAPI (`main.py`) para permitir peticiones preflight (`OPTIONS`) desde `localhost:3000` y `127.0.0.1:3000`.
 - [x] **[BBDD] Migración Manual Neon DB:** Inyección directa de SQL (`ALTER TABLE perfiles ADD COLUMN objetivo_etapa...`) para sincronizar el esquema de producción con los nuevos modelos de SQLAlchemy sin arriesgar la estabilidad con Alembic.
+- [x] **[FIX AUDITORÍA] CRONs Silenciosos Rotos:** Migración completa de `newsletter_semanal.py` y `retargeting_vistas.py` a la nueva arquitectura `Oferta.precio` para evitar fallos de lectura y pérdida de emails.
+- [x] **[FIX AUDITORÍA] Endpoints UGC (User Generated Content):** Exposición de las lógicas ocultas de base de datos creando los endpoints de lectura/escritura de reseñas (`GET`/`POST /api/resenas`) y Stacks interactivos (`GET /api/stacks/{id}`).
+- [x] **[FRONTEND FIX] Modal UI:** Resolución del bug visual de la superposición (Z-index/Opacity) en el pop-up de `ModalAñadirStack`.
 
 ## Sprint 3: Monolito Estable Restaurado (Legado)
 - **Estado Histórico:** El "Monolito Estable" se consolidó exitosamente, sirviendo de base para la posterior migración a la Fase 2 (Multi-Tienda).
@@ -99,7 +105,6 @@
 ## Backlog / Roadmap Técnico Pendiente
 - **Frontend - UI Historial de Precios:** Consumir el array `historial_precios` desde Next.js para renderizar componentes visuales (gráficas interactivas) en la ficha de cada producto.
 - **Arquitectura SEO y Rutas Dinámicas:** Migrar la dependencia actual de parámetros de búsqueda (`/?categoria=proteinas`) hacia páginas SSR/ISR reales (`/proteinas/whey`, `/marcas/hsn`, `/comparar/hsn-vs-myprotein`) para potenciar el indexado en Google.
-- **Sistema de Medición y Analytics (Funnel):** Implementar tracking avanzado en Next.js conectado a GA4 para trazar el flujo completo del usuario (desde la vista de categoría hasta el clic de afiliado `CLICK_AFFILIATE`).
 - **Algoritmo de Ranking Antimonopolio:** Refinar la ordenación de `/api/productos` creando un SCORE combinado (relevancia + calidad + precio + clics) para evitar que una sola tienda monopolice las primeras páginas.
 
 ## Backlog de Negocio

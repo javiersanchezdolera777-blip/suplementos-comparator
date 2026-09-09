@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
@@ -23,15 +24,16 @@ from services.email_service import enviar_newsletter_suscripcion
 
 
 def obtener_top_5_chollos(db):
-    # Productos en oferta
-    base_query = db.query(models.Producto).filter(
-        models.Producto.precio_anterior != None,
-        models.Producto.precio_anterior > models.Producto.precio,
+    # Ofertas activas con descuento real
+    base_query = db.query(models.Oferta).join(models.Producto).filter(
+        models.Oferta.activo == True,
+        models.Oferta.precio_anterior != None,
+        models.Oferta.precio_anterior > models.Oferta.precio,
     )
 
     # 1. Buscar prioritarios: Proteínas o Creatina
     prioritarios = (
-        base_query.join(models.Categoria)
+        base_query.join(models.Categoria, models.Producto.categoria_id == models.Categoria.id)
         .filter(
             or_(
                 models.Categoria.nombre.ilike("%prote%"),
@@ -40,13 +42,13 @@ def obtener_top_5_chollos(db):
                 models.Producto.nombre.ilike("%creatin%"),
             )
         )
-        .order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+        .order_by((models.Oferta.precio_anterior - models.Oferta.precio).desc())
         .limit(3)
         .all()
     )
 
-    # Extraer IDs para no repetir
-    ids_prioritarios = [p.id for p in prioritarios]
+    # Extraer IDs de Oferta para no repetir
+    ids_prioritarios = [o.id for o in prioritarios]
 
     # 2. Buscar el resto para completar los 5
     faltantes = 5 - len(prioritarios)
@@ -54,9 +56,9 @@ def obtener_top_5_chollos(db):
     if faltantes > 0:
         query_resto = (
             base_query.filter(
-                ~models.Producto.id.in_(ids_prioritarios) if ids_prioritarios else True
+                ~models.Oferta.id.in_(ids_prioritarios) if ids_prioritarios else True
             )
-            .order_by((models.Producto.precio_anterior - models.Producto.precio).desc())
+            .order_by((models.Oferta.precio_anterior - models.Oferta.precio).desc())
             .limit(faltantes)
         )
         resto = query_resto.all()
@@ -80,12 +82,13 @@ def enviar_newsletter_email(chollos):
 
         html_productos = ""
         medallas_html = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-        for idx, prod in enumerate(chollos):
+        for idx, oferta in enumerate(chollos):
+            prod = oferta.producto
             medalla = medallas_html[idx] if idx < 5 else f"{idx+1}️⃣"
-            ahorro = round(prod.precio_anterior - prod.precio, 2)
+            ahorro = round(oferta.precio_anterior - oferta.precio, 2)
             porcentaje = int(
                 round(
-                    ((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100
+                    ((oferta.precio_anterior - oferta.precio) / oferta.precio_anterior) * 100
                 )
             )
 
@@ -104,15 +107,16 @@ def enviar_newsletter_email(chollos):
                 {img_thumb}
                 <div style="flex-grow: 1; margin-left: 10px;">
                     <div style="display: inline-block; background-color: #fee2e2; color: #ef4444; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">
-                        -{porcentaje}% DTO
+                        -{porcentaje}% DTO en {oferta.tienda}
                     </div>
                     <h3 style="margin-top: 0; color: #0f172a; font-size: 16px; font-weight: 700; line-height: 1.2; margin-bottom: 8px;">{prod.nombre}</h3>
                     <div style="display: flex; align-items: baseline; margin-bottom: 12px;">
-                        <span style="font-size: 22px; font-weight: 900; color: #059669; line-height: 1;">{prod.precio:.2f}€</span>
-                        <span style="font-size: 13px; color: #94a3b8; text-decoration: line-through; margin-left: 8px;">{prod.precio_anterior:.2f}€</span>
+                        <span style="font-size: 22px; font-weight: 900; color: #059669; line-height: 1;">{oferta.precio:.2f}€</span>
+                        <span style="font-size: 13px; color: #94a3b8; text-decoration: line-through; margin-left: 8px;">{oferta.precio_anterior:.2f}€</span>
                     </div>
                     <a href="{frontend_url}/producto/{prod.slug}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; text-transform: uppercase;">
                         Ver Oferta
+
                     </a>
                 </div>
             </div>
@@ -171,11 +175,11 @@ def enviar_newsletter_telegram(chollos):
         porcentaje = int(
             round(((prod.precio_anterior - prod.precio) / prod.precio_anterior) * 100)
         )
-        url = f"{frontend_url}/producto/{prod.slug}"
+        url = f"{frontend_url}/producto/{prod.producto.slug}"
         medalla = medallas[idx] if idx < 5 else f"{idx+1}️⃣"
         
         # Recorte de seguridad para nombres extra largos (protección límite 1024 chars)
-        nombre_corto = prod.nombre[:65] + "..." if len(prod.nombre) > 65 else prod.nombre
+        nombre_corto = prod.producto.nombre[:65] + "..." if len(prod.producto.nombre) > 65 else prod.producto.nombre
 
         mensaje += f"{medalla} <b><a href='{url}'>{nombre_corto}</a></b>\n"
         mensaje += f"💰 <s>{prod.precio_anterior:.2f}€</s> ➡️ <b>{prod.precio:.2f}€</b> (-{porcentaje}%)\n\n"
@@ -183,7 +187,7 @@ def enviar_newsletter_telegram(chollos):
     mensaje += "⚡️ <i>Las ofertas destacadas suelen agotarse rápido.</i>"
 
     # Inyección Visual: Usamos la imagen del chollo #1 como portada del mensaje
-    imagen_portada = chollos[0].imagen_url if chollos[0].imagen_url else "https://www.tussuplementos.com/Logo_icon2.png"
+    imagen_portada = chollos[0].producto.imagen_url if chollos[0].producto.imagen_url else "https://www.tussuplementos.com/Logo_icon2.png"
 
     # Cambiamos el endpoint a sendPhoto en lugar de sendMessage
     url_api = f"https://api.telegram.org/bot{token}/sendPhoto"
@@ -243,6 +247,17 @@ def main():
 
     except Exception as e:
         print(f"❌ Error crítico en el proceso principal: {e}")
+        try:
+            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            chat_id = os.getenv("TELEGRAM_CHAT_ID")
+            if token and chat_id:
+                import requests
+                msg = f"🚨 <b>ERROR CRÍTICO EN CRON (Newsletter)</b>\n\nFalló la ejecución de <code>newsletter_semanal.py</code>:\n<pre>{e}</pre>"
+                requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+                    "chat_id": chat_id, "text": msg, "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
     finally:
         db.close()
         print("🏁 Proceso finalizado. Conexión cerrada.")

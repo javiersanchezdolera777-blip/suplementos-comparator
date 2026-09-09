@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query
+from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func, nulls_last, desc
@@ -24,6 +24,10 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API de Suplementos")
 
+# Control de Entorno
+IS_PROD = os.getenv("ENV") == "production"
+
+
 # --- CONFIGURACIÓN DE CORS ---
 origins = [
     "https://www.tussuplementos.com",
@@ -31,10 +35,9 @@ origins = [
     "https://www.tussuplementos.es",
     "https://tussuplementos.es",
     "https://suplementos-comparator.vercel.app",
-    "http://192.168.64.1:3000"
+    "http://192.168.64.1:3000",
     "http://localhost:3000",
-    "http://localhost:8000",
-    "*"
+    "http://localhost:8000"
 ]
 
 app.add_middleware(
@@ -46,6 +49,21 @@ app.add_middleware(
 )
 
 
+def verificar_csrf(request: Request):
+    """
+    Mitigación CSRF Básica:
+    Valida que la cabecera Origin o Referer coincida con los dominios permitidos.
+    """
+    origen = request.headers.get("origin") or request.headers.get("referer")
+    if not origen:
+        raise HTTPException(status_code=403, detail="Falta cabecera Origin/Referer (CSRF Protection)")
+        
+    origen_limpio = origen.rstrip("/")
+    if origen_limpio not in origins:
+        # Permitir requests desde las previews de vercel si no coinciden exactas
+        if "vercel.app" not in origen_limpio and "localhost" not in origen_limpio:
+            raise HTTPException(status_code=403, detail="Origen no permitido (CSRF Protection)")
+
 def get_db():
     db = SessionLocal()
     try:
@@ -55,7 +73,7 @@ def get_db():
 
 
 # --- ENDPOINT ULTRALIGERO PARA KEEP-ALIVE ---
-@app.get("/api/health")
+@app.get("/api/health", tags=["Sistema"])
 def health_check():
     return {
         "status": "ok",
@@ -65,7 +83,7 @@ def health_check():
 
 
 # --- RUTA DE MARCAS (CON PRODUCTOS) ---
-@app.get("/api/marcas", response_model=List[schemas.BrandResponse])
+@app.get("/api/marcas", response_model=List[schemas.BrandResponse], tags=["Catálogo y Búsqueda"])
 def listar_marcas(db: Session = Depends(get_db)):
     """Devuelve únicamente las marcas que tienen productos en catálogo."""
     return (
@@ -77,7 +95,7 @@ def listar_marcas(db: Session = Depends(get_db)):
 
 
 # --- RUTA: DICCIONARIO DE FILTROS COMPLETOS ---
-@app.get("/api/config/filtros")
+@app.get("/api/config/filtros", tags=["Catálogo y Búsqueda"])
 def obtener_filtros(db: Session = Depends(get_db)):
     marcas_activas = (
         db.query(models.Marca)
@@ -127,7 +145,7 @@ def obtener_filtros(db: Session = Depends(get_db)):
     }
 
 
-@app.get("/api/productos/live-search")
+@app.get("/api/productos/live-search", tags=["Catálogo y Búsqueda"])
 def live_search(q: str = Query(..., min_length=1),
                 db: Session = Depends(get_db)):
     grupos_tokens = expandir_terminos_busqueda(q)
@@ -192,7 +210,7 @@ def live_search(q: str = Query(..., min_length=1),
 
 
 # --- RUTA PRINCIPAL DE PRODUCTOS ---
-@app.get("/api/productos", response_model=schemas.PaginatedProducts)
+@app.get("/api/productos", response_model=schemas.PaginatedProducts, tags=["Catálogo y Búsqueda"])
 def obtener_productos(
     request: Request,
     skip: int = 0,
@@ -490,7 +508,7 @@ def obtener_productos(
 # ==========================================
 # --- RUTA DE COMPARADOR MULTITIENDA ---
 # ==========================================
-@app.get("/api/productos/comparar",
+@app.get("/api/productos/comparar", tags=["Catálogo y Búsqueda"],
          response_model=List[schemas.ProductResponse])
 def comparar_productos(
     ids: str = Query(
@@ -549,7 +567,7 @@ def comparar_productos(
 
 
 # --- RUTA DE PRODUCTO INDIVIDUAL POR ID ---
-@app.get("/api/productos/{producto_id}",
+@app.get("/api/productos/{producto_id}", tags=["Catálogo y Búsqueda"],
          response_model=schemas.ProductResponse)
 def obtener_producto_individual(
         producto_id: int,
@@ -564,7 +582,7 @@ def obtener_producto_individual(
 
 
 # --- RUTA DE PRODUCTO INDIVIDUAL POR SLUG ---
-@app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse)
+@app.get("/api/productos/slug/{slug}", response_model=schemas.ProductResponse, tags=["Catálogo y Búsqueda"])
 def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
     producto = db.query(
         models.Producto).filter(
@@ -577,7 +595,7 @@ def obtener_producto_por_slug(slug: str, db: Session = Depends(get_db)):
 # ==========================================
 # --- CLOAKER DE AFILIADOS Y TRACKING ---
 # ==========================================
-@app.get("/api/out/{tienda}/{slug}")
+@app.get("/api/out/{tienda}/{slug}", tags=["Catálogo y Búsqueda"])
 def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
     """
     Registra el clic en la base de datos y redirige al enlace de afiliado real.
@@ -616,7 +634,7 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
 # ==========================================
 
 
-@app.post("/api/registro", response_model=schemas.UsuarioResponse)
+@app.post("/api/registro", response_model=schemas.UsuarioResponse, tags=["Autenticación y Sesión"])
 def registrar_usuario(
         usuario: schemas.UsuarioCreate,
         db: Session = Depends(get_db)):
@@ -638,9 +656,10 @@ def registrar_usuario(
     return nuevo_usuario
 
 
-@app.post("/api/login", response_model=schemas.Token)
+@app.post("/api/login", tags=["Autenticación y Sesión"])
 def iniciar_sesion(
         usuario: schemas.UsuarioCreate,
+        response: Response,
         db: Session = Depends(get_db)):
     user_db = (
         db.query(
@@ -653,13 +672,24 @@ def iniciar_sesion(
                             detail="Email o contraseña incorrectos")
 
     access_token = security.crear_token_acceso(data={"sub": user_db.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=IS_PROD,
+        samesite="lax",
+        domain=".tussuplementos.com" if IS_PROD else None,
+        max_age=60 * 60 * 24 * 7,
+        path="/",
+    )
+    return {"mensaje": "Login exitoso"}
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/swagger")
 
 
-@app.post("/api/login/swagger", include_in_schema=False)
+@app.post("/api/login/swagger", include_in_schema=False, tags=["Autenticación y Sesión"])
 def login_exclusivo_swagger(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)):
@@ -680,13 +710,23 @@ def login_exclusivo_swagger(
 
 
 def obtener_usuario_actual(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db)
 ):
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            
     credenciales_exception = HTTPException(
         status_code=401,
         detail="No se pudo validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        raise credenciales_exception
     try:
         payload = security.jwt.decode(
             token, security.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -708,8 +748,8 @@ class GoogleToken(BaseModel):
     token: str
 
 
-@app.post("/api/auth/google")
-def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
+@app.post("/api/auth/google", tags=["Autenticación y Sesión"])
+def login_con_google(google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
     try:
         # Obtenemos el Client ID desde la variable de entorno
         client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -734,11 +774,40 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
             db.refresh(usuario)
 
         access_token = security.crear_token_acceso(data={"sub": usuario.email})
-        return {"access_token": access_token, "token_type": "bearer"}
+        
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=IS_PROD,
+            samesite="lax",
+            domain=".tussuplementos.com" if IS_PROD else None,
+            max_age=60 * 60 * 24 * 7,
+            path="/",
+        )
+        return {"mensaje": "Login con Google exitoso"}
 
     except ValueError as e:
         print(f"🛑 EL MOTIVO EXACTO DEL RECHAZO ES: {e}")
         raise HTTPException(status_code=401, detail="Token de Google inválido")
+
+
+@app.post("/api/logout", tags=["Autenticación y Sesión"])
+def logout(response: Response):
+    response.delete_cookie(
+        "access_token", 
+        domain=".tussuplementos.com" if IS_PROD else None, 
+        path="/"
+    )
+    return {"mensaje": "Sesión cerrada"}
+
+
+@app.get("/api/auth/me", tags=["Autenticación y Sesión"])
+def quien_soy(usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
+    return {
+        "id": usuario_actual.id,
+        "email": usuario_actual.email
+    }
 
 
 # ==========================================
@@ -746,11 +815,12 @@ def login_con_google(google_data: GoogleToken, db: Session = Depends(get_db)):
 # ==========================================
 
 
-@app.post("/api/perfil", response_model=schemas.PerfilResponse)
+@app.post("/api/perfil", response_model=schemas.PerfilResponse, tags=["Comunidad - Perfiles"])
 def crear_perfil(
     perfil_in: schemas.PerfilCreate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     # 1. Comprobar si el usuario ya tiene un perfil (Solo se permite 1 por
     # cuenta)
@@ -801,11 +871,12 @@ def crear_perfil(
     return nuevo_perfil
 
 
-@app.put("/api/perfil/me", response_model=schemas.PerfilResponse)
+@app.put("/api/perfil/me", response_model=schemas.PerfilResponse, tags=["Comunidad - Perfiles"])
 def actualizar_mi_perfil(
     perfil_update: schemas.PerfilUpdate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Actualiza la información del perfil del usuario logueado."""
     mi_perfil = usuario_actual.perfil
@@ -826,7 +897,7 @@ def actualizar_mi_perfil(
     return mi_perfil
 
 
-@app.get("/api/perfil/me", response_model=schemas.PerfilResponse)
+@app.get("/api/perfil/me", response_model=schemas.PerfilResponse, tags=["Comunidad - Perfiles"])
 def obtener_mi_perfil(
         usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
     """Devuelve el perfil social del usuario que tiene la sesión iniciada."""
@@ -837,9 +908,10 @@ def obtener_mi_perfil(
     return usuario_actual.perfil
 
 
-@app.get("/api/perfil/{username}")
+@app.get("/api/perfil/{username}", tags=["Comunidad - Perfiles"])
 def obtener_perfil_publico(
     username: str, 
+    request: Request,
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
@@ -853,10 +925,14 @@ def obtener_perfil_publico(
         raise HTTPException(status_code=404, detail="Perfil no encontrado.")
         
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
                 email: str = payload.get("sub")
                 if email:
@@ -897,9 +973,10 @@ def obtener_perfil_publico(
 # ==========================================
 
 
-@app.get("/api/comunidad/buscar")
+@app.get("/api/comunidad/buscar", tags=["Comunidad - Social"])
 def buscar_usuarios(
     q: str,
+    request: Request,
     db: Session = Depends(get_db),
     # Token opcional para saber si los sigo
     token: Optional[str] = Header(None, alias="Authorization")
@@ -918,10 +995,14 @@ def buscar_usuarios(
 
     # Comprobamos si estamos logueados para devolver 'is_following'
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(
                     token_str, security.SECRET_KEY, algorithms=[
                         security.ALGORITHM])
@@ -954,7 +1035,7 @@ def buscar_usuarios(
     return resultados
 
 
-@app.get("/api/comunidad/leaderboard")
+@app.get("/api/comunidad/leaderboard", tags=["Comunidad - Social"])
 def obtener_leaderboard(db: Session = Depends(get_db)):
     """Devuelve los 5 mejores atletas por puntos totales."""
     top_perfiles = (
@@ -976,8 +1057,9 @@ def obtener_leaderboard(db: Session = Depends(get_db)):
     return resultados
 
 
-@app.get("/api/comunidad/descubrir-stacks")
+@app.get("/api/comunidad/descubrir-stacks", tags=["Comunidad - Stacks"])
 def descubrir_stacks(
+    request: Request,
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
@@ -997,10 +1079,14 @@ def descubrir_stacks(
 
     # Identificar al usuario actual para ver si ya le dio like
     usuario_actual = None
-    if token:
+    token_str = request.cookies.get("access_token")
+    if not token_str and token:
+        scheme, _, fallback_token_str = token.partition(" ")
+        if scheme.lower() == "bearer" and fallback_token_str:
+            token_str = fallback_token_str
+
+    if token_str:
         try:
-            scheme, _, token_str = token.partition(" ")
-            if scheme.lower() == "bearer" and token_str:
                 payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
                 email: str = payload.get("sub")
                 if email:
@@ -1035,11 +1121,12 @@ def descubrir_stacks(
     return resultados
 
 
-@app.post("/api/stacks/{stack_id}/like")
+@app.post("/api/stacks/{stack_id}/like", tags=["Comunidad - Stacks"])
 def toggle_like_stack(
     stack_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(obtener_usuario_actual)
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     mi_perfil = usuario_actual.perfil
     if not mi_perfil:
@@ -1091,11 +1178,12 @@ def toggle_like_stack(
     return {"mensaje": mensaje, "liked": liked, "likes_count": nuevo_count}
 
 
-@app.post("/api/comunidad/seguir/{username}")
+@app.post("/api/comunidad/seguir/{username}", tags=["Comunidad - Social"])
 def seguir_usuario(
     username: str,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Permite al usuario logueado seguir a otro perfil."""
     mi_perfil = usuario_actual.perfil
@@ -1140,7 +1228,7 @@ def seguir_usuario(
     return {"mensaje": f"¡Ahora sigues a {perfil_objetivo.username}!"}
 
 
-@app.get("/api/comunidad/notificaciones")
+@app.get("/api/comunidad/notificaciones", tags=["Comunidad - Notificaciones"])
 def obtener_notificaciones(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
@@ -1168,10 +1256,11 @@ def obtener_notificaciones(
     ]
 
 
-@app.post("/api/comunidad/notificaciones/marcar-leidas")
+@app.post("/api/comunidad/notificaciones/marcar-leidas", tags=["Comunidad - Notificaciones"])
 def marcar_notificaciones_leidas(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     mi_perfil = usuario_actual.perfil
     if not mi_perfil:
@@ -1187,11 +1276,12 @@ def marcar_notificaciones_leidas(
 
 
 
-@app.delete("/api/comunidad/seguir/{username}")
+@app.delete("/api/comunidad/seguir/{username}", tags=["Comunidad - Social"])
 def dejar_de_seguir_usuario(
     username: str,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Permite al usuario logueado dejar de seguir a otro perfil."""
     mi_perfil = usuario_actual.perfil
@@ -1224,11 +1314,12 @@ def dejar_de_seguir_usuario(
 # ==========================================
 
 
-@app.post("/api/stacks", response_model=schemas.StackResponse)
+@app.post("/api/stacks", response_model=schemas.StackResponse, tags=["Comunidad - Stacks"])
 def crear_stack(
     stack_in: schemas.StackCreate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Crea un nuevo Stack vacío para el usuario (Ej: 'Definición 2026')."""
     mi_perfil = usuario_actual.perfil
@@ -1250,12 +1341,13 @@ def crear_stack(
     return nuevo_stack
 
 
-@app.post("/api/stacks/{stack_id}/productos/{producto_id}")
+@app.post("/api/stacks/{stack_id}/productos/{producto_id}", tags=["Comunidad - Stacks"])
 def anadir_producto_a_stack(
     stack_id: int,
     producto_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Mete un producto de la tienda dentro de un Stack tuyo."""
     mi_perfil = usuario_actual.perfil
@@ -1299,12 +1391,13 @@ def anadir_producto_a_stack(
             stack.nombre}'"}
 
 
-@app.delete("/api/stacks/{stack_id}/productos/{producto_id}")
+@app.delete("/api/stacks/{stack_id}/productos/{producto_id}", tags=["Comunidad - Stacks"])
 def quitar_producto_de_stack(
     stack_id: int,
     producto_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """Saca un producto de tu Stack."""
     mi_perfil = usuario_actual.perfil
@@ -1343,10 +1436,11 @@ def quitar_producto_de_stack(
 # ==========================================
 
 
-@app.post("/api/comunidad/checkin")
+@app.post("/api/comunidad/checkin", tags=["Comunidad - Gamificación"])
 def hacer_checkin_diario(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     """El ritual diario. Gana puntos y mantén tu racha de suplementación."""
     from datetime import date, timedelta
@@ -1429,11 +1523,12 @@ def hacer_checkin_diario(
 # ==========================================
 
 
-@app.post("/api/favoritos")
+@app.post("/api/favoritos", tags=["Personal - Favoritos"])
 def añadir_favorito(
     favorito: schemas.FavoritoCreate,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     producto = (
         db.query(models.Producto)
@@ -1463,7 +1558,7 @@ def añadir_favorito(
     return {"mensaje": "Producto añadido a favoritos correctamente"}
 
 
-@app.get("/api/favoritos", response_model=List[schemas.FavoriteResponse])
+@app.get("/api/favoritos", response_model=List[schemas.FavoriteResponse], tags=["Personal - Favoritos"])
 def obtener_favoritos(
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
@@ -1475,11 +1570,12 @@ def obtener_favoritos(
     )
 
 
-@app.delete("/api/favoritos/{producto_id}")
+@app.delete("/api/favoritos/{producto_id}", tags=["Personal - Favoritos"])
 def eliminar_favorito(
     producto_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     favorito = (
         db.query(models.Favorito)
@@ -1505,7 +1601,7 @@ def eliminar_favorito(
 # ==========================================
 
 
-@app.post("/api/newsletter/subscribe")
+@app.post("/api/newsletter/subscribe", tags=["Newsletter"])
 def suscribir_newsletter(
     suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
 ):
@@ -1547,11 +1643,12 @@ def suscribir_newsletter(
 # ==========================================
 
 
-@app.post("/api/historial/{producto_id}")
+@app.post("/api/historial/{producto_id}", tags=["Personal - Historial"])
 def registrar_vista_producto(
     producto_id: int,
     db: Session = Depends(get_db),
     usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
 ):
     from datetime import datetime
 
@@ -1582,6 +1679,90 @@ def registrar_vista_producto(
     db.commit()
     return {"status": "ok"}
 
+
+# ==========================================
+# --- UGC: RESEÑAS Y STACKS INDIVIDUALES ---
+# ==========================================
+@app.get("/api/stacks/{stack_id}", response_model=schemas.StackResponse, tags=["Comunidad - Stacks"])
+def obtener_stack_individual(
+    stack_id: int, 
+    request: Request,
+    db: Session = Depends(get_db),
+    token: Optional[str] = Header(None, alias="Authorization")
+):
+    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    if not stack:
+        raise HTTPException(status_code=404, detail="Stack no encontrado")
+        
+    stack_data = schemas.StackResponse.model_validate(stack).model_dump()
+    stack_data["autor_username"] = stack.creador.username if stack.creador else "Desconocido"
+    stack_data["autor_foto"] = stack.creador.foto_perfil if stack.creador else None
+    stack_data["likes_count"] = stack.likes_count
+    
+    is_liked_by_me = False
+    if token:
+        try:
+            scheme, _, token_str = token.partition(" ")
+            if scheme.lower() == "bearer" and token_str:
+                payload = security.jwt.decode(token_str, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+                email: str = payload.get("sub")
+                if email:
+                    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+                    if usuario and usuario.perfil:
+                        like_exists = db.query(models.stack_likes).filter_by(
+                            stack_id=stack.id, perfil_id=usuario.perfil.id
+                        ).first()
+                        if like_exists:
+                            is_liked_by_me = True
+        except Exception:
+            pass
+            
+    stack_data["is_liked_by_me"] = is_liked_by_me
+    return stack_data
+
+
+@app.get("/api/resenas", response_model=List[schemas.ResenaSaborResponse], tags=["Comunidad - Reseñas"])
+def listar_resenas(producto_id: int = Query(...), db: Session = Depends(get_db)):
+    resenas = db.query(models.ResenaSabor).filter(models.ResenaSabor.producto_id == producto_id).order_by(models.ResenaSabor.fecha.desc()).all()
+    
+    resultados = []
+    for r in resenas:
+        data = schemas.ResenaSaborResponse.model_validate(r).model_dump()
+        data["autor_username"] = r.perfil.username if r.perfil else "Usuario"
+        data["autor_foto"] = r.perfil.foto_perfil if r.perfil else None
+        resultados.append(data)
+    return resultados
+
+
+@app.post("/api/resenas", response_model=schemas.ResenaSaborResponse, tags=["Comunidad - Reseñas"])
+def crear_resena(
+    resena: schemas.ResenaSaborCreate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(obtener_usuario_actual),
+    _csrf: None = Depends(verificar_csrf)
+):
+    if not usuario_actual.perfil:
+        raise HTTPException(status_code=400, detail="Debes crear un perfil primero para dejar una reseña.")
+        
+    prod = db.query(models.Producto).filter(models.Producto.id == resena.producto_id).first()
+    if not prod:
+        raise HTTPException(status_code=404, detail="Producto no encontrado.")
+        
+    nueva_resena = models.ResenaSabor(
+        perfil_id=usuario_actual.perfil.id,
+        producto_id=resena.producto_id,
+        sabor_probado=resena.sabor_probado,
+        nota=resena.nota,
+        comentario=resena.comentario
+    )
+    db.add(nueva_resena)
+    db.commit()
+    db.refresh(nueva_resena)
+    
+    data = schemas.ResenaSaborResponse.model_validate(nueva_resena).model_dump()
+    data["autor_username"] = usuario_actual.perfil.username
+    data["autor_foto"] = usuario_actual.perfil.foto_perfil
+    return data
 
 # ==========================================
 # --- ARRANQUE DEL SERVIDOR (RENDER) ---

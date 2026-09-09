@@ -1,6 +1,7 @@
 import os
 import sys
 from datetime import datetime, timedelta
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 import resend
 
@@ -19,7 +20,11 @@ def generar_html_retargeting(productos, frontend_url):
     html_productos = ""
     for prod in productos:
         producto_url = f"{frontend_url}/producto/{prod.slug}"
-        precio = prod.precio if prod.precio else 0.0
+        
+        # Encontrar la mejor oferta activa
+        ofertas_activas = [o for o in prod.ofertas if o.activo]
+        mejor_oferta = min(ofertas_activas, key=lambda x: x.precio) if ofertas_activas else None
+        precio = mejor_oferta.precio if mejor_oferta else 0.0
 
         # Miniatura de la foto del producto
         img_thumb = (
@@ -129,7 +134,10 @@ def ejecutar_retargeting():
                 f"🔍 DEBUG: Evaluando {len(productos_unicos)} productos únicos para {usuario.email}"
             )
             for p in productos_unicos:
-                precio_debug = p.precio if p.precio else "0.0 (None)"
+                ofertas_activas = [o for o in p.ofertas if o.activo]
+                mejor_oferta = min(ofertas_activas, key=lambda x: x.precio) if ofertas_activas else None
+                precio_debug = mejor_oferta.precio if mejor_oferta else 0.0
+                
                 print(
                     f"   -> Producto: '{p.nombre}' | Precio: {precio_debug} | Slug: '{p.slug}'"
                 )
@@ -168,6 +176,17 @@ def ejecutar_retargeting():
         print(f"✅ Proceso finalizado. Emails enviados: {enviados}")
     except Exception as e:
         print(f"❌ Error crítico en retargeting: {e}")
+        try:
+            import os, requests
+            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            chat_id = os.getenv("TELEGRAM_CHAT_ID")
+            if token and chat_id:
+                msg = f"🚨 <b>ERROR CRÍTICO EN CRON (Retargeting)</b>\n\nFalló la ejecución de <code>retargeting_vistas.py</code>:\n<pre>{e}</pre>"
+                requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+                    "chat_id": chat_id, "text": msg, "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
     finally:
         db.close()
         print("🏁 Conexión a base de datos cerrada.")
