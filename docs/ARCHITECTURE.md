@@ -100,9 +100,11 @@ Para garantizar la seguridad y la correcta conexión entre servicios, el proyect
 > [!WARNING]  
 > **Guía de Despliegue Crítica:** Debes configurar todas estas variables de entorno en los paneles de control de tus respectivos hostings (Vercel para el Frontend y Render para el Backend) **ANTES** de realizar el primer despliegue. Si un despliegue se inicia sin las variables inyectadas, fallarán los builds o, peor aún, los endpoints de autenticación y base de datos rechazarán las conexiones.
 
-## Autenticación y Seguridad (OAuth Google)
+## Autenticación y Seguridad (BFF & Cookies HttpOnly)
 
-El proyecto utiliza una arquitectura de autenticación JWT híbrida. El frontend obtiene el token de Google y el backend lo valida e intercambia por un JWT propio.
+El proyecto utiliza una arquitectura de autenticación robusta mediante el patrón Backend-for-Frontend (BFF). El frontend obtiene el token OAuth de Google y el backend lo valida, estableciendo una sesión gestionada enteramente a través de **Cookies `HttpOnly`**.
+- El uso de `localStorage` para almacenar tokens JWT ha sido erradicado, eliminando los vectores de ataque XSS.
+- Todos los endpoints protegidos y de mutación exigen la validación cruzada mediante **protección CSRF** evaluando la cabecera `Origin` o `Referer` contra la lista de dominios permitidos (`origins`), rechazando de forma proactiva solicitudes cruzadas no autorizadas.
 
 > [!IMPORTANT]  
 > **Añadir dominios a Google Cloud Console:** Si despliegas la aplicación en un nuevo dominio (o quieres probarla en un entorno distinto a localhost), es obligatorio ir a la [Google Cloud Console](https://console.cloud.google.com/), navegar a **API y Servicios > Credenciales**, seleccionar tu Cliente OAuth 2.0 y añadir el nuevo dominio a las listas de:

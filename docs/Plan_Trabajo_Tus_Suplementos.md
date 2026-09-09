@@ -57,8 +57,9 @@ Reglas prácticas:
 Archivos propios, sin solapamiento con Track B salvo lo indicado:
 
 **Semana 1**
-- [ ] Arreglar `backend/newsletter_semanal.py` (migrar a `Oferta.precio`, copiando patrón de `orquestador.py`)
-- [ ] Arreglar `backend/retargeting_vistas.py` (mismo fix)
+- [x] Arreglar `backend/newsletter_semanal.py` (migrar a `Oferta.precio`, copiando patrón de `orquestador.py`)
+- [x] Arreglar `backend/retargeting_vistas.py` (mismo fix)
+- [x] Fix bug de spam continuo en Telegram (orquestador.py e ingestores)
 - [ ] Añadir alerta Telegram cuando cualquier CRON falle (nueva función pequeña en `services/`, o reutilizar `send_telegram_deals.py` como referencia de cómo pegan a la API de Telegram)
 - [ ] Setup de pytest básico: 2-3 tests de integración que habrían pillado el bug (`test_newsletter_query_no_rompe`, etc.) — esto sirve de "prueba de que el bug está arreglado y no puede volver"
 
@@ -67,8 +68,8 @@ Archivos propios, sin solapamiento con Track B salvo lo indicado:
 - [ ] Decidir con Track B qué hacer con `/api/click/{id}` (borrar la llamada del frontend o implementar el endpoint) — es la única tarea que requiere coordinación explícita entre los dos
 
 **Semana 3-4**
-- [ ] Endpoint de reseñas de sabor: `POST/GET /api/resenas` en `main.py` + schema nuevo en `schemas.py` (avisar antes de tocar estos dos archivos)
-- [ ] Endpoint `GET /api/stacks/{id}` y añadir `stacks` a `PerfilResponse`
+- [x] Endpoint de reseñas de sabor: `POST/GET /api/resenas` en `main.py` + schema nuevo en `schemas.py` (avisar antes de tocar estos dos archivos)
+- [x] Endpoint `GET /api/stacks/{id}` y añadir `stacks` a `PerfilResponse`
 
 **Mes 2+**
 - [ ] Monitor de scrapers: script que valide que cada ingestor devolvió >0 productos, si no, avisa por Telegram
@@ -79,8 +80,8 @@ Archivos propios, sin solapamiento con Track B salvo lo indicado:
 Archivos propios, casi todo dentro de `frontend/src/`, sin tocar backend salvo consumo de endpoints ya existentes:
 
 **Semana 1**
-- [ ] Arreglar `frontend/src/app/sitemap.ts` (paginación real en bloques de 200, corregir `data.items` → `data.productos`)
-- [ ] Revisar `AuthContext`/almacenamiento del JWT — evaluar mover de `localStorage` a cookie httpOnly (esto puede requerir un pequeño cambio en backend de `/api/login` para setear cookie — coordinar con Track A si se decide hacer, si no, dejarlo para más adelante)
+- [x] Arreglar `frontend/src/app/sitemap.ts` (paginación real en bloques de 200, corregir `data.items` → `data.productos`)
+- [x] Revisar `AuthContext`/almacenamiento del JWT — evaluar mover de `localStorage` a cookie httpOnly (esto puede requerir un pequeño cambio en backend de `/api/login` para setear cookie — coordinar con Track A si se decide hacer, si no, dejarlo para más adelante) (Cookies HttpOnly completado)
 
 **Semana 2**
 - [ ] `producto/[slug]/page.tsx`: cambiar `cache: 'no-store'` por `next: { revalidate: 3600 }`, añadir `canonical` explícito por producto
@@ -89,8 +90,8 @@ Archivos propios, casi todo dentro de `frontend/src/`, sin tocar backend salvo c
 
 **Semana 3-4**
 - [ ] Frontend del histórico de precios: gráfico simple (Chart.js o Recharts, ya está listado como librería disponible) consumiendo `historial_precios` que ya devuelve la API
-- [ ] UI de reseñas de sabor en la ficha de producto (una vez Track A tenga el endpoint listo — si no está listo aún, dejar el componente con datos mock y conectar después, así no bloqueas tu semana esperando al otro)
-- [ ] UI de stacks en el perfil público
+- [x] UI de reseñas de sabor en la ficha de producto (una vez Track A tenga el endpoint listo — si no está listo aún, dejar el componente con datos mock y conectar después, así no bloqueas tu semana esperando al otro)
+- [x] UI de stacks en el perfil público
 
 **Mes 2+**
 - [ ] Migrar categorías/marcas más buscadas a rutas SSR/ISR dedicadas (`/proteinas`, `/marcas/hsn`) en vez de solo query params

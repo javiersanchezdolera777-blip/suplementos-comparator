@@ -16,21 +16,23 @@ Antes de invertir en "features nuevas para ser el mayor comparador nacional", ha
 ## 1. BUGS CRÍTICOS (impacto directo en ingresos/tráfico, no cosmético)
 
 ### 1.1 🔴 El sitemap probablemente no está indexando ningún producto
-`frontend/src/app/sitemap.ts` hace:
+~~`frontend/src/app/sitemap.ts` hace:~~
 ```ts
-fetch(`${apiUrl}/api/productos?limit=5000`, ...)
+// ~~fetch(`${apiUrl}/api/productos?limit=5000`, ...)~~
 ```
-Pero el backend define:
+~~Pero el backend define:~~
 ```python
-limit: int = Query(100, le=200)
+# ~~limit: int = Query(100, le=200)~~
 ```
-Un `limit=5000` **viola la validación de FastAPI (`le=200`)** → la API responde `422 Unprocessable Entity` → `res.ok` es `false` → el sitemap se queda con `dynamicRoutes = []`.
+~~Un `limit=5000` **viola la validación de FastAPI (`le=200`)** → la API responde `422 Unprocessable Entity` → `res.ok` es `false` → el sitemap se queda con `dynamicRoutes = []`.~~
 
-Y aunque esto se arreglara, hay un segundo bug: el código lee `data.items`, pero el endpoint devuelve `{ total_resultados, productos }` (ver `schemas.PaginatedProducts`). `data.items` **no existe nunca** → sería `undefined` de todas formas.
+~~Y aunque esto se arreglara, hay un segundo bug: el código lee `data.items`, pero el endpoint devuelve `{ total_resultados, productos }` (ver `schemas.PaginatedProducts`). `data.items` **no existe nunca** → sería `undefined` de todas formas.~~
 
-**Efecto real:** tu `sitemap.xml` casi seguro solo contiene las páginas estáticas (home, about, legal…) y **ninguna de las 1.700+ fichas de producto**. Con 0 tráfico y dependiendo 100% de SEO orgánico, esto es probablemente el bug de mayor impacto de todo el proyecto — Google no puede indexar lo que no encuentra en el sitemap (aunque rastree enlaces internos igualmente, el sitemap acelera y prioriza indexación masiva).
+~~**Efecto real:** tu `sitemap.xml` casi seguro solo contiene las páginas estáticas (home, about, legal…) y **ninguna de las 1.700+ fichas de producto**. Con 0 tráfico y dependiendo 100% de SEO orgánico, esto es probablemente el bug de mayor impacto de todo el proyecto — Google no puede indexar lo que no encuentra en el sitemap (aunque rastree enlaces internos igualmente, el sitemap acelera y prioriza indexación masiva).~~
 
-**Fix:** bajar el límite a bloques de 200 con paginación en el propio `sitemap.ts` (loop de `page=1..N`), y corregir `data.items` → `data.productos`.
+~~**Fix:** bajar el límite a bloques de 200 con paginación en el propio `sitemap.ts` (loop de `page=1..N`), y corregir `data.items` → `data.productos`.~~
+(✅ RESUELTO - Paginación corregida, mapeo ajustado a data.productos y URLs validadas en Google Search Console).
+
 
 ### 1.2 ~~🔴 Newsletter semanal y retargeting llevan (probablemente) meses fallando en silencio~~ (✅ RESUELTO)
 `backend/newsletter_semanal.py` y `backend/retargeting_vistas.py` han sido migrados para utilizar `Oferta.precio` dinámicamente en lugar del obsoleto `Producto.precio`. Ahora funcionan correctamente.
@@ -92,7 +94,7 @@ Esto es interesante: tenéis **infraestructura de producto ya construida en base
 
 | Hallazgo | Severidad | Detalle |
 |---|---|---|
-| JWT en `localStorage` | Media | `ProductViewTracker.tsx` (y presumiblemente `AuthContext`) leen el token de `localStorage`. Es vulnerable a robo vía XSS. Para un sitio con inputs de usuario (bio, username, comentarios de reseña en el futuro) esto es un vector real. Recomendado: cookies `httpOnly` + `SameSite=Strict`, o al menos sanitizar agresivamente cualquier input renderizado. |
+| ~~JWT en `localStorage`~~ | ~~Media~~ | ~~`ProductViewTracker.tsx` (y presumiblemente `AuthContext`) leen el token de `localStorage`. Es vulnerable a robo vía XSS. Para un sitio con inputs de usuario (bio, username, comentarios de reseña en el futuro) esto es un vector real. Recomendado: cookies `httpOnly` + `SameSite=Strict`, o al menos sanitizar agresivamente cualquier input renderizado.~~ (✅ RESUELTO - Sistema migrado a patrón BFF con Cookies HttpOnly, validación cruzada y middlewares CSRF inyectados en endpoints de mutación) |
 | Sin rate limiting | Media-Alta | `/api/login`, `/api/registro`, `/api/newsletter/subscribe` no tienen ningún límite de peticiones. Expuesto a fuerza bruta de credenciales y a spam de suscripciones. Añadir `slowapi` o un límite a nivel de proxy/Render es trivial y barato. |
 | Sin verificación de email | Baja-Media | El registro no exige confirmar el correo. Cualquiera puede registrarse con emails inventados o ajenos, lo que además ensucia tu base de newsletter/retargeting. |
 | Sin recuperación de contraseña | Media | No hay flujo de "olvidé mi contraseña". Es una fricción de producto real y un futuro ticket de soporte garantizado. |
