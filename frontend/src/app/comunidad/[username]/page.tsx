@@ -19,14 +19,8 @@ export default function PerfilPublico() {
   useEffect(() => {
     const cargarPerfilPublico = async () => {
       try {
-        const token = localStorage.getItem("suparator_token");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${API_URL}/api/perfil/${username}`, { headers });
+        const res = await fetch(`${API_URL}/api/perfil/${username}`, { credentials: "include" });
         
         if (res.ok) {
           const data = await res.json();
@@ -51,16 +45,10 @@ export default function PerfilPublico() {
 
   const seguirUsuario = async () => {
     try {
-      const token = localStorage.getItem("suparator_token");
-      if (!token) {
-        alert("Debes iniciar sesión para seguir a otros usuarios.");
-        return;
-      }
-
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/comunidad/seguir/${username}`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
 
       const data = await res.json();
@@ -84,11 +72,7 @@ export default function PerfilPublico() {
   const toggleLikeStack = async (e: React.MouseEvent, stackId: number) => {
     e.stopPropagation();
     
-    const token = localStorage.getItem("suparator_token");
-    if (!token) {
-      alert("Debes iniciar sesión para dar like.");
-      return;
-    }
+    // Token is checked by backend via HttpOnly cookie
 
     // Optimistic Update
     setPerfil((prev: any) => {
@@ -110,7 +94,7 @@ export default function PerfilPublico() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/stacks/${stackId}/like`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
       if (!res.ok) {
         console.error("Error al dar like");

@@ -3,10 +3,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface AuthContextType {
-  token: string | null;
+  user: any | null;
   isLoggedIn: boolean;
+  authChecked: boolean;
   isLoginModalOpen: boolean;
-  login: (token: string) => void;
+  checkAuth: () => Promise<void>;
   logout: () => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
@@ -18,32 +19,44 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
 
-  useEffect(() => {
-    setIsMounted(true);
-    // Recuperar token del localStorage al cargar
-    const storedToken = localStorage.getItem("suparator_token");
-    if (storedToken) {
-      setToken(storedToken);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        setUser(null);
+      }
+    } catch (e) {
+      setUser(null);
+    } finally {
+      setAuthChecked(true);
     }
+  };
+
+  useEffect(() => {
+    checkAuth();
   }, []);
 
-  // Cargar favoritos cuando el token esté disponible
+  // Cargar favoritos cuando el usuario esté disponible
   useEffect(() => {
-    if (token) {
+    if (user) {
       const fetchFavs = async () => {
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
           const res = await fetch(`${apiUrl}/api/favoritos`, {
-            headers: { Authorization: `Bearer ${token}` }
+            credentials: 'include'
           });
           if (res.ok) {
             const data = await res.json();
-            setFavoriteIds(data.map((f: any) => f.product_id));
+            setFavoriteIds(data.map((f: any) => f.producto_id));
           }
         } catch (e) {
           console.error("Error cargando favoritos:", e);
@@ -53,34 +66,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setFavoriteIds([]);
     }
-  }, [token]);
+  }, [user]);
 
   const addFavoriteId = (id: number) => setFavoriteIds(prev => [...prev, id]);
   const removeFavoriteId = (id: number) => setFavoriteIds(prev => prev.filter(fId => fId !== id));
 
-  const login = (newToken: string) => {
-    setToken(newToken);
-    localStorage.setItem("suparator_token", newToken);
-  };
-
-  const logout = () => {
-    setToken(null);
-    localStorage.removeItem("suparator_token");
+  const logout = async () => {
+    try {
+      await fetch(`${apiUrl}/api/logout`, { method: 'POST', credentials: 'include' });
+    } catch (e) {
+      console.error(e);
+    }
+    setUser(null);
+    setAuthChecked(false);
   };
 
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
-  // Evitamos hidratación incorrecta
-  if (!isMounted) return null;
+  // Evitamos hidratación incorrecta hasta que Auth se verifique
+  if (!authChecked) return null;
 
   return (
     <AuthContext.Provider
       value={{
-        token,
-        isLoggedIn: !!token,
+        user,
+        isLoggedIn: !!user,
+        authChecked,
         isLoginModalOpen,
-        login,
+        checkAuth,
         logout,
         openLoginModal,
         closeLoginModal,

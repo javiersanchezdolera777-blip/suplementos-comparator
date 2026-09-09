@@ -5,7 +5,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginModal() {
-  const { isLoginModalOpen, closeLoginModal, login } = useAuth();
+  const { isLoginModalOpen, closeLoginModal, checkAuth } = useAuth();
   
   // Estados para el formulario tradicional
   const [isRegister, setIsRegister] = useState(false);
@@ -30,6 +30,7 @@ export default function LoginModal() {
         const resReg = await fetch(`${apiUrl}/api/registro`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: 'include',
           body: JSON.stringify({ email, password }),
         });
 
@@ -44,6 +45,7 @@ export default function LoginModal() {
       const resLog = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -54,7 +56,7 @@ export default function LoginModal() {
 
       const data = await resLog.json();
       
-      login(data.access_token); // Guardamos la llave correcta, se llame como se llame
+      await checkAuth(); // Recargar estado de auth vía cookie
       closeLoginModal(); // Cerramos el modal
       
       // Limpiar campos por seguridad
@@ -87,12 +89,12 @@ export default function LoginModal() {
       const res = await fetch(`${apiUrl}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ token: tokenStr }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        login(data.access_token); 
+        await checkAuth(); 
         closeLoginModal(); 
       } else {
         const errData = await res.json();

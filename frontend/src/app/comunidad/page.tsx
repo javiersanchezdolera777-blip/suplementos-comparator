@@ -22,8 +22,8 @@ export default function ComunidadHub() {
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const [resLideres, resStacks] = await Promise.all([
-          fetch(`${API_URL}/api/comunidad/leaderboard`),
-          fetch(`${API_URL}/api/comunidad/descubrir-stacks`)
+          fetch(`${API_URL}/api/comunidad/leaderboard`, { credentials: 'include' }),
+          fetch(`${API_URL}/api/comunidad/descubrir-stacks`, { credentials: 'include' })
         ]);
         
         if (resLideres.ok) setLeaderboard(await resLideres.json());
@@ -48,13 +48,7 @@ export default function ComunidadHub() {
       setBuscando(true);
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const token = localStorage.getItem("suparator_token");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
-        const res = await fetch(`${API_URL}/api/comunidad/buscar?q=${busqueda}`, { headers });
+        const res = await fetch(`${API_URL}/api/comunidad/buscar?q=${busqueda}`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setSugerencias(data);
@@ -88,11 +82,8 @@ export default function ComunidadHub() {
   const toggleLikeStack = async (e: React.MouseEvent, stackId: number) => {
     e.stopPropagation(); // Evitar navegar al perfil al hacer click en Like
     
-    const token = localStorage.getItem("suparator_token");
-    if (!token) {
-      alert("Debes iniciar sesión para dar like.");
-      return;
-    }
+    // Backend validará la sesión a través de la cookie HttpOnly
+    // if no cookie, API will return error and we can catch it.
 
     // Optimistic Update
     setStacksDescubrimiento(prev => prev.map(stack => {
@@ -111,7 +102,7 @@ export default function ComunidadHub() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/stacks/${stackId}/like`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
       if (!res.ok) {
         // Revertir si falla (opcional)

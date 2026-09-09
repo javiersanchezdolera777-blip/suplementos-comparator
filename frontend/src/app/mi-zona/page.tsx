@@ -47,18 +47,12 @@ export default function MiZonaPage() {
       setLoading(false);
     }
   }, [isLoggedIn]);
-const comprobarEstado = async () => {
-    const token = localStorage.getItem("suparator_token");
-    if (!token) {
-      setNecesitaLogin(true);
-      setLoading(false);
-      return;
-    }
 
+  const comprobarEstado = async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/perfil/me`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
       
       if (res.ok) {
@@ -80,14 +74,12 @@ const comprobarEstado = async () => {
   const crearPerfil = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorForm("");
-    const token = localStorage.getItem("suparator_token");
-
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const res = await fetch(`${API_URL}/api/perfil`, {
       method: "POST",
+      credentials: "include",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         username: formUsername,
@@ -101,9 +93,9 @@ const comprobarEstado = async () => {
       // Como el endpoint POST de Perfil no recibe objetivo_etapa, hacemos un PUT rápido para actualizarlo.
       await fetch(`${API_URL}/api/perfil/me`, {
         method: "PUT",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ objetivo_etapa: formObjetivo })
       });
@@ -308,7 +300,7 @@ const comprobarEstado = async () => {
                 try {
                   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
                   const res = await fetch(`${API_URL}/api/comunidad/checkin`, {
-                    method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("suparator_token")}` }
+                    method: "POST", credentials: "include"
                   });
                   const data = await res.json();
                   if(res.ok) comprobarEstado(); else alert(data.detail);

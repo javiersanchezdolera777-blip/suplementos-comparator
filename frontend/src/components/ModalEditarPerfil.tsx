@@ -45,9 +45,9 @@ export default function ModalEditarPerfil({ isOpen, onClose, perfilActual, onAct
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/perfil/me`, {
         method: "PUT",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("suparator_token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           descripcion: descripcion,

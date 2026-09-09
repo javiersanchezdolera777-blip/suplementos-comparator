@@ -24,16 +24,9 @@ export default function ModalAñadirStack({ isOpen, onClose, productoId, product
   const cargarMisStacks = async () => {
     setCargando(true);
     try {
-      const token = localStorage.getItem("suparator_token");
-      if (!token) {
-        setMensaje("Debes iniciar sesión para usar los Stacks.");
-        setCargando(false);
-        return;
-      }
-
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/perfil/me`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
       
       if (res.ok) {
@@ -49,12 +42,11 @@ export default function ModalAñadirStack({ isOpen, onClose, productoId, product
 
   const añadirAlStack = async (stackId: number) => {
     try {
-      const token = localStorage.getItem("suparator_token");
       // Llamamos a la ruta exacta que programaste ayer en el backend
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/stacks/${stackId}/productos/${productoId}`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        credentials: "include"
       });
 
       const data = await res.json();

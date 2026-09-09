@@ -7,7 +7,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
 export default function FavoritosPage() {
-  const { isLoggedIn, token, openLoginModal } = useAuth();
+  const { isLoggedIn, openLoginModal } = useAuth();
   const [favoritos, setFavoritos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +22,7 @@ export default function FavoritosPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const res = await fetch(`${apiUrl}/api/favoritos`, {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         if (res.ok) {
@@ -39,7 +37,7 @@ export default function FavoritosPage() {
     };
 
     fetchFavoritos();
-  }, [isLoggedIn, token]);
+  }, [isLoggedIn]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-500/30 flex flex-col">

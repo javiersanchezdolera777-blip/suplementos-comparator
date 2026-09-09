@@ -70,8 +70,6 @@ def generar_alertas(db):
                     }
                 )
             
-            # Marcamos como no publicado en Telegram para que el bot de Telegram lo recoja luego
-            oferta.publicado_telegram = False
         
         db.commit()
 
