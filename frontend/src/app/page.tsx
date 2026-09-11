@@ -6,10 +6,10 @@ import Link from 'next/link';
 
 export default async function Home() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  
+
   let initialProducts = [];
   let initialTotal = 0;
-  
+
   try {
     const res = await fetch(`${apiUrl}/api/productos?limit=36&page=1`, {
       next: { revalidate: 3600 } // ISR: revalida cada hora
@@ -28,18 +28,18 @@ export default async function Home() {
       {/* Sticky Header Group: Banner + Navbar */}
       <header className="sticky top-0 z-50 flex flex-col w-full shadow-sm">
         {/* Announcement Bar at the very top */}
-        <TelegramBanner/>
-        
+        <TelegramBanner />
+
         {/* Navigation */}
-        <Navbar/>
+        <Navbar />
       </header>
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col items-center z-10 w-full max-w-7xl mx-auto px-6 pt-2 pb-12">
         <Catalog initialProducts={initialProducts} initialTotal={initialTotal} />
       </main>
-      
-      <Footer/>
+
+      <Footer />
     </div>
   );
 }
