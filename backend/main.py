@@ -424,15 +424,21 @@ def obtener_productos(
             )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
-    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON Y DEDUPLICACIÓN!
-    productos_raw_duplicados = query.all()
+    # ESTRATEGIA OPTIMIZADA: Solo pedimos a SQL los campos mínimos para filtrar y ordenar (IDs, sabor, objetivo)
+    
+    # Extraemos solo las tuplas ligeras manteniendo el orden de la query original
+    datos_raw_duplicados = query.with_entities(
+        models.Producto.id, 
+        models.Producto.sabor, 
+        models.Producto.objetivo
+    ).all()
 
-    productos_raw = []
+    datos_raw = []
     vistos = set()
-    for p in productos_raw_duplicados:
-        if p.id not in vistos:
-            vistos.add(p.id)
-            productos_raw.append(p)
+    for row in datos_raw_duplicados:
+        if row.id not in vistos:
+            vistos.add(row.id)
+            datos_raw.append(row)
 
     sabor_str = sabores or sabor
     sabores_lista = (
@@ -448,13 +454,12 @@ def obtener_productos(
         else []
     )
 
-    def cumple_filtros_arrays(producto):
+    def cumple_filtros_arrays(fila):
         # ¿Cumple el sabor?
         if sabores_lista:
-            valor_sabor = getattr(producto, "sabor", None)
+            valor_sabor = fila.sabor
             if isinstance(valor_sabor, list):
-                if not any(
-                        str(item).lower() in sabores_lista for item in valor_sabor):
+                if not any(str(item).lower() in sabores_lista for item in valor_sabor):
                     return False
             elif isinstance(valor_sabor, str):
                 if not any(s in valor_sabor.lower() for s in sabores_lista):
@@ -464,10 +469,9 @@ def obtener_productos(
 
         # ¿Cumple el objetivo?
         if objetivos_lista:
-            valor_obj = getattr(producto, "objetivo", None)
+            valor_obj = fila.objetivo
             if isinstance(valor_obj, list):
-                if not any(
-                        str(item).lower() in objetivos_lista for item in valor_obj):
+                if not any(str(item).lower() in objetivos_lista for item in valor_obj):
                     return False
             elif isinstance(valor_obj, str):
                 if not any(o in valor_obj.lower() for o in objetivos_lista):
@@ -478,15 +482,30 @@ def obtener_productos(
         return True
 
     if sabores_lista or objetivos_lista:
-        productos_filtrados = [
-            p for p in productos_raw if cumple_filtros_arrays(p)]
+        datos_filtrados = [d for d in datos_raw if cumple_filtros_arrays(d)]
     else:
-        productos_filtrados = productos_raw
+        datos_filtrados = datos_raw
 
-    # 9. Paginación Final
-    total_resultados = len(productos_filtrados)
+    # 9. Paginación y Carga Real de los Productos Finales
+    total_resultados = len(datos_filtrados)
     offset_real = skip if skip > 0 else (page - 1) * limit
-    productos = productos_filtrados[offset_real: offset_real + limit]
+    
+    # Extraemos SOLO los IDs que pertenecen a la página actual (ej. 36 IDs)
+    ids_pagina = [d.id for d in datos_filtrados[offset_real: offset_real + limit]]
+    
+    productos = []
+    if ids_pagina:
+        # Hacemos una única query final para traer SOLO los 36 objetos completos
+        productos_bd = (
+            db.query(models.Producto)
+            .outerjoin(models.Oferta)
+            .filter(models.Producto.id.in_(ids_pagina))
+            .all()
+        )
+        
+        # Volvemos a ordenarlos según el orden exacto que determinó la query principal (ids_pagina)
+        productos_dict = {p.id: p for p in productos_bd}
+        productos = [productos_dict[id_] for id_ in ids_pagina if id_ in productos_dict]
 
     return {"total_resultados": total_resultados, "productos": productos}
 
