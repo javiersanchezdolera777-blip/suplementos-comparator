@@ -11,7 +11,6 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
 
-
 # Importamos nuestras piezas
 import models
 import schemas
