@@ -11,13 +11,20 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
 
-
 # Importamos nuestras piezas
 import models
 import schemas
 from database import engine, SessionLocal
 import security
 from busqueda import expandir_terminos_busqueda
+
+import re
+
+# Patrón estricto que solo acepta los previews oficiales de TU proyecto en Vercel
+VERCEL_PREVIEW_RE = re.compile(
+    r'^https://suplementos-comparator(-[a-z0-9]+)*\.vercel\.app$',
+    re.IGNORECASE
+)
 
 # Orden de construcción
 models.Base.metadata.create_all(bind=engine)
@@ -51,18 +58,42 @@ app.add_middleware(
 
 def verificar_csrf(request: Request):
     """
-    Mitigación CSRF Básica:
-    Valida que la cabecera Origin o Referer coincida con los dominios permitidos.
+    Protección CSRF: valida que Origin o Referer pertenezcan a dominios autorizados.
+    Acepta:
+      - Lista explícita de `origins`
+      - Previews de Vercel del propio proyecto (patrón controlado, no comodín)
     """
-    origen = request.headers.get("origin") or request.headers.get("referer")
-    if not origen:
-        raise HTTPException(status_code=403, detail="Falta cabecera Origin/Referer (CSRF Protection)")
+    origen_header = (
+        request.headers.get("origin") 
+        or request.headers.get("referer", "").split("?")[0]
+    )
+    
+    if not origen_header:
+        raise HTTPException(
+            status_code=403, 
+            detail="Falta cabecera Origin (CSRF Protection)"
+        )
         
-    origen_limpio = origen.rstrip("/")
-    if origen_limpio not in origins:
-        # Permitir requests desde las previews de vercel si no coinciden exactas
-        if "vercel.app" not in origen_limpio and "localhost" not in origen_limpio:
-            raise HTTPException(status_code=403, detail="Origen no permitido (CSRF Protection)")
+    # Normalizar: quitar trailing slash y fragmentos
+    origen_limpio = origen_header.rstrip("/").split("#")[0]
+    
+    # 1. Verificar contra lista explícita (tu web de producción)
+    if origen_limpio in origins:
+        return
+        
+    # 2. Verificar preview de Vercel del propio proyecto (patrón estricto)
+    if VERCEL_PREVIEW_RE.match(origen_limpio):
+        return
+        
+    # 3. Localhost para desarrollo local (origins ya lo incluye, pero por seguridad extra)
+    if origen_limpio.startswith("http://localhost:") or origen_limpio.startswith("http://127.0.0.1:"):
+        return
+        
+    # Rechazar todo lo demás rotundamente
+    raise HTTPException(
+        status_code=403,
+        detail=f"Origen no autorizado: {origen_limpio}"
+    )
 
 def get_db():
     db = SessionLocal()
@@ -357,51 +388,6 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-    # 4. Filtros Básicos (Formatos, Vegano, Sellos)
-    formato_str = formatos or formato
-    if formato_str:
-        lista_formatos = [f.strip()
-                          for f in formato_str.split(",") if f.strip()]
-        if lista_formatos:
-            query = query.filter(models.Producto.formato.in_(lista_formatos))
-
-    if es_vegano is not None:
-        query = query.filter(models.Producto.es_vegano == es_vegano)
-    if sin_gluten is True:
-        query = query.filter(models.Producto.sin_gluten.is_(True))
-    if sin_lactosa is True:
-        query = query.filter(models.Producto.sin_lactosa.is_(True))
-
-    if solo_ofertas:
-        # Ahora el cálculo del descuento tira de models.Oferta
-        descuento_pct = (
-            (models.Oferta.precio_anterior - models.Oferta.precio)
-            / models.Oferta.precio_anterior
-        ) * 100
-
-        query = query.filter(
-            models.Oferta.precio_anterior.isnot(None),
-            models.Oferta.precio_anterior > models.Oferta.precio,
-            models.Oferta.precio_anterior > 0,
-            or_(
-                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
-                & (descuento_pct >= 30),
-                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
-                & (descuento_pct >= 40),
-                (
-                    ~models.Categoria.nombre.in_(
-                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
-                    )
-                )
-                & (descuento_pct >= 50),
-            ),
-        )
-
-    if sello_calidad:
-        query = query.filter(
-            models.Producto.sello_calidad.ilike(
-                f"%{sello_calidad}%"))
-
     # ... (deja igual los subfiltros y buscador de texto libre) ...
 
     # 7. ORDENACIÓN (Ahora tira de Oferta)
@@ -438,15 +424,21 @@ def obtener_productos(
             )
 
     # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
-    # ¡AQUÍ HACEMOS LA EXTRACCIÓN A MEMORIA DE PYTHON Y DEDUPLICACIÓN!
-    productos_raw_duplicados = query.all()
+    # ESTRATEGIA OPTIMIZADA: Solo pedimos a SQL los campos mínimos para filtrar y ordenar (IDs, sabor, objetivo)
+    
+    # Extraemos solo las tuplas ligeras manteniendo el orden de la query original
+    datos_raw_duplicados = query.with_entities(
+        models.Producto.id, 
+        models.Producto.sabor, 
+        models.Producto.objetivo
+    ).all()
 
-    productos_raw = []
+    datos_raw = []
     vistos = set()
-    for p in productos_raw_duplicados:
-        if p.id not in vistos:
-            vistos.add(p.id)
-            productos_raw.append(p)
+    for row in datos_raw_duplicados:
+        if row.id not in vistos:
+            vistos.add(row.id)
+            datos_raw.append(row)
 
     sabor_str = sabores or sabor
     sabores_lista = (
@@ -462,13 +454,12 @@ def obtener_productos(
         else []
     )
 
-    def cumple_filtros_arrays(producto):
+    def cumple_filtros_arrays(fila):
         # ¿Cumple el sabor?
         if sabores_lista:
-            valor_sabor = getattr(producto, "sabor", None)
+            valor_sabor = fila.sabor
             if isinstance(valor_sabor, list):
-                if not any(
-                        str(item).lower() in sabores_lista for item in valor_sabor):
+                if not any(str(item).lower() in sabores_lista for item in valor_sabor):
                     return False
             elif isinstance(valor_sabor, str):
                 if not any(s in valor_sabor.lower() for s in sabores_lista):
@@ -478,10 +469,9 @@ def obtener_productos(
 
         # ¿Cumple el objetivo?
         if objetivos_lista:
-            valor_obj = getattr(producto, "objetivo", None)
+            valor_obj = fila.objetivo
             if isinstance(valor_obj, list):
-                if not any(
-                        str(item).lower() in objetivos_lista for item in valor_obj):
+                if not any(str(item).lower() in objetivos_lista for item in valor_obj):
                     return False
             elif isinstance(valor_obj, str):
                 if not any(o in valor_obj.lower() for o in objetivos_lista):
@@ -492,15 +482,30 @@ def obtener_productos(
         return True
 
     if sabores_lista or objetivos_lista:
-        productos_filtrados = [
-            p for p in productos_raw if cumple_filtros_arrays(p)]
+        datos_filtrados = [d for d in datos_raw if cumple_filtros_arrays(d)]
     else:
-        productos_filtrados = productos_raw
+        datos_filtrados = datos_raw
 
-    # 9. Paginación Final
-    total_resultados = len(productos_filtrados)
+    # 9. Paginación y Carga Real de los Productos Finales
+    total_resultados = len(datos_filtrados)
     offset_real = skip if skip > 0 else (page - 1) * limit
-    productos = productos_filtrados[offset_real: offset_real + limit]
+    
+    # Extraemos SOLO los IDs que pertenecen a la página actual (ej. 36 IDs)
+    ids_pagina = [d.id for d in datos_filtrados[offset_real: offset_real + limit]]
+    
+    productos = []
+    if ids_pagina:
+        # Hacemos una única query final para traer SOLO los 36 objetos completos
+        productos_bd = (
+            db.query(models.Producto)
+            .outerjoin(models.Oferta)
+            .filter(models.Producto.id.in_(ids_pagina))
+            .all()
+        )
+        
+        # Volvemos a ordenarlos según el orden exacto que determinó la query principal (ids_pagina)
+        productos_dict = {p.id: p for p in productos_bd}
+        productos = [productos_dict[id_] for id_ in ids_pagina if id_ in productos_dict]
 
     return {"total_resultados": total_resultados, "productos": productos}
 
