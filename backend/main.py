@@ -19,6 +19,14 @@ from database import engine, SessionLocal
 import security
 from busqueda import expandir_terminos_busqueda
 
+import re
+
+# Patrón estricto que solo acepta los previews oficiales de TU proyecto en Vercel
+VERCEL_PREVIEW_RE = re.compile(
+    r'^https://suplementos-comparator(-[a-z0-9]+)*\.vercel\.app$',
+    re.IGNORECASE
+)
+
 # Orden de construcción
 models.Base.metadata.create_all(bind=engine)
 
@@ -51,18 +59,42 @@ app.add_middleware(
 
 def verificar_csrf(request: Request):
     """
-    Mitigación CSRF Básica:
-    Valida que la cabecera Origin o Referer coincida con los dominios permitidos.
+    Protección CSRF: valida que Origin o Referer pertenezcan a dominios autorizados.
+    Acepta:
+      - Lista explícita de `origins`
+      - Previews de Vercel del propio proyecto (patrón controlado, no comodín)
     """
-    origen = request.headers.get("origin") or request.headers.get("referer")
-    if not origen:
-        raise HTTPException(status_code=403, detail="Falta cabecera Origin/Referer (CSRF Protection)")
+    origen_header = (
+        request.headers.get("origin") 
+        or request.headers.get("referer", "").split("?")[0]
+    )
+    
+    if not origen_header:
+        raise HTTPException(
+            status_code=403, 
+            detail="Falta cabecera Origin (CSRF Protection)"
+        )
         
-    origen_limpio = origen.rstrip("/")
-    if origen_limpio not in origins:
-        # Permitir requests desde las previews de vercel si no coinciden exactas
-        if "vercel.app" not in origen_limpio and "localhost" not in origen_limpio:
-            raise HTTPException(status_code=403, detail="Origen no permitido (CSRF Protection)")
+    # Normalizar: quitar trailing slash y fragmentos
+    origen_limpio = origen_header.rstrip("/").split("#")[0]
+    
+    # 1. Verificar contra lista explícita (tu web de producción)
+    if origen_limpio in origins:
+        return
+        
+    # 2. Verificar preview de Vercel del propio proyecto (patrón estricto)
+    if VERCEL_PREVIEW_RE.match(origen_limpio):
+        return
+        
+    # 3. Localhost para desarrollo local (origins ya lo incluye, pero por seguridad extra)
+    if origen_limpio.startswith("http://localhost:") or origen_limpio.startswith("http://127.0.0.1:"):
+        return
+        
+    # Rechazar todo lo demás rotundamente
+    raise HTTPException(
+        status_code=403,
+        detail=f"Origen no autorizado: {origen_limpio}"
+    )
 
 def get_db():
     db = SessionLocal()
@@ -356,51 +388,6 @@ def obtener_productos(
                 condiciones_token.append(models.Marca.nombre.ilike(patron))
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
-
-    # 4. Filtros Básicos (Formatos, Vegano, Sellos)
-    formato_str = formatos or formato
-    if formato_str:
-        lista_formatos = [f.strip()
-                          for f in formato_str.split(",") if f.strip()]
-        if lista_formatos:
-            query = query.filter(models.Producto.formato.in_(lista_formatos))
-
-    if es_vegano is not None:
-        query = query.filter(models.Producto.es_vegano == es_vegano)
-    if sin_gluten is True:
-        query = query.filter(models.Producto.sin_gluten.is_(True))
-    if sin_lactosa is True:
-        query = query.filter(models.Producto.sin_lactosa.is_(True))
-
-    if solo_ofertas:
-        # Ahora el cálculo del descuento tira de models.Oferta
-        descuento_pct = (
-            (models.Oferta.precio_anterior - models.Oferta.precio)
-            / models.Oferta.precio_anterior
-        ) * 100
-
-        query = query.filter(
-            models.Oferta.precio_anterior.isnot(None),
-            models.Oferta.precio_anterior > models.Oferta.precio,
-            models.Oferta.precio_anterior > 0,
-            or_(
-                (models.Categoria.nombre.in_(["Proteínas", "Creatinas"]))
-                & (descuento_pct >= 30),
-                (models.Categoria.nombre.in_(["Aminoácidos", "Pre-Entrenos"]))
-                & (descuento_pct >= 40),
-                (
-                    ~models.Categoria.nombre.in_(
-                        ["Proteínas", "Creatinas", "Aminoácidos", "Pre-Entrenos"]
-                    )
-                )
-                & (descuento_pct >= 50),
-            ),
-        )
-
-    if sello_calidad:
-        query = query.filter(
-            models.Producto.sello_calidad.ilike(
-                f"%{sello_calidad}%"))
 
     # ... (deja igual los subfiltros y buscador de texto libre) ...
 
