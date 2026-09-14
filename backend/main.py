@@ -86,7 +86,7 @@ def verificar_csrf(request: Request):
         return
         
     # 3. Localhost para desarrollo local (origins ya lo incluye, pero por seguridad extra)
-    if origen_limpio.startswith("http://localhost:") or origen_limpio.startswith("http://127.0.0.1:"):
+    if origen_limpio.startswith(("http://localhost:", "http://127.0.0.1:")):
         return
         
     # Rechazar todo lo demás rotundamente
