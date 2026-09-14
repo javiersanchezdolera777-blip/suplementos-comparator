@@ -235,15 +235,27 @@ def main():
             print("ℹ️ No hay productos en oferta actualmente. Cancelando newsletter.")
             return
 
-        print(f"📊 Encontrados {len(chollos)} productos para el Top.")
-        for c in chollos:
-            print(f"  - {c.nombre} (Ahorro: {round(c.precio_anterior - c.precio, 2)}€)")
+        # Validación de integridad antes de procesar
+        chollos_validos = [c for c in chollos if c.producto and c.producto.slug]
+        if len(chollos_validos) < len(chollos):
+            print(f"⚠️ Advertencia: {len(chollos) - len(chollos_validos)} ofertas descartadas por falta de producto asociado.")
+            
+        if not chollos_validos:
+            print("❌ Ninguna oferta tiene producto válido. Abortando.")
+            sys.exit(1)
 
-        # 1. Enviar por Email[cite: 16]
-        enviar_newsletter_email(chollos)
+        print(f"📊 Encontrados {len(chollos_validos)} ofertas válidas para el Top.")
+        for c in chollos_validos:
+            nombre_prod = c.producto.nombre
+            ahorro = round(c.precio_anterior - c.precio, 2) if c.precio_anterior else 0
+            porcentaje = int(round((ahorro / c.precio_anterior) * 100)) if c.precio_anterior else 0
+            print(f"  - {nombre_prod} | {c.tienda} | -{porcentaje}% | Ahorro: {ahorro}€")
 
-        # 2. Enviar por Telegram[cite: 16]
-        enviar_newsletter_telegram(chollos)
+        # 1. Enviar por Email
+        enviar_newsletter_email(chollos_validos)
+
+        # 2. Enviar por Telegram
+        enviar_newsletter_telegram(chollos_validos)
 
     except Exception as e:
         print(f"❌ Error crítico en el proceso principal: {e}")
@@ -258,6 +270,8 @@ def main():
                 })
         except Exception:
             pass
+        # Propagamos el error para que GitHub Actions lo marque en rojo
+        sys.exit(1)
     finally:
         db.close()
         print("🏁 Proceso finalizado. Conexión cerrada.")

@@ -1,0 +1,842 @@
+# Auditoría Técnica Extrema: Tus Suplementos
+
+---
+
+## 1. Bugs Críticos y Fallos Silenciosos (Prioridad 0)
+
+### 1.1 Código muerto después de `return None` en `http_client.py`
+
+En `_read_cache`, hay un bloque completo de código inalcanzable tras el primer `return None`:
+
+```python
+# http_client.py líneas ~70-90
+return None  # <-- PRIMER RETURN
+
+try:                # ← NUNCA SE EJECUTA
+    modified_at = datetime.fromtimestamp(...)
+```
+
+Este es un bug silencioso: la lógica de fallback de caché duplicada debajo del primer `return` nunca corre. Si la primera rama falla, simplemente retorna `None` sin usar la caché legacy.
+
+**Fix:** Eliminar el bloque duplicado tras el primer `return None`.
+
+### 1.2 `newsletter_semanal.py` llama `c.nombre` en lugar de `c.producto.nombre`
+
+```python
+# newsletter_semanal.py línea ~106
+for c in chollos:
+    print(f"  - {c.nombre} ...")  # AttributeError: 'Oferta' has no attribute 'nombre'
+```
+
+`obtener_top_5_chollos` devuelve objetos `Oferta`, no `Producto`. El atributo correcto es `c.producto.nombre`.
+
+**Fix:**
+```python
+for c in chollos:
+    print(f"  - {c.producto.nombre} (Ahorro: {round(c.precio_anterior - c.precio, 2)}€)")
+```
+
+### 1.3 `db` global en `pharma2go.py` — sesión de BD nunca se cierra
+
+```python
+# pharma2go.py línea ~18
+db = SessionLocal()  # ← GLOBAL, nunca se cierra
+```
+
+Si `inyectar_en_bd()` lanza una excepción, la sesión queda abierta indefinidamente. En Render con PostgreSQL Neon, esto agota el pool de conexiones silenciosamente.
+
+**Fix:**
+```python
+def inyectar_en_bd():
+    db = SessionLocal()
+    try:
+        # ... toda la lógica
+    except Exception as e:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+```
+
+### 1.4 `ProductViewTracker` envía un token "dummy" hardcodeado
+
+```typescript
+// ProductViewTracker.tsx línea ~9
+const token = "dummy"; // ← Se envía en la cabecera implícitamente
+```
+
+Aunque el comentario dice que ya no se usa, el código existe y puede confundir futuras implementaciones. Además, si el backend alguna vez lee esta cabecera, aceptará "dummy" como token válido durante milisegundos antes del error 401.
+
+**Fix:**
+```typescript
+// Eliminar toda la variable token y el comentario
+await fetch(`${apiUrl}/api/historial/${productId}`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' }
+});
+```
+
+### 1.5 Race condition en `orquestador.py`: `alertas_pendientes` es un dict global mutable
+
+```python
+# orquestador.py línea ~10
+alertas_pendientes = {}  # ← GLOBAL mutable
+```
+
+Si el orquestador se ejecuta concurrentemente (dos GitHub Actions en overlap), ambas instancias comparten el mismo proceso Python pero con dicts separados. El problema real: si `generar_alertas` falla a mitad, `alertas_pendientes` queda en estado sucio para la próxima ejecución del mismo proceso.
+
+**Fix:** Pasar el dict como parámetro en lugar de variable global:
+
+```python
+def ejecutar_orquestador():
+    alertas_pendientes = {}
+    # ...
+    generar_alertas(db, alertas_pendientes)
+    disparar_alertas_agrupadas(alertas_pendientes)
+```
+
+### 1.6 Filtros duplicados en `main.py` — se aplican dos veces
+
+```python
+# main.py — el bloque de filtros de formato, vegano, etc. aparece LITERALMENTE dos veces
+# Primera vez: líneas ~340-365
+# Segunda vez: líneas ~385-410 (idéntico)
+```
+
+El endpoint `/api/productos` aplica `format`, `es_vegano`, `sin_gluten`, `solo_ofertas` y `sello_calidad` **dos veces** en la misma query. Aunque SQLAlchemy los colapsa en el mismo WHERE, el `solo_ofertas` genera un JOIN+FILTER duplicado que puede producir resultados incorrectos con las condiciones OR complejas.
+
+**Fix:** Eliminar el bloque duplicado completo (el segundo bloque, aproximadamente líneas 385-410 de `main.py`).
+
+### 1.7 `NotificacionesDropdown` usa `localhost:8000` hardcodeado
+
+```typescript
+// NotificacionesDropdown.tsx líneas 23, 35
+const res = await fetch("http://localhost:8000/api/comunidad/notificaciones", ...)
+await fetch("http://localhost:8000/api/comunidad/notificaciones/marcar-leidas", ...)
+```
+
+En producción, esto llama a `localhost` desde el navegador del usuario, que falla silenciosamente. Las notificaciones nunca cargan en producción.
+
+**Fix:**
+```typescript
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const res = await fetch(`${API_URL}/api/comunidad/notificaciones`, ...)
+```
+
+---
+
+## 2. Cuellos de Botella y Escalabilidad
+
+### 2.1 Paginación en memoria de Python — bloqueante a 50k productos
+
+```python
+# main.py líneas ~450-470
+productos_raw_duplicados = query.all()  # ← CARGA TODA LA BD EN MEMORIA
+
+productos_raw = []
+vistos = set()
+for p in productos_raw_duplicados:  # ← DEDUPLICACIÓN EN PYTHON
+    if p.id not in vistos:
+        ...
+
+# Luego filtra por sabores/objetivos también en memoria
+productos_filtrados = [p for p in productos_raw if cumple_filtros_arrays(p)]
+
+# Y PAGINA en memoria
+total_resultados = len(productos_filtrados)
+productos = productos_filtrados[offset_real: offset_real + limit]
+```
+
+Con 50k productos, esto carga decenas de MB por request, satura la RAM de Render (512MB en plan gratuito) y tarda segundos. Es el cuello de botella más grave de la arquitectura.
+
+**Fix — Deduplicación en SQL con `distinct()` y paginación real:**
+
+```python
+# Reemplazar query.all() por:
+query = query.distinct(models.Producto.id)
+
+# Paginación real en SQL
+total_resultados = query.with_entities(
+    func.count(func.distinct(models.Producto.id))
+).scalar()
+
+productos = (
+    query
+    .offset(offset_real)
+    .limit(limit)
+    .all()
+)
+```
+
+Para los filtros de sabores (arrays JSON), migrar a PostgreSQL jsonb:
+
+```sql
+-- Añadir índice GIN en la columna sabor
+CREATE INDEX idx_producto_sabor ON productos USING gin(sabor);
+```
+
+```python
+# Filtro de sabor directo en SQL
+if sabores_lista:
+    query = query.filter(
+        models.Producto.sabor.cast(JSONB).contains(sabores_lista[0])
+    )
+```
+
+### 2.2 Problema N+1 en `retargeting_vistas.py`
+
+```python
+# retargeting_vistas.py línea ~75
+for vista in vistas:
+    if vista.producto and vista.producto.id not in ids_vistos:
+        # ← Accede a vista.producto → dispara SELECT por cada fila
+```
+
+Con 1.000 usuarios cada uno con 10 vistas, esto genera 10.000 queries individuales a PostgreSQL.
+
+**Fix — Eager loading:**
+
+```python
+from sqlalchemy.orm import joinedload
+
+vistas = (
+    db.query(models.HistorialVistas)
+    .options(joinedload(models.HistorialVistas.producto)
+             .joinedload(models.Producto.ofertas))
+    .filter(models.HistorialVistas.usuario_id == usuario.id)
+    .order_by(models.HistorialVistas.ultima_vista.desc())
+    .limit(10)
+    .all()
+)
+```
+
+### 2.3 El scraper de HSN no tiene límite de memoria — commit cada 20 pero acumula todo
+
+```python
+# hsn.py líneas ~315-330
+if total_general > 0 and total_general % 20 == 0:
+    try:
+        if productos_nuevos:
+            db.add_all(productos_nuevos)
+        db.commit()
+    finally:
+        productos_nuevos = []  # ← se limpia, bien
+```
+
+El problema está en `productos_bd` y `enlaces_procesados`, que crecen indefinidamente durante toda la ejecución. Con 5.000 productos, `productos_bd` es un dict de 5.000 objetos SQLAlchemy completos en RAM.
+
+**Fix — Usar solo los slugs como clave de verificación:**
+
+```python
+# En lugar de cargar objetos completos
+slugs_en_bd = {
+    p[0] for p in db.query(models.Producto.slug)
+    .join(models.Oferta)
+    .filter(models.Oferta.tienda == "HSN")
+    .all()
+}
+
+# Al procesar, consultar el objeto solo cuando se necesita actualizar
+if slug_norm in slugs_en_bd:
+    p_existente = db.query(models.Producto).filter_by(slug=slug_norm).first()
+```
+
+### 2.4 Falta de índices críticos en la BD
+
+Revisando `models.py`, faltan índices para los patrones de query más frecuentes:
+
+```python
+# models.py — índices faltantes críticos
+class Oferta(Base):
+    # Falta índice compuesto para la query del bot de Telegram y orquestador
+    publicado_telegram = Column(Boolean, default=False)  # sin index=True
+    activo = Column(Boolean, default=True)               # sin index=True
+    precio_anterior = Column(Float, nullable=True)       # sin index=True
+
+class HistorialVistas(Base):
+    # La query de retargeting filtra por usuario_id y ordena por ultima_vista
+    ultima_vista = Column(DateTime, ...)  # sin index=True
+```
+
+**Fix en `models.py`:**
+
+```python
+from sqlalchemy import Index
+
+# Al final de models.py, añadir:
+Index('idx_oferta_telegram', Oferta.publicado_telegram, Oferta.activo, Oferta.precio_anterior)
+Index('idx_historial_usuario_fecha', HistorialVistas.usuario_id, HistorialVistas.ultima_vista.desc())
+Index('idx_producto_slug', Producto.slug)  # ya existe unique=True pero confirmar en Neon
+Index('idx_oferta_producto_tienda', Oferta.producto_id, Oferta.tienda)
+```
+
+### 2.5 `sitemap.ts` hace paginación con bucle while que puede ser infinito
+
+```typescript
+// sitemap.ts líneas ~45-70
+while (hasMore) {
+    const res = await fetch(`${apiUrl}/api/productos?limit=${limit}&page=${page}`)
+    // Si la API siempre devuelve 200 productos, hasMore nunca es false
+    // y el sitemap genera requests infinitos en build time de Vercel (timeout 60s)
+```
+
+Si hay exactamente 200 productos en la última página, `hasMore` no se pone en `false` y el siguiente request devuelve array vacío — ahí sí rompe. Pero si la API tiene un bug y siempre devuelve datos, es un bucle infinito que mata el build de Vercel.
+
+**Fix:**
+
+```typescript
+const MAX_PAGES = 100; // Safety cap
+while (hasMore && page <= MAX_PAGES) {
+    // ...
+    if (productos.length === 0 || productos.length < limit) {
+        hasMore = false;
+    } else {
+        page++;
+    }
+}
+```
+
+---
+
+## 3. Seguridad y Auth
+
+### 3.1 CSRF check bypaseable — `verificar_csrf` permite cualquier origen `vercel.app`
+
+```python
+# main.py líneas ~65-72
+if origen_limpio not in origins:
+    if "vercel.app" not in origen_limpio and "localhost" not in origen_limpio:
+        raise HTTPException(...)
+```
+
+Cualquier atacante que controle un subdominio `*.vercel.app` (un deploy de Vercel gratuito) puede hacer requests CSRF a tu API porque el check solo verifica que la cadena `"vercel.app"` esté en la URL. Un atacante crea `mi-ataque.vercel.app` y tiene acceso total a todos los endpoints de mutación.
+
+**Fix:**
+
+```python
+ALLOWED_ORIGINS_SET = set(origins)
+ALLOWED_VERCEL_PREVIEWS = re.compile(
+    r'^https://suplementos-comparator-[a-z0-9]+-[a-z0-9]+\.vercel\.app$'
+)
+
+def verificar_csrf(request: Request):
+    origen = request.headers.get("origin") or request.headers.get("referer", "").split("?")[0].rstrip("/")
+    if not origen:
+        raise HTTPException(status_code=403, detail="Missing Origin header")
+    
+    if origen in ALLOWED_ORIGINS_SET:
+        return
+    if ALLOWED_VERCEL_PREVIEWS.match(origen):
+        return
+    raise HTTPException(status_code=403, detail="Origin not allowed")
+```
+
+### 3.2 Sin Rate Limiting en ningún endpoint — DoS trivial
+
+El endpoint `/api/auth/google` y `/api/login` no tienen rate limiting. Un atacante puede hacer fuerza bruta de contraseñas o agotar las cuotas de Google OAuth sin ningún freno.
+
+**Fix — añadir `slowapi`:**
+
+```python
+# main.py
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.post("/api/login")
+@limiter.limit("5/minute")
+def iniciar_sesion(request: Request, ...):
+    ...
+
+@app.post("/api/auth/google")
+@limiter.limit("10/minute")
+def login_con_google(request: Request, ...):
+    ...
+```
+
+### 3.3 Cookie de sesión sin `Secure` en desarrollo — riesgo en staging
+
+```python
+# main.py línea ~300
+response.set_cookie(
+    secure=IS_PROD,  # ← False en desarrollo/staging
+    samesite="lax",
+    domain=".tussuplementos.com" if IS_PROD else None,
+```
+
+Si existe un entorno de staging en Render con la misma URL que producción pero `ENV != "production"`, las cookies se envían en HTTP plano. Además, `samesite="lax"` con cookies HttpOnly no protege completamente contra CSRF en peticiones GET que muten estado.
+
+**Fix:** Añadir una variable `STAGING` explícita y forzar `secure=True` siempre que no sea localhost:
+
+```python
+IS_SECURE = os.getenv("ENV") in ("production", "staging")
+
+response.set_cookie(
+    key="access_token",
+    value=access_token,
+    httponly=True,
+    secure=IS_SECURE,
+    samesite="strict",  # Más restrictivo que "lax"
+    max_age=60 * 60 * 24 * 7,
+    path="/",
+)
+```
+
+### 3.4 `obtener_perfil_publico` lee token del header Authorization en producción
+
+```python
+# main.py línea ~490
+token: Optional[str] = Header(None, alias="Authorization")
+```
+
+Los perfiles públicos son endpoints GET que cualquiera puede ver, pero el sistema lee el header Authorization para calcular `is_following`. Esto significa que el frontend debe enviar el token en la cabecera, pero el `ProductCard` y otros componentes usan `credentials: 'include'` (cookies). Si ambos mecanismos se mezclan, pueden producirse estados inconsistentes de "siguiendo/no siguiendo".
+
+**Fix:** Usar exclusivamente cookies, eliminar el fallback de header en endpoints públicos y leer siempre de `request.cookies`:
+
+```python
+def obtener_perfil_publico(username: str, request: Request, db: Session = Depends(get_db)):
+    # Sin el parámetro Header — solo cookies
+    token_str = request.cookies.get("access_token")
+    # resto igual...
+```
+
+---
+
+## 4. SEO Técnico y Frontend
+
+### 4.1 El Catalog es 100% Client-Side — Google no indexa los productos
+
+```typescript
+// page.tsx (homepage)
+export default function Home() {
+  return (
+    <main>
+      <Catalog/>  {/* "use client" — renderiza en el navegador */}
+    </main>
+  )
+}
+```
+
+`Catalog.tsx` tiene `"use client"` y hace `fetch` al montar. Google Crawler ejecuta JavaScript, pero el contenido cargado vía fetch asíncrono tras el primer paint **no siempre se indexa correctamente**. Las URLs de productos no existen como HTML estático en la homepage. Esto es el mayor problema SEO del proyecto.
+
+**Fix — Pasar `initialProducts` con SSR desde `page.tsx`:**
+
+```typescript
+// app/page.tsx — AÑADIR SSR
+export default async function Home() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  
+  let initialProducts = [];
+  let initialTotal = 0;
+  
+  try {
+    const res = await fetch(`${apiUrl}/api/productos?limit=36&page=1`, {
+      next: { revalidate: 3600 } // ISR: revalida cada hora
+    });
+    if (res.ok) {
+      const data = await res.json();
+      initialProducts = data.productos || [];
+      initialTotal = data.total_resultados || 0;
+    }
+  } catch (e) {}
+
+  return (
+    <main>
+      <Catalog initialProducts={initialProducts} initialTotal={initialTotal}/>
+    </main>
+  )
+}
+```
+
+### 4.2 JSON-LD en ficha de producto usa `process.env` en el servidor con valor incorrecto
+
+```typescript
+// producto/[slug]/page.tsx línea ~95
+href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/...`}
+```
+
+En el JSON-LD de `offers`, las URLs de afiliado apuntan al backend de Render directamente. Google ve estas URLs como URLs de producto (canónicas según el schema), pero son redirects 302 de tracking. Esto puede penalizar el SEO y confunde los parsers de rich snippets.
+
+**Fix — Usar el dominio canónico en el JSON-LD:**
+
+```typescript
+const baseUrl = 'https://www.tussuplementos.com';
+
+// En el JSON-LD de ofertas
+"offers": activeOffers.map((o) => ({
+  "@type": "Offer",
+  "price": o.precio,
+  "priceCurrency": "EUR",
+  "url": `${baseUrl}/producto/${product.slug}`, // URL canónica, no de tracking
+  "seller": { "@type": "Organization", "name": o.tienda }
+}))
+```
+
+### 4.3 Canonical incorrecto en páginas de categoría — usa slug sin normalizar
+
+```typescript
+// categoria/[slug]/page.tsx línea ~25
+canonical: `https://www.tussuplementos.com/categoria/${slug}`,
+```
+
+Si alguien accede a `/categoria/Proteínas` (con tilde) o `/categoria/proteinas`, el canonical apunta a la URL tal cual está en los params, no a la versión normalizada. Los crawlers pueden indexar duplicados.
+
+**Fix:**
+
+```typescript
+const canonicalSlug = slug.toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita tildes
+  .replace(/\s+/g, '-');
+
+alternates: { canonical: `https://www.tussuplementos.com/categoria/${canonicalSlug}` }
+```
+
+### 4.4 `Pagination.tsx` genera URLs sin estado — el back button rompe la experiencia y el SEO
+
+```typescript
+// Pagination.tsx
+<button onClick={() => onPageChange(page as number)}>
+  {page}
+</button>
+```
+
+Los botones de paginación son `<button>`, no `<Link href="?page=2">`. Google no puede descubrir la página 2, 3, etc. del catálogo porque no hay URLs enlazables. Esto limita severamente la indexación del catálogo.
+
+**Fix:**
+
+```typescript
+// Pagination.tsx — usar Link con searchParams
+import { useSearchParams, useRouter } from 'next/navigation';
+
+const buildPageUrl = (page: number) => {
+  const params = new URLSearchParams(searchParams.toString());
+  params.set('page', page.toString());
+  return `?${params.toString()}`;
+};
+
+// Reemplazar button por Link
+<Link href={buildPageUrl(page)} className="...">
+  {page}
+</Link>
+```
+
+### 4.5 `robots.ts` permite el rastreo de URLs de API y rutas privadas
+
+```typescript
+// robots.ts
+rules: { userAgent: '*', allow: '/' }
+// No hay Disallow para /api/*, /mi-zona, /favoritos, /versus
+```
+
+Los bots rastrean `/api/productos` (que devuelve JSON), `/mi-zona` (que requiere login) y `/versus` (contenido vacío sin productos). Esto gasta crawl budget y puede generar soft 404s.
+
+**Fix:**
+
+```typescript
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/mi-zona', '/favoritos', '/versus', '/comunidad/*/'],
+      }
+    ],
+    sitemap: 'https://www.tussuplementos.com/sitemap.xml',
+  };
+}
+```
+
+---
+
+## 5. Deuda Técnica y Limpieza de Código
+
+### 5.1 Lógica NLP duplicada entre `utils.py` y `pharma2go.py`/`sportlive.py`/`hsn.py`
+
+A pesar de que el doc dice que el NLP está centralizado, `hsn.py` tiene sus propias funciones duplicadas:
+
+```python
+# hsn.py — funciones que ya existen en utils.py
+def extraer_porcentaje_proteina(texto):  # DUPLICADO
+def calcular_metricas_precio(nombre, descripcion, precio):  # DUPLICADO (con firma diferente)
+```
+
+La función en `hsn.py` tiene una firma de 3 parámetros mientras la de `utils.py` acepta `Union[dict, str]`. Esto significa que si se actualiza el cerebro NLP en `utils.py`, `hsn.py` queda desincronizado silenciosamente.
+
+**Fix:** Importar desde `utils.py` en `hsn.py` y eliminar las definiciones locales:
+
+```python
+# hsn.py — eliminar definiciones locales y usar:
+from ingestores.utils import (
+    calcular_metricas_precio,
+    extraer_porcentaje_proteina,
+    clasificar_producto,
+    normalizar_descripcion_ui,
+    extraer_presentacion,
+)
+
+# Adaptar llamadas a la firma de utils.py
+metricas = calcular_metricas_precio(
+    {"nombre": nombre_ampliado, "peso_gramos": None},
+    precio,
+    desc_limpia
+)
+```
+
+### 5.2 `Catalog.tsx` tiene un `useEffect` con lista de dependencias incorrecta
+
+```typescript
+// Catalog.tsx — useEffect del fetch
+useEffect(() => {
+    // ...
+    fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
+}, [
+    searchQuery, selectedCategory, selectedBrands, ordenPrecio,
+    // ... 15 dependencias
+    // FALTA: apiUrl — si cambia dinámicamente, no re-fetcha
+]);
+```
+
+`apiUrl` viene de `process.env` y es estático, pero la ESLint rule `exhaustive-deps` lo detectaría como faltante. Más importante: `buildQueryParams` es una función definida dentro del componente que no está en las deps. Si sus dependencias cambian sin cambiar las de arriba, el fetch usa params viejos.
+
+**Fix — extraer `buildQueryParams` con `useCallback`:**
+
+```typescript
+const buildQueryParams = useCallback(() => {
+  const queryParams = new URLSearchParams();
+  // ... resto igual
+  return queryParams;
+}, [soloOfertas, searchQuery, selectedCategory, selectedBrands, ordenPrecio,
+    selectedFormat, selectedFlavor, selectedGoal, selectedQualitySeal,
+    selectedProteinType, selectedProteinPercentage, selectedCreatineType,
+    selectedVitaminType, selectedAminoProfile, isVegan, sinGluten, sinLactosa]);
+
+useEffect(() => {
+  // ...
+  const queryParams = buildQueryParams();
+  fetch(`${apiUrl}/api/productos?${queryParams.toString()}`)
+}, [buildQueryParams, apiUrl, currentPage, initialProducts]);
+```
+
+### 5.3 `ProductCard.tsx` — modal renderizado en portal con Image de Next.js sin `sizes`
+
+```typescript
+// ProductCard.tsx líneas ~220-235
+<Image
+  src={product.image_url}
+  alt={formattedName}
+  width={500}
+  height={500}
+  unoptimized  // ← Desactiva toda la optimización de Next.js Image
+  className="w-full h-full object-contain..."
+/>
+```
+
+`unoptimized={true}` en todas las imágenes del catálogo elimina el WebP automático, lazy loading optimizado y el responsive sizing. Con 36 productos por página, esto carga 36 imágenes sin optimizar en el primer paint, destruyendo el LCP (Largest Contentful Paint).
+
+**Fix:**
+
+```typescript
+<Image
+  src={product.image_url}
+  alt={formattedName}
+  fill
+  sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 20vw"
+  className="object-contain"
+  // Sin unoptimized — dejar que Next.js optimice
+  onError={() => setImageError(true)}
+/>
+```
+
+Y en `next.config.ts`, añadir dominios de imagen conocidos para que el optimizador los procese:
+
+```typescript
+images: {
+  remotePatterns: [
+    { protocol: 'https', hostname: '**.hsnstore.com' },
+    { protocol: 'https', hostname: '**.farma2go.es' },
+    // En lugar del wildcard ** que omite la optimización en algunos hosts
+  ]
+}
+```
+
+---
+
+## 6. Oportunidades de Negocio y Monetización
+
+### 6.1 Historial de precios construido pero invisible — oportunidad de conversión perdida
+
+La tabla `precios_historicos` existe, el backend la expone en `OfertaResponse`, y `schemas.py` la serializa correctamente. Pero en toda la UI no hay ni un solo gráfico que muestre esta curva de precios.
+
+Un gráfico de precio histórico tipo "Amazon" es el **elemento de conversión número uno** en comparadores de precio: el usuario ve que el precio está en mínimos y compra ahora.
+
+**Fix — Componente de gráfico en la ficha de producto (React + recharts, ya disponible):**
+
+```typescript
+// frontend/src/components/PriceHistoryChart.tsx
+"use client";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+export default function PriceHistoryChart({ oferta }: { oferta: any }) {
+  if (!oferta.historial_precios || oferta.historial_precios.length < 2) return null;
+  
+  const data = oferta.historial_precios.map((h: any) => ({
+    fecha: new Date(h.fecha).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    precio: h.precio
+  }));
+  
+  const minPrice = Math.min(...data.map((d: any) => d.precio));
+  
+  return (
+    <div className="mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+        Evolución del precio — Mínimo histórico: <span className="text-green-600">{minPrice.toFixed(2)}€</span>
+      </p>
+      <ResponsiveContainer width="100%" height={120}>
+        <LineChart data={data}>
+          <XAxis dataKey="fecha" tick={{ fontSize: 10 }} />
+          <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10 }} />
+          <Tooltip formatter={(v: number) => [`${v.toFixed(2)}€`, 'Precio']} />
+          <Line type="monotone" dataKey="precio" stroke="#2563eb" strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+Añadir en `producto/[slug]/page.tsx` dentro del bloque de ofertas, con llamada al componente por cada oferta activa que tenga historial.
+
+### 6.2 Reseñas de sabores construidas en backend pero sin UI — UGC desperdiciado
+
+Los endpoints `GET/POST /api/resenas` existen y funcionan. Las reseñas están en la BD. Pero no hay ningún componente que las muestre en la ficha del producto ni en el catálogo. Las reseñas de usuarios son **contenido único** que Google indexa con preferencia (rich snippets de `AggregateRating`), y son el factor más importante para la conversión en e-commerce.
+
+**Fix inmediato — añadir en `producto/[slug]/page.tsx`:**
+
+```typescript
+// Fetch de reseñas en el servidor (SSR)
+const resenasRes = await fetch(`${apiUrl}/api/resenas?producto_id=${product.id}`, {
+  next: { revalidate: 1800 }
+});
+const resenas = resenasRes.ok ? await resenasRes.json() : [];
+
+// Añadir al JSON-LD del producto
+if (resenas.length > 0) {
+  const avgRating = resenas.reduce((a: number, r: any) => a + r.nota, 0) / resenas.length;
+  jsonLd["aggregateRating"] = {
+    "@type": "AggregateRating",
+    "ratingValue": avgRating.toFixed(1),
+    "ratingCount": resenas.length,
+    "bestRating": "10",
+    "worstRating": "1"
+  };
+}
+```
+
+Esto añade estrellas en los resultados de búsqueda de Google (rich snippets de rating), que aumentan el CTR orgánico entre un 15-35%.
+
+### 6.3 El cloaker `/api/out/{tienda}/{slug}` no está en el frontend de la ficha de producto
+
+```typescript
+// producto/[slug]/page.tsx — AffiliateButton usa la URL correcta del cloaker
+href={`${process.env.NEXT_PUBLIC_API_URL}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
+```
+
+Esto está bien en la ficha. Pero en `ProductCard.tsx` el modal Quick View usa directamente `product.affiliate_url`:
+
+```typescript
+// ProductCard.tsx línea ~285
+href={product.slug && oferta.tienda 
+  ? `${apiUrl}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}` 
+  : (product.affiliate_url || "#")}
+```
+
+El fallback a `product.affiliate_url` expone la URL directa de afiliado (con el token de TradeDoubler visible), lo que AdBlockers pueden filtrar. El cloaker resuelve esto y además registra el clic para el ranking de popularidad.
+
+**Fix — eliminar el fallback a `affiliate_url` directo:**
+
+```typescript
+const href = product.slug && oferta.tienda
+  ? `${apiUrl}/api/out/${encodeURIComponent(oferta.tienda.toLowerCase())}/${product.slug}`
+  : '#'; // Si no hay slug, no hay link (mejor que exponer URL de afiliado)
+```
+
+### 6.4 El canal de Telegram publica hasta 2 chollos cada vez — podría ser un embudo de captación más agresivo
+
+```python
+# send_telegram_deals.py línea ~120
+chollos = fetch_best_deals(limit=2, min_discount=15)
+```
+
+Con solo 2 chollos por publicación y descuento mínimo del 15%, el bot apenas genera contenido. El canal de Telegram es activo `2 veces/día × 2 productos = 4 posts/día`. Esto es insuficiente para mantener engagement y hacer crecer el canal orgánicamente.
+
+**Fix de negocio:**
+- Subir a `limit=3` para tener más contenido por publicación
+- Añadir un segundo tipo de post: "Oferta del día en Proteínas" y "Chollo en Vitaminas" alternando categorías
+- Añadir un countdown en el mensaje cuando hay ofertas de tiempo limitado
+
+```python
+# Añadir en format_deal_message para urgencia
+expiry_note = ""
+if discount >= 40:
+    expiry_note = "\n⏰ <b>Oferta limitada — suele agotarse rápido</b>"
+caption += expiry_note
+```
+
+### 6.5 `clics_count` se actualiza pero nunca se usa en el ranking por defecto de forma efectiva
+
+```python
+# main.py — orden por defecto
+query = query.order_by(
+    nulls_last(models.Producto.clics_count.desc()),
+    models.Producto.id.asc(),
+)
+```
+
+El 99% de los productos tienen `clics_count = 0` (especialmente los nuevos). Esto hace que el ordenamiento sea efectivamente por `id.asc()` — los productos más antiguos aparecen primero. Los nuevos productos (potencialmente con mejores precios) quedan enterrados.
+
+**Fix — score de relevancia combinado:**
+
+```python
+from sqlalchemy import case, cast, Float
+
+relevance_score = (
+    func.coalesce(models.Producto.clics_count, 0) * 0.4 +
+    case(
+        (models.Oferta.precio_anterior.isnot(None), 
+         (models.Oferta.precio_anterior - models.Oferta.precio) / models.Oferta.precio_anterior * 100 * 0.6),
+        else_=0
+    )
+).label("relevance_score")
+
+query = query.order_by(relevance_score.desc(), models.Producto.id.desc())
+```
+
+Esto mezcla popularidad (clics) con descuento activo, poniendo productos con buen precio y algo de tráfico en las primeras posiciones, en lugar de favorecer los más antiguos.
+
+---
+
+## Resumen de Prioridades
+
+Los hallazgos ordenados por impacto inmediato:
+
+**Prioridad 0 — Fixes esta semana:**
+1. `NotificacionesDropdown` con `localhost` hardcodeado (rompe en producción)
+2. `newsletter_semanal.py` con `c.nombre` (AttributeError en cada ejecución del CRON)
+3. Filtros duplicados en `main.py` (posibles resultados incorrectos en ofertas)
+4. Sesión de BD global en `pharma2go.py` (agota conexiones de Neon)
+5. CSRF bypass con cualquier subdominio `*.vercel.app`
+
+**Prioridad 1 — Arquitectura:**
+6. Paginación en memoria de Python (bloqueante a 10k+ productos)
+7. Imágenes con `unoptimized` (LCP > 4s, penalización Core Web Vitals)
+8. Homepage sin SSR (Google no indexa el catálogo)
+
+**Prioridad 2 — Negocio:**
+9. Gráfico de historial de precios en la ficha (conversión directa)
+10. Reseñas visibles + JSON-LD AggregateRating (CTR orgánico +20%)

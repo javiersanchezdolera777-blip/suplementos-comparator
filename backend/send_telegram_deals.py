@@ -175,9 +175,9 @@ def mark_as_published(oferta_id):
         cursor = conn.cursor()
         # 🚨 CAMBIO: Sellamos la tabla ofertas, no productos
         cursor.execute(
-            "UPDATE ofertas SET publicado_telegram = TRUE, fecha_publicacion_telegram = NOW() WHERE id = %s;",
-            (oferta_id,),
-        )
+        "UPDATE ofertas SET publicado_telegram = TRUE WHERE id = %s;",
+        (oferta_id,),
+        )   
         conn.commit()
         cursor.close()
         conn.close()
