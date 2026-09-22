@@ -36,43 +36,5 @@ TIENDAS_AFILIADOS = {
             "afiliado_url": ["offers.0.productUrl", "offers.0.feedOfferUrl"],
             "peso_gramos": "weight"
         }
-    },
-    "Bulk": {
-        "url_feed": "https://example.com/feeds/bulk_feed.csv",
-        "formato": "csv",
-        "delimitador": ",",
-        "encoding": "utf-8",
-        "marca_modo": "fija",
-        "marca_defecto": "Bulk",
-        "columna_marca": None,
-        "base_url_imagen": None,
-        "columnas": {
-            "nombre": "Title",
-            "descripcion": "Description",
-            "precio": "Price",
-            "precio_anterior": "Retail Price",
-            "imagen_url": "Image URL",
-            "afiliado_url": "Product URL",
-            "peso_gramos": "Grammage"
-        }
-    },
-    "MyProtein": {
-        "url_feed": "https://example.com/feeds/myprotein_feed.tsv",
-        "formato": "tsv",
-        "delimitador": "\t",
-        "encoding": "utf-8",
-        "marca_modo": "fija",
-        "marca_defecto": "MyProtein",
-        "columna_marca": None,
-        "base_url_imagen": None,
-        "columnas": {
-            "nombre": "product_name",
-            "descripcion": "description",
-            "precio": "price",
-            "precio_anterior": "regular_price",
-            "imagen_url": "image_url",
-            "afiliado_url": "affiliate_url",
-            "peso_gramos": "weight_g"
-        }
     }
 }

@@ -10,6 +10,10 @@ from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 
 # Importamos nuestras piezas
 import models
@@ -30,6 +34,11 @@ VERCEL_PREVIEW_RE = re.compile(
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API de Suplementos")
+
+# Configuración de Rate Limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Control de Entorno
 IS_PROD = os.getenv("ENV") == "production"
@@ -640,6 +649,7 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/registro", response_model=schemas.UsuarioResponse, tags=["Autenticación y Sesión"])
+@limiter.limit("5/minute")
 def registrar_usuario(
         usuario: schemas.UsuarioCreate,
         db: Session = Depends(get_db)):
@@ -662,6 +672,7 @@ def registrar_usuario(
 
 
 @app.post("/api/login", tags=["Autenticación y Sesión"])
+@limiter.limit("10/minute")
 def iniciar_sesion(
         usuario: schemas.UsuarioCreate,
         response: Response,
@@ -754,6 +765,7 @@ class GoogleToken(BaseModel):
 
 
 @app.post("/api/auth/google", tags=["Autenticación y Sesión"])
+@limiter.limit("10/minute")
 def login_con_google(google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
     try:
         # Obtenemos el Client ID desde la variable de entorno
@@ -1607,6 +1619,7 @@ def eliminar_favorito(
 
 
 @app.post("/api/newsletter/subscribe", tags=["Newsletter"])
+@limiter.limit("3/hour")
 def suscribir_newsletter(
     suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
 ):
