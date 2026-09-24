@@ -1,4 +1,8 @@
+"use client";
+
 import React from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface PaginationProps {
   currentPage: number;
@@ -7,6 +11,13 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  const searchParams = useSearchParams();
+
+  const getPageUrl = (page: number) => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    params.set("page", page.toString());
+    return `?${params.toString()}#catalogo`;
+  };
   if (totalPages <= 1) return null;
 
   // Lógica para mostrar máximo 5 números de página con elipsis si es necesario
@@ -36,13 +47,24 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   return (
     <div className="flex items-center justify-center gap-2 mt-10 mb-6">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium shadow-sm"
+      <Link
+        href={currentPage > 1 ? getPageUrl(currentPage - 1) : '#'}
+        onClick={(e) => {
+          if (currentPage === 1) {
+            e.preventDefault();
+            return;
+          }
+          // We don't preventDefault to allow URL update, but we still trigger local state update
+          onPageChange(currentPage - 1);
+        }}
+        className={`px-4 py-2 rounded-xl border border-slate-200 transition-colors font-medium shadow-sm flex items-center justify-center ${
+          currentPage === 1
+            ? 'bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed pointer-events-none'
+            : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+        }`}
       >
         Anterior
-      </button>
+      </Link>
       
       <div className="flex items-center gap-1 hidden sm:flex">
         {visiblePages.map((page, index) => {
@@ -54,17 +76,18 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             );
           }
           return (
-            <button
+            <Link
               key={`page-${page}`}
+              href={getPageUrl(page as number)}
               onClick={() => onPageChange(page as number)}
               className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center transition-all ${
                 currentPage === page 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 pointer-events-none' 
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
               }`}
             >
               {page}
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -73,13 +96,23 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         Página {currentPage} de {totalPages}
       </div>
 
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium shadow-sm"
+      <Link
+        href={currentPage < totalPages ? getPageUrl(currentPage + 1) : '#'}
+        onClick={(e) => {
+          if (currentPage === totalPages) {
+            e.preventDefault();
+            return;
+          }
+          onPageChange(currentPage + 1);
+        }}
+        className={`px-4 py-2 rounded-xl border border-slate-200 transition-colors font-medium shadow-sm flex items-center justify-center ${
+          currentPage === totalPages
+            ? 'bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed pointer-events-none'
+            : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+        }`}
       >
         Siguiente
-      </button>
+      </Link>
     </div>
   );
 }
