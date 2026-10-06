@@ -10,6 +10,9 @@ from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Importamos nuestras piezas
 import models
@@ -31,8 +34,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API de Suplementos")
 
+# Configuración de Rate Limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Control de Entorno
-IS_PROD = os.getenv("ENV") == "production"
+IS_LOCAL = os.getenv("ENV", "production") in ("local", "development")
 
 
 # --- CONFIGURACIÓN DE CORS ---
@@ -642,7 +650,9 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/registro", response_model=schemas.UsuarioResponse, tags=["Autenticación y Sesión"])
+@limiter.limit("5/minute")
 def registrar_usuario(
+        request: Request,
         usuario: schemas.UsuarioCreate,
         db: Session = Depends(get_db)):
     usuario_existente = (
@@ -664,7 +674,9 @@ def registrar_usuario(
 
 
 @app.post("/api/login", tags=["Autenticación y Sesión"])
+@limiter.limit("10/minute")
 def iniciar_sesion(
+        request: Request,
         usuario: schemas.UsuarioCreate,
         response: Response,
         db: Session = Depends(get_db)):
@@ -684,9 +696,9 @@ def iniciar_sesion(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=IS_PROD,
+        secure=not IS_LOCAL,
         samesite="lax",
-        domain=".tussuplementos.com" if IS_PROD else None,
+        domain=".tussuplementos.com" if not IS_LOCAL else None,
         max_age=60 * 60 * 24 * 7,
         path="/",
     )
@@ -756,7 +768,8 @@ class GoogleToken(BaseModel):
 
 
 @app.post("/api/auth/google", tags=["Autenticación y Sesión"])
-def login_con_google(google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login_con_google(request: Request, google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
     try:
         # Obtenemos el Client ID desde la variable de entorno
         client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -786,9 +799,9 @@ def login_con_google(google_data: GoogleToken, response: Response, db: Session =
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=IS_PROD,
+            secure=not IS_LOCAL,
             samesite="lax",
-            domain=".tussuplementos.com" if IS_PROD else None,
+            domain=".tussuplementos.com" if not IS_LOCAL else None,
             max_age=60 * 60 * 24 * 7,
             path="/",
         )
@@ -803,7 +816,7 @@ def login_con_google(google_data: GoogleToken, response: Response, db: Session =
 def logout(response: Response):
     response.delete_cookie(
         "access_token", 
-        domain=".tussuplementos.com" if IS_PROD else None, 
+        domain=".tussuplementos.com" if not IS_LOCAL else None, 
         path="/"
     )
     return {"mensaje": "Sesión cerrada"}
@@ -1609,8 +1622,9 @@ def eliminar_favorito(
 
 
 @app.post("/api/newsletter/subscribe", tags=["Newsletter"])
+@limiter.limit("3/hour")
 def suscribir_newsletter(
-    suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
+    request: Request, suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
 ):
     email_limpio = suscripcion.email.lower().strip()
     registro = (
