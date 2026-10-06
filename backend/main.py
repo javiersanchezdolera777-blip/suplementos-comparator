@@ -942,6 +942,12 @@ def obtener_perfil_publico(
     """Visitar el perfil de otra persona (ej: tussuplementos.com/comunidad/pepe)"""
     perfil = (
         db.query(models.Perfil)
+        .options(
+            selectinload(models.Perfil.stacks)
+            .selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Perfil.username.ilike(username.strip()))
         .first()
     )
@@ -1720,7 +1726,16 @@ def obtener_stack_individual(
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
-    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    stack = (
+        db.query(models.Stack)
+        .options(
+            selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Stack.id == stack_id)
+        .first()
+    )
     if not stack:
         raise HTTPException(status_code=404, detail="Stack no encontrado")
         
