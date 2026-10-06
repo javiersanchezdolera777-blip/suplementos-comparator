@@ -879,6 +879,19 @@ def clasificar_producto(
         elif "citrulina" in texto_completo:
             c["perfil_aminoacidos"] = PerfilAminoacidosEnum.citrulina.value
 
+    # ------------------------------------------------------------
+    # SANITIZACIÓN FINAL DE ARRAYS (Para evitar errores en BD)
+    # ------------------------------------------------------------
+    if "sabor" not in c or c["sabor"] is None:
+        c["sabor"] = []
+    elif not isinstance(c["sabor"], list):
+        c["sabor"] = [c["sabor"]]
+
+    if "objetivo" not in c or c["objetivo"] is None:
+        c["objetivo"] = []
+    elif not isinstance(c["objetivo"], list):
+        c["objetivo"] = [c["objetivo"]]
+
     c["presentacion"] = extraer_presentacion(nombre)
 
     return c
