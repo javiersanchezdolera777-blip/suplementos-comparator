@@ -12,7 +12,7 @@ if not SQLALCHEMY_DATABASE_URL:
     raise RuntimeError("DATABASE_URL no está definido. Revisa el archivo .env del backend.")
 
 print("🗄️ Conectando a la base de datos configurada en el backend/.env")
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 
 
 def ensure_schema_compatibility():

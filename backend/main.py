@@ -5,7 +5,7 @@ from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
@@ -559,11 +559,16 @@ def comparar_productos(
             detail="Solo puedes comparar un máximo de 4 productos a la vez.",
         )
 
-    # 3. Consulta súper optimizada usando el operador in_() de SQLAlchemy
+    # 3. Consulta súper optimizada usando el operador in_() y carga adelantada
     productos = (
-        db.query(
-            models.Producto).filter(
-            models.Producto.id.in_(lista_ids)).all())
+        db.query(models.Producto)
+        .options(
+            selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Producto.id.in_(lista_ids))
+        .all()
+    )
 
     if not productos:
         raise HTTPException(
