@@ -507,7 +507,10 @@ def obtener_productos(
         # Hacemos una única query final para traer SOLO los 36 objetos completos
         productos_bd = (
             db.query(models.Producto)
-            .outerjoin(models.Oferta)
+            .options(
+                selectinload(models.Producto.ofertas)
+                .selectinload(models.Oferta.historial_precios)
+            )
             .filter(models.Producto.id.in_(ids_pagina))
             .all()
         )
