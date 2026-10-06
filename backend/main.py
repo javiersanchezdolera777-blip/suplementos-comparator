@@ -800,6 +800,9 @@ def login_con_google(request: Request, google_data: GoogleToken, response: Respo
             clock_skew_in_seconds=10,
         )
 
+        if not idinfo.get("email_verified"):
+            raise HTTPException(status_code=401, detail="Email de Google no verificado")
+
         email = idinfo["email"]
         usuario = db.query(
             models.Usuario).filter(
