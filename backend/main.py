@@ -291,13 +291,29 @@ def obtener_productos(
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200),
 ):
-    # Join inicial maestro para evitar conflictos
+    # 0. Evaluar si necesitamos cruzar con Ofertas (solo si hay orden por precio o filtro solo_ofertas)
+    sort_final = (
+        request.query_params.get("orden_precio")
+        or request.query_params.get("ordenar_por")
+        or request.query_params.get("sort")
+        or orden
+    )
+    
+    necesita_join_ofertas = solo_ofertas or sort_final in [
+        "precio_asc", "price_asc", "asc", 
+        "precio_desc", "price_desc", "desc", 
+        "descuento"
+    ]
+
+    # Join inicial maestro optimizado
     query = (
         db.query(models.Producto)
         .join(models.Categoria, isouter=True)
         .join(models.Marca, isouter=True)
-        .outerjoin(models.Oferta)
     )
+    
+    if necesita_join_ofertas:
+        query = query.outerjoin(models.Oferta)
 
     # 1. Filtros de Categoría
     cat_str = categorias or categoria
@@ -401,12 +417,7 @@ def obtener_productos(
     # ... (deja igual los subfiltros y buscador de texto libre) ...
 
     # 7. ORDENACIÓN (Ahora tira de Oferta)
-    sort_final = (
-        request.query_params.get("orden_precio")
-        or request.query_params.get("ordenar_por")
-        or request.query_params.get("sort")
-        or orden
-    )
+
 
     if sort_final in ["precio_asc", "price_asc", "asc"]:
         query = query.order_by(models.Oferta.precio.asc())
