@@ -92,7 +92,7 @@ export default function Catalog({
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000" || "http://127.0.0.1:8000";
 
   useEffect(() => {
     fetch(`${apiUrl}/api/config/filtros`)
@@ -182,7 +182,7 @@ export default function Catalog({
     return queryParams;
   };
 
-useEffect(() => {
+  useEffect(() => {
     // Si tenemos initialProducts, omitimos la primera carga
     if (isFirstRender.current && initialProducts) {
       isFirstRender.current = false;
@@ -190,8 +190,8 @@ useEffect(() => {
     }
 
     // 1. CREAMOS LA BANDERA MÁGICA
-    let peticionActiva = true; 
-    
+    let peticionActiva = true;
+
     setLoading(true);
 
     const queryParams = buildQueryParams();
@@ -202,8 +202,8 @@ useEffect(() => {
       .then((res) => res.json())
       .then((data) => {
         // 2. SI LA BANDERA ESTÁ BAJADA, IGNORAMOS ESTA RESPUESTA VIEJA
-        if (!peticionActiva) return; 
-        
+        if (!peticionActiva) return;
+
         setProductos(Array.isArray(data) ? data : data.productos || []);
         setTotalResultados(Array.isArray(data) ? data.length : data.total_resultados || 0);
         setLoading(false);
@@ -216,7 +216,7 @@ useEffect(() => {
 
     // 3. FUNCIÓN DE LIMPIEZA: Si el usuario cambia de filtro antes de que termine, bajamos la bandera
     return () => {
-      peticionActiva = false; 
+      peticionActiva = false;
     };
   }, [
     searchQuery, selectedCategory, selectedBrands, ordenPrecio,
@@ -411,11 +411,11 @@ useEffect(() => {
               <div className="flex items-start sm:items-center gap-3">
                 <div className="text-3xl hidden sm:block">✨</div>
                 <div>
-                   <h4 className="font-bold text-sm sm:text-base text-blue-950">¡Tu Stack está creado!</h4>
-                   <p className="text-xs sm:text-sm text-blue-800/90 mt-0.5">Busca el suplemento que quieras y pulsa el botón (+) en su tarjeta para añadirlo.</p>
+                  <h4 className="font-bold text-sm sm:text-base text-blue-950">¡Tu Stack está creado!</h4>
+                  <p className="text-xs sm:text-sm text-blue-800/90 mt-0.5">Busca el suplemento que quieras y pulsa el botón (+) en su tarjeta para añadirlo.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   const params = new URLSearchParams(window.location.search);
                   params.delete("add_to_stack");
@@ -448,11 +448,10 @@ useEffect(() => {
                   }
                   router.push(`/?${params.toString()}#catalogo`);
                 }}
-                className={`md:hidden flex items-center justify-center gap-1 h-8 px-2.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  soloOfertas
-                    ? "bg-slate-900 text-white border-slate-900 shadow-md"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
+                className={`md:hidden flex items-center justify-center gap-1 h-8 px-2.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all ${soloOfertas
+                  ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                  }`}
               >
                 <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -461,7 +460,7 @@ useEffect(() => {
               </button>
 
               <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block ml-2">Ordenar por</label>
-              
+
               {/* Selector Minimalista (Dropdown Nativo Optimizado) */}
               <div className="relative w-full sm:w-auto h-8 md:h-10">
                 <select

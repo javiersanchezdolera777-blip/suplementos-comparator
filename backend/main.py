@@ -14,7 +14,6 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-
 # Importamos nuestras piezas
 import models
 import schemas
@@ -53,7 +52,9 @@ origins = [
     "https://suplementos-comparator.vercel.app",
     "http://192.168.64.1:3000",
     "http://localhost:3000",
-    "http://localhost:8000"
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
 ]
 
 app.add_middleware(

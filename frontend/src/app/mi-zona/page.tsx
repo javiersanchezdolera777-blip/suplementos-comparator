@@ -39,6 +39,7 @@ export default function MiZonaPage() {
 
   useEffect(() => {
     if (isLoggedIn) {
+      setLoading(true);
       setNecesitaLogin(false);
       comprobarEstado();
     } else {

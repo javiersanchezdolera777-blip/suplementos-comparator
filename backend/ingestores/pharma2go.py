@@ -38,7 +38,6 @@ ARCHIVO_CACHE = os.path.join(
     "farma2go_temporal.json",
 )
 
-db = SessionLocal()
 
 
 def descargar_datos():
@@ -68,262 +67,301 @@ def generar_slug(nombre: str) -> str:
 
 
 def inyectar_en_bd():
+    db = SessionLocal()
     print("🔄 Descargando y procesando datos de Farma2Go...")
-    datos = descargar_datos()
-    if not datos:
-        print("⚠️ No se recibieron datos del feed. Se aborta la inserción.")
-        return
+    try:
+        datos = descargar_datos()
+        if not datos:
+            print("⚠️ No se recibieron datos del feed. Se aborta la inserción.")
+            return
 
-    mapa_categorias = {}
-    for cat in CategoriaEnum:
-        cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
-        if not cat_db:
-            try:
-                cat_db = models.Categoria(nombre=cat.value)
-                db.add(cat_db)
-                db.commit()
-                db.refresh(cat_db)
-            except Exception:
-                db.rollback()
-                cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
-                if not cat_db:
-                    raise
-        mapa_categorias[cat.value] = cat_db.id
-    productos_nuevos = []
-    actualizados = 0
-    cache_marcas = {}
-    print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")
-    productos_bd = {
-        p.slug: p
-        for p in db.query(models.Producto)
-        .join(models.Oferta)
-        .filter(models.Oferta.tienda == "Farma2Go")
-        .all()
-    }
-    print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
-
-    for item in datos.get("products", []):
-        nombre = html.unescape(item.get("name", "Sin nombre"))
-        desc_cruda = item.get("description", "")
-        desc_limpia = limpiar_texto(desc_cruda)
-        descripcion_ui = normalizar_descripcion_ui(desc_cruda)
-
-        # ==========================================
-        # CAPA 1: LISTA NEGRA (Falsos Positivos y Veterinaria)
-        # ==========================================
-        nombre_lower = nombre.lower()
-        basura_titulo = [
-            "alfombra", "caballo", "perro", "gato", "mascota", "animal",
-            "serum", "antiarrugas", "antiedad", "estuche", "champú"
-        ]
-        if any(b in nombre_lower for b in basura_titulo):
-            continue
-            
-        # Regla especial para rechazar "crema" a menos que sea crema de untar (alimentación)
-        if "crema" in nombre_lower:
-            if not any(buena in nombre_lower for buena in ["cacahuete", "arroz", "almendra", "avellana", "cacao"]):
-                continue
-
-        # FILTRO EXTREMO DE CATEGORÍAS JSON
-        categorias_json = [
-            (c.get("name") or c.get("tdCategoryName") or "").lower()
-            for c in item.get("categories", [])
-        ]
-        categorias_prohibidas = [
-            "cosmética",
-            "higiene",
-            "bebé",
-            "ortopedia",
-            "facial",
-            "corporal",
-            "capilar",
-            "solar",
-            "maternidad",
-            "infantil",
-            "bucal",
-            "dental",
-            "botiquín",
-            "óptica",
-            "sexual",
-            "perfumería",
-        ]
-        if any(
-            prohibida in cat
-            for cat in categorias_json
-            for prohibida in categorias_prohibidas
-        ):
-            continue
-
-        # FILTRO ESTRICTO DE SUPLEMENTACIÓN (Restaura el antiguo 'return None' de clasificar_producto)
-        # Si un producto no tiene NINGÚN término clave de suplementación, se rechaza.
-        terminos_validos = [
-            "whey",
-            "protein",
-            "proteína",
-            "proteina",
-            "isolate",
-            "aislado",
-            "creatin",
-            "amino",
-            "bcaa",
-            "glutamina",
-            "carnitina",
-            "colágeno",
-            "colageno",
-            "harina",
-            "copos",
-            "mermelada",
-            "avena",
-            "eritritol",
-            "peanut",
-            "crema de",
-            "sirope",
-            "salsa",
-            "barrita",
-            "snack",
-            "flapjack",
-            "magnesio",
-            "vitamina",
-            "omega",
-            "multivitam",
-            "gainer",
-            "mass",
-            "casein",
-            "citrulina",
-            "alanina",
-            "eaa",
-            "kre-alkalyn",
-            "hcl",
-            "hidrolizado",
-            "hydro",
-            "peptopro",
-            "evowhey",
-            "evoisolate",
-            "evocasein",
-            "evoegg",
-            "evomass",
-            "gominola",
-            "gummy",
-        ]
-
-        if not any(t in nombre.lower() for t in terminos_validos):
-            continue
-
-        etiquetas = clasificar_producto(nombre, desc_limpia)
-        if not etiquetas:
-            continue
-
-        presentacion_ext = extraer_presentacion(nombre)
-
-        # LIMPIEZA DE MARCA
-        marca_cruda = item.get("brand", "Desconocida")
-        # Si la marca es muy larga o tiene caracteres raros, la descartamos
-        if len(marca_cruda) > 30 or any(
-            char in marca_cruda for char in ["/", "\\", ":", ";"]
-        ):
-            marca_cruda = "Desconocida"
-
-        nombre_marca = normalizar_marca(marca_cruda)
-
-        if nombre_marca not in cache_marcas:
-            marca_db = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
-            if not marca_db:
+        mapa_categorias = {}
+        for cat in CategoriaEnum:
+            cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+            if not cat_db:
                 try:
-                    marca_db = models.Marca(nombre=nombre_marca)
-                    db.add(marca_db)
+                    cat_db = models.Categoria(nombre=cat.value)
+                    db.add(cat_db)
                     db.commit()
-                    db.refresh(marca_db)
+                    db.refresh(cat_db)
                 except Exception:
                     db.rollback()
-                    marca_db = (
-                        db.query(models.Marca).filter_by(nombre=nombre_marca).first()
-                    )
-                    if not marca_db:
+                    cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
+                    if not cat_db:
                         raise
-            cache_marcas[nombre_marca] = marca_db.id
+            mapa_categorias[cat.value] = cat_db.id
+        productos_nuevos = []
+        actualizados = 0
+        cache_marcas = {}
+        print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")
+        productos_bd = {
+            p.slug: p
+            for p in db.query(models.Producto)
+            .join(models.Oferta)
+            .filter(models.Oferta.tienda == "Farma2Go")
+            .all()
+        }
+        print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
-        precio = 0.0
-        precio_anterior = None
-        afiliado_url = ""
-        ofertas = item.get("offers", [])
-        if ofertas:
-            afiliado_url = ofertas[0].get("productUrl", "")
+        for item in datos.get("products", []):
+            nombre = html.unescape(item.get("name", "Sin nombre"))
+            desc_cruda = item.get("description", "")
+            desc_limpia = limpiar_texto(desc_cruda)
+            descripcion_ui = normalizar_descripcion_ui(desc_cruda)
 
-            # 1. Intentamos sacar el precio rebajado y el original de la API
-            oferta = ofertas[0]
-            if "price" in oferta and isinstance(oferta["price"], dict):
-                precio = float(oferta["price"].get("value", 0.0))
+            # ==========================================
+            # CAPA 1: LISTA NEGRA (Falsos Positivos y Veterinaria)
+            # ==========================================
+            nombre_lower = nombre.lower()
+            basura_titulo = [
+                "alfombra", "caballo", "perro", "gato", "mascota", "animal",
+                "serum", "antiarrugas", "antiedad", "estuche", "champú"
+            ]
+            if any(b in nombre_lower for b in basura_titulo):
+                continue
+            
+            # Regla especial para rechazar "crema" a menos que sea crema de untar (alimentación)
+            if "crema" in nombre_lower:
+                if not any(buena in nombre_lower for buena in ["cacahuete", "arroz", "almendra", "avellana", "cacao"]):
+                    continue
 
-            if "previousPrice" in oferta and isinstance(oferta["previousPrice"], dict):
-                p_previo = float(oferta["previousPrice"].get("value", 0.0))
-                if p_previo > precio:
-                    precio_anterior = p_previo
+            # FILTRO EXTREMO DE CATEGORÍAS JSON
+            categorias_json = [
+                (c.get("name") or c.get("tdCategoryName") or "").lower()
+                for c in item.get("categories", [])
+            ]
+            categorias_prohibidas = [
+                "cosmética",
+                "higiene",
+                "bebé",
+                "ortopedia",
+                "facial",
+                "corporal",
+                "capilar",
+                "solar",
+                "maternidad",
+                "infantil",
+                "bucal",
+                "dental",
+                "botiquín",
+                "óptica",
+                "sexual",
+                "perfumería",
+            ]
+            if any(
+                prohibida in cat
+                for cat in categorias_json
+                for prohibida in categorias_prohibidas
+            ):
+                continue
 
-            # 2. Respaldo antiguo (Historial) por si falla lo de arriba
-            if precio == 0.0:
-                historial = oferta.get("priceHistory", [])
-                if historial and "price" in historial[0]:
-                    precio = float(historial[0]["price"].get("value", 0))
+            # FILTRO ESTRICTO DE SUPLEMENTACIÓN (Restaura el antiguo 'return None' de clasificar_producto)
+            # Si un producto no tiene NINGÚN término clave de suplementación, se rechaza.
+            terminos_validos = [
+                "whey",
+                "protein",
+                "proteína",
+                "proteina",
+                "isolate",
+                "aislado",
+                "creatin",
+                "amino",
+                "bcaa",
+                "glutamina",
+                "carnitina",
+                "colágeno",
+                "colageno",
+                "harina",
+                "copos",
+                "mermelada",
+                "avena",
+                "eritritol",
+                "peanut",
+                "crema de",
+                "sirope",
+                "salsa",
+                "barrita",
+                "snack",
+                "flapjack",
+                "magnesio",
+                "vitamina",
+                "omega",
+                "multivitam",
+                "gainer",
+                "mass",
+                "casein",
+                "citrulina",
+                "alanina",
+                "eaa",
+                "kre-alkalyn",
+                "hcl",
+                "hidrolizado",
+                "hydro",
+                "peptopro",
+                "evowhey",
+                "evoisolate",
+                "evocasein",
+                "evoegg",
+                "evomass",
+                "gominola",
+                "gummy",
+            ]
 
-        imagen_url = item.get("productImage", {}).get("url", "")
+            if not any(t in nombre.lower() for t in terminos_validos):
+                continue
 
-        metricas = calcular_metricas_precio(item, precio)
+            etiquetas = clasificar_producto(nombre, desc_limpia)
+            if not etiquetas:
+                continue
 
-        categoria_id = mapa_categorias.get(etiquetas.get("categoria"))
-        if not categoria_id:
-            categoria_id = next(iter(mapa_categorias.values()))
+            presentacion_ext = extraer_presentacion(nombre)
 
-        slug_norm = generar_slug(nombre)
-        slug_norm = generar_slug(nombre)
-        if slug_norm in productos_bd:
-            p_existente = productos_bd[slug_norm]
-            p_existente.nombre = nombre
-            p_existente.descripcion = descripcion_ui
-            p_existente.imagen_url = imagen_url
-            p_existente.marca_id = cache_marcas[nombre_marca]
-            p_existente.categoria_id = categoria_id
-            p_existente.sabor = etiquetas.get("sabor")
-            p_existente.formato = etiquetas.get("formato")
-            p_existente.objetivo = etiquetas.get("objetivo")
-            p_existente.es_vegano = bool(etiquetas.get("es_vegano"))
-            p_existente.sin_gluten = bool(etiquetas.get("sin_gluten"))
-            p_existente.sin_lactosa = bool(etiquetas.get("sin_lactosa"))
-            p_existente.sello_calidad = etiquetas.get("sello_calidad")
-            p_existente.tipo_proteina = etiquetas.get("tipo_proteina")
-            p_existente.porcentaje_proteina = etiquetas.get("porcentaje_proteina")
-            p_existente.tipo_creatina = etiquetas.get("tipo_creatina")
-            p_existente.perfil_aminoacidos = etiquetas.get("perfil_aminoacidos")
-            p_existente.tipo_vitamina = etiquetas.get("tipo_vitamina")
-            p_existente.peso_gramos = metricas["peso_gramos"]
-            p_existente.presentacion = presentacion_ext
+            # LIMPIEZA DE MARCA
+            marca_cruda = item.get("brand", "Desconocida")
+            # Si la marca es muy larga o tiene caracteres raros, la descartamos
+            if len(marca_cruda) > 30 or any(
+                char in marca_cruda for char in ["/", "\\", ":", ";"]
+            ):
+                marca_cruda = "Desconocida"
 
-            # --- NUEVA LÓGICA DE OFERTAS MULTI-TIENDA ---
-            oferta_farma = next(
-                (o for o in p_existente.ofertas if o.tienda == "Farma2Go"), None
-            )
+            nombre_marca = normalizar_marca(marca_cruda)
 
-            if oferta_farma:
-                oferta_farma.afiliado_url = afiliado_url
-                oferta_farma.precio_por_kg = metricas["precio_por_kg"]
-                oferta_farma.activo = True
+            if nombre_marca not in cache_marcas:
+                marca_db = db.query(models.Marca).filter_by(nombre=nombre_marca).first()
+                if not marca_db:
+                    try:
+                        marca_db = models.Marca(nombre=nombre_marca)
+                        db.add(marca_db)
+                        db.commit()
+                        db.refresh(marca_db)
+                    except Exception:
+                        db.rollback()
+                        marca_db = (
+                            db.query(models.Marca).filter_by(nombre=nombre_marca).first()
+                        )
+                        if not marca_db:
+                            raise
+                cache_marcas[nombre_marca] = marca_db.id
 
-                if round(precio, 2) != round(oferta_farma.precio, 2):
-                    oferta_farma.historial_precios.append(
-                        models.HistorialPrecio(precio=round(precio, 2))
-                    )
-                    oferta_farma.publicado_telegram = False
+            precio = 0.0
+            precio_anterior = None
+            afiliado_url = ""
+            ofertas = item.get("offers", [])
+            if ofertas:
+                afiliado_url = ofertas[0].get("productUrl", "")
 
-                if precio_anterior is not None:
-                    oferta_farma.precio_anterior = precio_anterior
-                    oferta_farma.precio = precio
+                # 1. Intentamos sacar el precio rebajado y el original de la API
+                oferta = ofertas[0]
+                if "price" in oferta and isinstance(oferta["price"], dict):
+                    precio = float(oferta["price"].get("value", 0.0))
+
+                if "previousPrice" in oferta and isinstance(oferta["previousPrice"], dict):
+                    p_previo = float(oferta["previousPrice"].get("value", 0.0))
+                    if p_previo > precio:
+                        precio_anterior = p_previo
+
+                # 2. Respaldo antiguo (Historial) por si falla lo de arriba
+                if precio == 0.0:
+                    historial = oferta.get("priceHistory", [])
+                    if historial and "price" in historial[0]:
+                        precio = float(historial[0]["price"].get("value", 0))
+
+            imagen_url = item.get("productImage", {}).get("url", "")
+
+            metricas = calcular_metricas_precio(item, precio)
+
+            categoria_id = mapa_categorias.get(etiquetas.get("categoria"))
+            if not categoria_id:
+                categoria_id = next(iter(mapa_categorias.values()))
+
+            slug_norm = generar_slug(nombre)
+            slug_norm = generar_slug(nombre)
+            if slug_norm in productos_bd:
+                p_existente = productos_bd[slug_norm]
+                p_existente.nombre = nombre
+                p_existente.descripcion = descripcion_ui
+                p_existente.imagen_url = imagen_url
+                p_existente.marca_id = cache_marcas[nombre_marca]
+                p_existente.categoria_id = categoria_id
+                p_existente.sabor = etiquetas.get("sabor")
+                p_existente.formato = etiquetas.get("formato")
+                p_existente.objetivo = etiquetas.get("objetivo")
+                p_existente.es_vegano = bool(etiquetas.get("es_vegano"))
+                p_existente.sin_gluten = bool(etiquetas.get("sin_gluten"))
+                p_existente.sin_lactosa = bool(etiquetas.get("sin_lactosa"))
+                p_existente.sello_calidad = etiquetas.get("sello_calidad")
+                p_existente.tipo_proteina = etiquetas.get("tipo_proteina")
+                p_existente.porcentaje_proteina = etiquetas.get("porcentaje_proteina")
+                p_existente.tipo_creatina = etiquetas.get("tipo_creatina")
+                p_existente.perfil_aminoacidos = etiquetas.get("perfil_aminoacidos")
+                p_existente.tipo_vitamina = etiquetas.get("tipo_vitamina")
+                p_existente.peso_gramos = metricas["peso_gramos"]
+                p_existente.presentacion = presentacion_ext
+
+                # --- NUEVA LÓGICA DE OFERTAS MULTI-TIENDA ---
+                oferta_farma = next(
+                    (o for o in p_existente.ofertas if o.tienda == "Farma2Go"), None
+                )
+
+                if oferta_farma:
+                    oferta_farma.afiliado_url = afiliado_url
+                    oferta_farma.precio_por_kg = metricas["precio_por_kg"]
+                    oferta_farma.activo = True
+
+                    if round(precio, 2) != round(oferta_farma.precio, 2):
+                        oferta_farma.historial_precios.append(
+                            models.HistorialPrecio(precio=round(precio, 2))
+                        )
+                        oferta_farma.publicado_telegram = False
+
+                    if precio_anterior is not None:
+                        oferta_farma.precio_anterior = precio_anterior
+                        oferta_farma.precio = precio
+                    else:
+                        if precio < oferta_farma.precio:
+                            oferta_farma.precio_anterior = float(oferta_farma.precio)
+                            oferta_farma.precio = precio
+                        elif precio > oferta_farma.precio:
+                            oferta_farma.precio_anterior = None
+                            oferta_farma.precio = precio
                 else:
-                    if precio < oferta_farma.precio:
-                        oferta_farma.precio_anterior = float(oferta_farma.precio)
-                        oferta_farma.precio = precio
-                    elif precio > oferta_farma.precio:
-                        oferta_farma.precio_anterior = None
-                        oferta_farma.precio = precio
+                    nueva_oferta = models.Oferta(
+                        tienda="Farma2Go",
+                        precio=precio,
+                        precio_anterior=precio_anterior,
+                        precio_por_kg=metricas["precio_por_kg"],
+                        afiliado_url=afiliado_url,
+                        activo=True,
+                    )
+                    nueva_oferta.historial_precios.append(models.HistorialPrecio(precio=precio))
+                    p_existente.ofertas.append(nueva_oferta)
+
+                db.add(p_existente)
+                actualizados += 1
             else:
+                nuevo_producto = models.Producto(
+                    nombre=nombre,
+                    descripcion=descripcion_ui,
+                    imagen_url=imagen_url,
+                    marca_id=cache_marcas[nombre_marca],
+                    categoria_id=categoria_id,
+                    sabor=etiquetas.get("sabor"),
+                    formato=etiquetas.get("formato"),
+                    objetivo=etiquetas.get("objetivo"),
+                    es_vegano=bool(etiquetas.get("es_vegano")),
+                    sin_gluten=bool(etiquetas.get("sin_gluten")),
+                    sin_lactosa=bool(etiquetas.get("sin_lactosa")),
+                    sello_calidad=etiquetas.get("sello_calidad"),
+                    tipo_proteina=etiquetas.get("tipo_proteina"),
+                    porcentaje_proteina=etiquetas.get("porcentaje_proteina"),
+                    tipo_creatina=etiquetas.get("tipo_creatina"),
+                    perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
+                    tipo_vitamina=etiquetas.get("tipo_vitamina"),
+                    peso_gramos=metricas["peso_gramos"],
+                    presentacion=presentacion_ext,
+                    slug=slug_norm,
+                )
+
                 nueva_oferta = models.Oferta(
                     tienda="Farma2Go",
                     precio=precio,
@@ -333,53 +371,26 @@ def inyectar_en_bd():
                     activo=True,
                 )
                 nueva_oferta.historial_precios.append(models.HistorialPrecio(precio=precio))
-                p_existente.ofertas.append(nueva_oferta)
+                nuevo_producto.ofertas.append(nueva_oferta)
 
-            db.add(p_existente)
-            actualizados += 1
-        else:
-            nuevo_producto = models.Producto(
-                nombre=nombre,
-                descripcion=descripcion_ui,
-                imagen_url=imagen_url,
-                marca_id=cache_marcas[nombre_marca],
-                categoria_id=categoria_id,
-                sabor=etiquetas.get("sabor"),
-                formato=etiquetas.get("formato"),
-                objetivo=etiquetas.get("objetivo"),
-                es_vegano=bool(etiquetas.get("es_vegano")),
-                sin_gluten=bool(etiquetas.get("sin_gluten")),
-                sin_lactosa=bool(etiquetas.get("sin_lactosa")),
-                sello_calidad=etiquetas.get("sello_calidad"),
-                tipo_proteina=etiquetas.get("tipo_proteina"),
-                porcentaje_proteina=etiquetas.get("porcentaje_proteina"),
-                tipo_creatina=etiquetas.get("tipo_creatina"),
-                perfil_aminoacidos=etiquetas.get("perfil_aminoacidos"),
-                tipo_vitamina=etiquetas.get("tipo_vitamina"),
-                peso_gramos=metricas["peso_gramos"],
-                presentacion=presentacion_ext,
-                slug=slug_norm,
-            )
+                productos_nuevos.append(nuevo_producto)
+                productos_bd[slug_norm] = nuevo_producto
 
-            nueva_oferta = models.Oferta(
-                tienda="Farma2Go",
-                precio=precio,
-                precio_anterior=precio_anterior,
-                precio_por_kg=metricas["precio_por_kg"],
-                afiliado_url=afiliado_url,
-                activo=True,
-            )
-            nueva_oferta.historial_precios.append(models.HistorialPrecio(precio=precio))
-            nuevo_producto.ofertas.append(nueva_oferta)
+        db.add_all(productos_nuevos)
+        db.commit()
+        print(
+            f"\n🎉 ¡Inyección de Farma2Go completada! {len(productos_nuevos)} suplementos nuevos guardados, {actualizados} actualizados."
+        )
 
-            productos_nuevos.append(nuevo_producto)
-            productos_bd[slug_norm] = nuevo_producto
 
-    db.add_all(productos_nuevos)
-    db.commit()
-    print(
-        f"\n🎉 ¡Inyección de Farma2Go completada! {len(productos_nuevos)} suplementos nuevos guardados, {actualizados} actualizados."
-    )
+    except Exception as e:
+        db.rollback()
+        print(f"❌ ERROR CRÍTICO en Farma2Go: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        db.close()
+        print("🚪 Conexión a la base de datos de Farma2Go cerrada.")
 
 
 if __name__ == "__main__":
