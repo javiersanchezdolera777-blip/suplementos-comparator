@@ -5,7 +5,7 @@ from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
@@ -508,7 +508,10 @@ def obtener_productos(
         # Hacemos una única query final para traer SOLO los 36 objetos completos
         productos_bd = (
             db.query(models.Producto)
-            .outerjoin(models.Oferta)
+            .options(
+                selectinload(models.Producto.ofertas)
+                .selectinload(models.Oferta.historial_precios)
+            )
             .filter(models.Producto.id.in_(ids_pagina))
             .all()
         )
@@ -560,11 +563,16 @@ def comparar_productos(
             detail="Solo puedes comparar un máximo de 4 productos a la vez.",
         )
 
-    # 3. Consulta súper optimizada usando el operador in_() de SQLAlchemy
+    # 3. Consulta súper optimizada usando el operador in_() y carga adelantada
     productos = (
-        db.query(
-            models.Producto).filter(
-            models.Producto.id.in_(lista_ids)).all())
+        db.query(models.Producto)
+        .options(
+            selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Producto.id.in_(lista_ids))
+        .all()
+    )
 
     if not productos:
         raise HTTPException(
@@ -938,6 +946,12 @@ def obtener_perfil_publico(
     """Visitar el perfil de otra persona (ej: tussuplementos.com/comunidad/pepe)"""
     perfil = (
         db.query(models.Perfil)
+        .options(
+            selectinload(models.Perfil.stacks)
+            .selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Perfil.username.ilike(username.strip()))
         .first()
     )
@@ -1585,6 +1599,11 @@ def obtener_favoritos(
 ):
     return (
         db.query(models.Favorito)
+        .options(
+            selectinload(models.Favorito.producto)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Favorito.usuario_id == usuario_actual.id)
         .all()
     )
@@ -1711,7 +1730,16 @@ def obtener_stack_individual(
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
-    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    stack = (
+        db.query(models.Stack)
+        .options(
+            selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Stack.id == stack_id)
+        .first()
+    )
     if not stack:
         raise HTTPException(status_code=404, detail="Stack no encontrado")
         
