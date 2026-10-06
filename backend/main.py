@@ -1589,6 +1589,11 @@ def obtener_favoritos(
 ):
     return (
         db.query(models.Favorito)
+        .options(
+            selectinload(models.Favorito.producto)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Favorito.usuario_id == usuario_actual.id)
         .all()
     )
