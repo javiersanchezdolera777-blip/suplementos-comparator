@@ -5,11 +5,14 @@ from google.auth.transport import requests as google_requests
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, func, nulls_last, desc
 from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Importamos nuestras piezas
 import models
@@ -31,8 +34,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API de Suplementos")
 
+# Configuración de Rate Limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Control de Entorno
-IS_PROD = os.getenv("ENV") == "production"
+IS_LOCAL = os.getenv("ENV", "production") in ("local", "development")
 
 
 # --- CONFIGURACIÓN DE CORS ---
@@ -283,13 +291,29 @@ def obtener_productos(
     page: int = Query(1, ge=1),
     limit: int = Query(100, le=200),
 ):
-    # Join inicial maestro para evitar conflictos
+    # 0. Evaluar si necesitamos cruzar con Ofertas (solo si hay orden por precio o filtro solo_ofertas)
+    sort_final = (
+        request.query_params.get("orden_precio")
+        or request.query_params.get("ordenar_por")
+        or request.query_params.get("sort")
+        or orden
+    )
+    
+    necesita_join_ofertas = solo_ofertas or sort_final in [
+        "precio_asc", "price_asc", "asc", 
+        "precio_desc", "price_desc", "desc", 
+        "descuento"
+    ]
+
+    # Join inicial maestro optimizado
     query = (
         db.query(models.Producto)
         .join(models.Categoria, isouter=True)
         .join(models.Marca, isouter=True)
-        .outerjoin(models.Oferta)
     )
+    
+    if necesita_join_ofertas:
+        query = query.outerjoin(models.Oferta)
 
     # 1. Filtros de Categoría
     cat_str = categorias or categoria
@@ -393,12 +417,7 @@ def obtener_productos(
     # ... (deja igual los subfiltros y buscador de texto libre) ...
 
     # 7. ORDENACIÓN (Ahora tira de Oferta)
-    sort_final = (
-        request.query_params.get("orden_precio")
-        or request.query_params.get("ordenar_por")
-        or request.query_params.get("sort")
-        or orden
-    )
+
 
     if sort_final in ["precio_asc", "price_asc", "asc"]:
         query = query.order_by(models.Oferta.precio.asc())
@@ -500,7 +519,10 @@ def obtener_productos(
         # Hacemos una única query final para traer SOLO los 36 objetos completos
         productos_bd = (
             db.query(models.Producto)
-            .outerjoin(models.Oferta)
+            .options(
+                selectinload(models.Producto.ofertas)
+                .selectinload(models.Oferta.historial_precios)
+            )
             .filter(models.Producto.id.in_(ids_pagina))
             .all()
         )
@@ -552,11 +574,16 @@ def comparar_productos(
             detail="Solo puedes comparar un máximo de 4 productos a la vez.",
         )
 
-    # 3. Consulta súper optimizada usando el operador in_() de SQLAlchemy
+    # 3. Consulta súper optimizada usando el operador in_() y carga adelantada
     productos = (
-        db.query(
-            models.Producto).filter(
-            models.Producto.id.in_(lista_ids)).all())
+        db.query(models.Producto)
+        .options(
+            selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Producto.id.in_(lista_ids))
+        .all()
+    )
 
     if not productos:
         raise HTTPException(
@@ -642,7 +669,9 @@ def redirigir_afiliado(tienda: str, slug: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/registro", response_model=schemas.UsuarioResponse, tags=["Autenticación y Sesión"])
+@limiter.limit("5/minute")
 def registrar_usuario(
+        request: Request,
         usuario: schemas.UsuarioCreate,
         db: Session = Depends(get_db)):
     usuario_existente = (
@@ -664,7 +693,9 @@ def registrar_usuario(
 
 
 @app.post("/api/login", tags=["Autenticación y Sesión"])
+@limiter.limit("10/minute")
 def iniciar_sesion(
+        request: Request,
         usuario: schemas.UsuarioCreate,
         response: Response,
         db: Session = Depends(get_db)):
@@ -684,9 +715,9 @@ def iniciar_sesion(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=IS_PROD,
+        secure=not IS_LOCAL,
         samesite="lax",
-        domain=".tussuplementos.com" if IS_PROD else None,
+        domain=".tussuplementos.com" if not IS_LOCAL else None,
         max_age=60 * 60 * 24 * 7,
         path="/",
     )
@@ -756,7 +787,8 @@ class GoogleToken(BaseModel):
 
 
 @app.post("/api/auth/google", tags=["Autenticación y Sesión"])
-def login_con_google(google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login_con_google(request: Request, google_data: GoogleToken, response: Response, db: Session = Depends(get_db)):
     try:
         # Obtenemos el Client ID desde la variable de entorno
         client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -767,6 +799,9 @@ def login_con_google(google_data: GoogleToken, response: Response, db: Session =
             client_id,  # ✅ Ahora usas la variable dinámica
             clock_skew_in_seconds=10,
         )
+
+        if not idinfo.get("email_verified"):
+            raise HTTPException(status_code=401, detail="Email de Google no verificado")
 
         email = idinfo["email"]
         usuario = db.query(
@@ -786,9 +821,9 @@ def login_con_google(google_data: GoogleToken, response: Response, db: Session =
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=IS_PROD,
+            secure=not IS_LOCAL,
             samesite="lax",
-            domain=".tussuplementos.com" if IS_PROD else None,
+            domain=".tussuplementos.com" if not IS_LOCAL else None,
             max_age=60 * 60 * 24 * 7,
             path="/",
         )
@@ -803,7 +838,7 @@ def login_con_google(google_data: GoogleToken, response: Response, db: Session =
 def logout(response: Response):
     response.delete_cookie(
         "access_token", 
-        domain=".tussuplementos.com" if IS_PROD else None, 
+        domain=".tussuplementos.com" if not IS_LOCAL else None, 
         path="/"
     )
     return {"mensaje": "Sesión cerrada"}
@@ -925,6 +960,12 @@ def obtener_perfil_publico(
     """Visitar el perfil de otra persona (ej: tussuplementos.com/comunidad/pepe)"""
     perfil = (
         db.query(models.Perfil)
+        .options(
+            selectinload(models.Perfil.stacks)
+            .selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Perfil.username.ilike(username.strip()))
         .first()
     )
@@ -1572,6 +1613,11 @@ def obtener_favoritos(
 ):
     return (
         db.query(models.Favorito)
+        .options(
+            selectinload(models.Favorito.producto)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
         .filter(models.Favorito.usuario_id == usuario_actual.id)
         .all()
     )
@@ -1609,8 +1655,9 @@ def eliminar_favorito(
 
 
 @app.post("/api/newsletter/subscribe", tags=["Newsletter"])
+@limiter.limit("3/hour")
 def suscribir_newsletter(
-    suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
+    request: Request, suscripcion: schemas.NewsletterCreate, db: Session = Depends(get_db)
 ):
     email_limpio = suscripcion.email.lower().strip()
     registro = (
@@ -1697,7 +1744,16 @@ def obtener_stack_individual(
     db: Session = Depends(get_db),
     token: Optional[str] = Header(None, alias="Authorization")
 ):
-    stack = db.query(models.Stack).filter(models.Stack.id == stack_id).first()
+    stack = (
+        db.query(models.Stack)
+        .options(
+            selectinload(models.Stack.productos)
+            .selectinload(models.Producto.ofertas)
+            .selectinload(models.Oferta.historial_precios)
+        )
+        .filter(models.Stack.id == stack_id)
+        .first()
+    )
     if not stack:
         raise HTTPException(status_code=404, detail="Stack no encontrado")
         
