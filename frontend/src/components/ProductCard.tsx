@@ -435,14 +435,14 @@ export default function ProductCard({ product }: { product: Product }) {
                     <PriceHistoryChart ofertas={product.ofertas || []} compact={true} />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-2.5 sm:p-3 rounded-2xl border border-slate-100 text-sm w-full">
                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
                     {sellerStore && (
                       <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
                     )}
                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
 
-                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
+                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium line-clamp-2 leading-tight" title={Array.isArray(product.flavor) ? product.flavor.join(', ') : String(product.flavor || '')}>{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
   
                     {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
                     {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
@@ -469,8 +469,8 @@ export default function ProductCard({ product }: { product: Product }) {
               </div>
 
               {/* Zona Inferior: TABLA MULTI-TIENDA COMPACTA */}
-              <div className="pt-4 border-t border-slate-100 mt-auto">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <div className="pt-2 sm:pt-3 border-t border-slate-100 mt-auto">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                   Ofertas Disponibles
                 </h3>
 
