@@ -123,6 +123,31 @@ def health_check():
     }
 
 
+# --- ENDPOINT INTERNO PARA SITEMAPS ---
+@app.get("/api/internal/sitemap-batch", include_in_schema=False)
+def obtener_sitemap_batch(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(5000, le=10000),
+    db: Session = Depends(get_db)
+):
+    """Devuelve únicamente slugs para generación masiva de sitemaps. Sin joins."""
+    total = db.query(models.Producto.id).count()
+
+    # Extraemos solo el slug para minimizar el payload y uso de memoria
+    productos = (
+        db.query(models.Producto.slug)
+        .order_by(models.Producto.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "productos": [{"slug": p.slug} for p in productos]
+    }
+
+
 # --- RUTA DE MARCAS (CON PRODUCTOS) ---
 @app.get("/api/marcas", response_model=List[schemas.BrandResponse], tags=["Catálogo y Búsqueda"])
 def listar_marcas(db: Session = Depends(get_db)):
