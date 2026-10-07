@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import ModalAñadirStack from './ModalAñadirStack';
+import PriceHistoryChart from './PriceHistoryChart';
 // Usamos la ruta correcta para la tienda de Javi
 import { useCompareStore } from '@/store/useCompareStore';
 import { trackAffiliateClick, trackViewItem, trackInteraction } from '@/utils/analytics';
@@ -98,6 +99,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showChart, setShowChart] = useState(false);
 
   const [isStackModalOpen, setIsStackModalOpen] = useState(false);
 
@@ -419,26 +421,49 @@ export default function ProductCard({ product }: { product: Product }) {
 
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar my-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
-                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
-                  {sellerStore && (
-                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
-                  )}
-                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
+              <div className={`flex-1 pr-2 my-2 relative ${showChart ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
+                {showChart ? (
+                  <div className="bg-slate-50 p-2 sm:p-4 rounded-2xl border border-slate-100 w-full h-full relative flex flex-col justify-center">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setShowChart(false); }}
+                      className="absolute top-2 right-2 z-10 p-1 bg-white hover:bg-slate-200 rounded-full text-slate-500 transition-colors shadow-sm border border-slate-200"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <PriceHistoryChart ofertas={product.ofertas || []} compact={true} />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm w-full">
+                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Categoría</span><span className="text-slate-700 font-medium">{product.category?.name || '-'}</span></div>
+                    {sellerStore && (
+                      <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tienda</span><span className="text-slate-700 font-medium">{formatStoreName(sellerStore)}</span></div>
+                    )}
+                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
 
-                  <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
-
-                  {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
-                  {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
-                  {(product.protein_percentage || product.porcentaje_proteina) && (
+                    <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium">{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
+  
+                    {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
+                    {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
+                    {(product.protein_percentage || product.porcentaje_proteina) && (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">% Proteína</span>
+                        <span className="text-slate-700 font-medium">{product.protein_percentage ?? product.porcentaje_proteina}%</span>
+                      </div>
+                    )}
+                    {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-600 font-medium">{product.quality_seal}</span></div>}
+                    
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">% Proteína</span>
-                      <span className="text-slate-700 font-medium">{product.protein_percentage ?? product.porcentaje_proteina}%</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Precios</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShowChart(true); }}
+                        className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 w-full mt-auto"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        Historial
+                      </button>
                     </div>
-                  )}
-                  {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-600 font-medium">{product.quality_seal}</span></div>}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Zona Inferior: TABLA MULTI-TIENDA COMPACTA */}
