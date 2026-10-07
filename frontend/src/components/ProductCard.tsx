@@ -16,6 +16,8 @@ interface Oferta {
   id?: number;
   precio?: number;
   tienda?: string;
+  activo?: boolean;
+  historial_precios?: any[];
   [key: string]: any;
 }
 

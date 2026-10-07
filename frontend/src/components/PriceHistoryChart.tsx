@@ -18,8 +18,8 @@ type HistorialPrecio = {
 };
 
 type Oferta = {
-  tienda: string;
-  activo: boolean;
+  tienda?: string;
+  activo?: boolean;
   precio?: number;
   historial_precios?: HistorialPrecio[];
 };
@@ -61,7 +61,7 @@ export default function PriceHistoryChart({ ofertas, compact = false }: Props) {
     const storesSet = new Set<string>();
 
     ofertas.forEach((oferta) => {
-      if (!oferta.historial_precios || oferta.historial_precios.length === 0) return;
+      if (!oferta.historial_precios || oferta.historial_precios.length === 0 || !oferta.tienda) return;
       
       const tienda = oferta.tienda;
       storesSet.add(tienda);
