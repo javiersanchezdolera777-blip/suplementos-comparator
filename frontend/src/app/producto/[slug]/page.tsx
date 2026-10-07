@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import AffiliateButton from '@/components/AffiliateButton';
 import ProductViewTracker from '@/components/ProductViewTracker';
+import Sparkline from '@/components/Sparkline';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -20,6 +21,14 @@ const decodeHTML = (str: string) => {
     .replace(/&#039;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
+};
+
+const normalizar_descripcion_ui = (desc: string | null | undefined, productName: string, brandName: string, categoryName: string) => {
+  const decoded = desc ? decodeHTML(desc).trim() : "";
+  if (decoded.length < 80) {
+    return `Descubre ${productName} de la marca ${brandName}, tu mejor aliado en suplementación dentro de la categoría de ${categoryName}. Compara ahora el mejor precio entre nuestras tiendas asociadas y empieza a ahorrar en tus compras.`;
+  }
+  return decoded;
 };
 
 async function getProduct(slug: string) {
@@ -52,9 +61,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const cleanName = decodeHTML(product.name);
-  const cleanDescription = product.description
-    ? decodeHTML(product.description).slice(0, 150)
-    : `Compara precios y especificaciones de ${cleanName} en tiendas oficiales.`;
+  const brandName = product.brand?.name || "Sin marca";
+  const categoryName = product.category?.name || "Suplementos";
+  
+  const finalDescriptionFull = normalizar_descripcion_ui(product.description, cleanName, brandName, categoryName);
+  const cleanDescription = finalDescriptionFull.slice(0, 150);
 
   const price = product.price ? product.price.toFixed(2) : "0.00";
   const title = `${cleanName} desde ${price}€ - Mejor Precio | Tus Suplementos`;
@@ -118,13 +129,19 @@ export default async function ProductDetailPage({ params }: Props) {
         "lowPrice": Math.min(...prices),
         "highPrice": Math.max(...prices),
         "offerCount": activeOffers.length,
-        "offers": activeOffers.map((o: any) => ({
-          "@type": "Offer",
-          "price": o.precio,
-          "priceCurrency": "EUR",
-          "seller": { "@type": "Organization", "name": o.tienda },
-          "url": `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${o.tienda.toLowerCase()}/${product.slug}`
-        }))
+        "offers": activeOffers.map((o: any) => {
+          const nextWeek = new Date();
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          return {
+            "@type": "Offer",
+            "price": o.precio,
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock",
+            "priceValidUntil": nextWeek.toISOString().split("T")[0],
+            "seller": { "@type": "Organization", "name": o.tienda },
+            "url": `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${o.tienda.toLowerCase()}/${product.slug}`
+          };
+        })
       };
     }
   }
@@ -134,7 +151,7 @@ export default async function ProductDetailPage({ params }: Props) {
     "@type": "Product",
     "name": cleanName,
     "image": product.image_url || "",
-    "description": product.description ? decodeHTML(product.description).slice(0, 300) : `Compara precios de ${cleanName}`,
+    "description": normalizar_descripcion_ui(product.description, cleanName, brandName, categoryName).slice(0, 300),
     "brand": {
       "@type": "Brand",
       "name": brandName
@@ -265,6 +282,15 @@ export default async function ProductDetailPage({ params }: Props) {
                             </span>
                           </div>
 
+                          {oferta.historial_precios && oferta.historial_precios.length > 1 && (
+                            <div className="hidden sm:block ml-2 mr-4">
+                              <Sparkline 
+                                data={oferta.historial_precios} 
+                                color={index === 0 ? "#16a34a" : "#94a3b8"}
+                              />
+                            </div>
+                          )}
+
                           <AffiliateButton
                             href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
                             className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${index === 0 ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
@@ -297,14 +323,14 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
 
             {/* 3. DESCRIPCIÓN CON TRUCO CSS "LEER MÁS" */}
-            {product.description && (
+            {normalizar_descripcion_ui(product.description, cleanName, brandName, categoryName) && (
               <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 relative group/desc">
                 <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción del producto</h2>
 
                 <input type="checkbox" id="desc-toggle" className="peer hidden" />
 
                 <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line line-clamp-4 peer-checked:line-clamp-none transition-all duration-300">
-                  {decodeHTML(product.description)}
+                  {normalizar_descripcion_ui(product.description, cleanName, brandName, categoryName)}
                 </p>
 
                 <label htmlFor="desc-toggle" className="text-blue-600 text-xs font-bold cursor-pointer mt-3 inline-block peer-checked:hidden hover:text-blue-800">
