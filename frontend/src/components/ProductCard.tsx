@@ -246,14 +246,14 @@ export default function ProductCard({ product }: { product: Product }) {
       >
         <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
-              <Image
-                src={product.image_url}
-                alt={formattedName}
-                onError={() => setImageError(true)}
-                fill
-                sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 20vw"
-                className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
-              />
+            <Image
+              src={product.image_url}
+              alt={formattedName}
+              onError={() => setImageError(true)}
+              fill
+              sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 20vw"
+              className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
+            />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-2xl border border-slate-200/80 p-2 md:p-4 text-center relative z-10">
               <span className="text-slate-400 font-extrabold tracking-[0.2em] text-[8px] md:text-xs uppercase mb-1">Tus Suplementos</span>
@@ -277,8 +277,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200" onClick={toggleFavorite}>
               <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm w-[34px] h-[34px] flex items-center justify-center ${isFavorite
-                  ? "bg-red-50 border-red-200 scale-105"
-                  : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
+                ? "bg-red-50 border-red-200 scale-105"
+                : "bg-white/90 border-slate-200 group-hover/heart:bg-slate-100 group-hover/heart:border-slate-300"
                 }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
                 <svg className={`w-4 h-4 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`} fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -288,8 +288,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="group/vs cursor-pointer active:scale-125 transition-transform duration-200" onClick={handleCompare}>
               <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm w-[34px] h-[34px] flex items-center justify-center ${isCompared
-                  ? "bg-blue-50 border-blue-200 scale-105"
-                  : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
+                ? "bg-blue-50 border-blue-200 scale-105"
+                : "bg-white/90 border-slate-200 group-hover/vs:bg-slate-100 group-hover/vs:border-slate-300"
                 }`} title={isCompared ? "Ya en la comparativa" : "Añadir a comparativa"}>
                 <span className={`text-[10px] font-black tracking-tighter ${isCompared ? "text-blue-600" : "text-slate-400 group-hover/vs:text-slate-600"}`}>VS</span>
               </div>
@@ -395,8 +395,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
                 <div className="group/heart cursor-pointer active:scale-125 transition-transform duration-200 mt-1" onClick={toggleFavorite}>
                   <div className={`p-2 rounded-full border transition-all duration-200 shadow-sm ${isFavorite
-                      ? "bg-red-50 border-red-200 scale-105"
-                      : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
+                    ? "bg-red-50 border-red-200 scale-105"
+                    : "bg-white border-slate-200 group-hover/heart:bg-slate-50"
                     }`} title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}>
                     <svg
                       className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-400 group-hover/heart:text-slate-600"}`}
@@ -426,7 +426,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <div className={`flex-1 pr-2 my-2 relative ${showChart ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
                 {showChart ? (
                   <div className="bg-slate-50 p-2 sm:p-4 rounded-2xl border border-slate-100 w-full h-full relative flex flex-col justify-center">
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setShowChart(false); }}
                       className="absolute top-2 right-2 z-10 p-1 bg-white hover:bg-slate-200 rounded-full text-slate-500 transition-colors shadow-sm border border-slate-200"
                     >
@@ -443,7 +443,7 @@ export default function ProductCard({ product }: { product: Product }) {
                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Formato</span><span className="text-slate-700 font-medium">{product.format || '-'}</span></div>
 
                     <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Sabores</span><span className="text-slate-700 font-medium line-clamp-2 leading-tight" title={Array.isArray(product.flavor) ? product.flavor.join(', ') : String(product.flavor || '')}>{Array.isArray(product.flavor) ? (product.flavor.length ? product.flavor.join(', ') : '-') : (product.flavor ? String(product.flavor) : '-')}</span></div>
-  
+
                     {product.is_vegan && <div className="flex flex-col"><span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider">Dietético</span><span className="text-emerald-700 font-medium">100% Vegano</span></div>}
                     {product.protein_type && <div className="flex flex-col"><span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Proteína</span><span className="text-slate-700 font-medium">{product.protein_type}</span></div>}
                     {(product.protein_percentage || product.porcentaje_proteina) && (
@@ -453,10 +453,10 @@ export default function ProductCard({ product }: { product: Product }) {
                       </div>
                     )}
                     {product.quality_seal && <div className="flex flex-col"><span className="text-[10px] text-blue-500 uppercase font-bold tracking-wider">Sello Calidad</span><span className="text-blue-600 font-medium">{product.quality_seal}</span></div>}
-                    
+
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Precios</span>
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); setShowChart(true); }}
                         className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 w-full mt-auto"
                       >
