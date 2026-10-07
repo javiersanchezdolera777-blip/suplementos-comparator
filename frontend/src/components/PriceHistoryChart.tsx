@@ -232,7 +232,7 @@ export default function PriceHistoryChart({ ofertas, compact = false }: Props) {
               contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               itemStyle={{ fontWeight: 600 }}
               labelStyle={{ color: '#64748b', marginBottom: '4px', fontWeight: 500 }}
-              formatter={(value: any, name: string) => [`${value} €`, name]}
+              formatter={(value: any, name: any) => [`${value} €`, name]}
             />
             <Legend 
               iconType="circle"
