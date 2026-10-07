@@ -60,11 +60,33 @@ export default function PriceHistoryChart({ ofertas, compact = false }: Props) {
     const dateMap = new Map<string, any>();
     const storesSet = new Set<string>();
 
+    const startStr = startDate.toISOString().split("T")[0];
+    const nowStr = now.toISOString().split("T")[0];
+    dateMap.set(startStr, { name: startStr, timestamp: startDate.getTime() });
+    dateMap.set(nowStr, { name: nowStr, timestamp: now.getTime() });
+
     ofertas.forEach((oferta) => {
       if (!oferta.historial_precios || oferta.historial_precios.length === 0 || !oferta.tienda) return;
       
       const tienda = oferta.tienda;
       storesSet.add(tienda);
+
+      let startPrice = null;
+      const beforeStart = oferta.historial_precios.filter(hp => new Date(hp.fecha) <= startDate).sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      if (beforeStart.length > 0) startPrice = beforeStart[0].precio;
+      else {
+         const afterStart = oferta.historial_precios.filter(hp => new Date(hp.fecha) > startDate).sort((a,b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+         if (afterStart.length > 0) startPrice = afterStart[0].precio;
+      }
+      
+      let endPrice = oferta.precio;
+      if (endPrice === undefined) {
+         const beforeNow = oferta.historial_precios.filter(hp => new Date(hp.fecha) <= now).sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+         if (beforeNow.length > 0) endPrice = beforeNow[0].precio;
+      }
+
+      if (startPrice !== null) dateMap.get(startStr)[tienda] = startPrice;
+      if (endPrice !== null) dateMap.get(nowStr)[tienda] = endPrice;
       
       oferta.historial_precios.forEach((hp) => {
         const d = new Date(hp.fecha);
@@ -189,7 +211,7 @@ export default function PriceHistoryChart({ ofertas, compact = false }: Props) {
 
       <div className={`${compact ? 'h-32' : 'h-72'} w-full`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
             <XAxis 
               dataKey="displayDate" 
@@ -210,6 +232,7 @@ export default function PriceHistoryChart({ ofertas, compact = false }: Props) {
               contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               itemStyle={{ fontWeight: 600 }}
               labelStyle={{ color: '#64748b', marginBottom: '4px', fontWeight: 500 }}
+              formatter={(value: any, name: any) => [`${value} €`, name]}
             />
             <Legend 
               iconType="circle"
