@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import AffiliateButton from '@/components/AffiliateButton';
 import ProductViewTracker from '@/components/ProductViewTracker';
-import Sparkline from '@/components/Sparkline';
+import PriceHistoryChart from '@/components/PriceHistoryChart';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -244,7 +244,10 @@ export default async function ProductDetailPage({ params }: Props) {
                 <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                   {product.price?.toFixed(2)} €
                 </span>
-
+                <a href="#historial-precios" className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 ml-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                  Historial de precios
+                </a>
               </div>
             </div>
 
@@ -281,15 +284,6 @@ export default async function ProductDetailPage({ params }: Props) {
                               {oferta.precio.toFixed(2)} €
                             </span>
                           </div>
-
-                          {oferta.historial_precios && oferta.historial_precios.length > 1 && (
-                            <div className="hidden sm:block ml-2 mr-4">
-                              <Sparkline 
-                                data={oferta.historial_precios} 
-                                color={index === 0 ? "#16a34a" : "#94a3b8"}
-                              />
-                            </div>
-                          )}
 
                           <AffiliateButton
                             href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}`}
@@ -343,6 +337,13 @@ export default async function ProductDetailPage({ params }: Props) {
             )}
           </div>
         </div>
+
+        {/* 4. HISTORIAL DE PRECIOS */}
+        {product.ofertas && product.ofertas.length > 0 && (
+          <div className="mt-8">
+            <PriceHistoryChart ofertas={product.ofertas} />
+          </div>
+        )}
       </div>
     </div>
   );
