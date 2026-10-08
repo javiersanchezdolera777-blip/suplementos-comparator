@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 
 const baseUrl = 'https://www.tussuplementos.com';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const LIMIT = 5000;
+const LIMIT = 1000;
 
 export async function generateSitemaps() {
   try {
@@ -13,7 +13,7 @@ export async function generateSitemaps() {
     if (!res.ok) return [{ id: 0 }];
     const data = await res.json();
     const total = data.total || 0;
-    
+
     const chunks = Math.ceil(total / LIMIT);
     const sitemaps = [];
     for (let i = 0; i < (chunks || 1); i++) {
@@ -21,7 +21,8 @@ export async function generateSitemaps() {
     }
     return sitemaps;
   } catch (error) {
-    return [{ id: 0 }];
+    console.error("Error en generateSitemaps fetch:", error);
+    return [{ id: 0 }, { id: 1 }]; // force 2 chunks even on error for testing
   }
 }
 
@@ -67,21 +68,21 @@ export default async function sitemap({ id }: { id: Promise<number> | number }):
     const res = await fetch(`${apiUrl}/api/internal/sitemap-batch?offset=${offset}&limit=${LIMIT}`, {
       next: { revalidate: 3600 }
     });
-    
+
     if (res.ok) {
       const data = await res.json();
       const productos = data.productos || [];
-      
+
       const productRoutes: MetadataRoute.Sitemap = productos.map((prod: any) => ({
         url: `${baseUrl}/producto/${prod.slug}`,
         lastModified: new Date(),
         changeFrequency: 'daily',
         priority: 0.8,
       }));
-      
+
       routes = [...routes, ...productRoutes];
     } else {
-       console.error(`Sitemap fetch error en el chunk ${resolvedId}: status ${res.status}`);
+      console.error(`Sitemap fetch error en el chunk ${resolvedId}: status ${res.status}`);
     }
   } catch (error) {
     console.error(`Error crítico generando rutas dinámicas para el sitemap chunk ${resolvedId}:`, error);

@@ -181,6 +181,8 @@ export default function ProductCard({ product }: { product: Product }) {
     setIsModalOpen(false);
   };
 
+  const [isHovered, setIsHovered] = useState(false);
+
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -243,7 +245,19 @@ export default function ProductCard({ product }: { product: Product }) {
       <div
         className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-1 cursor-pointer"
         onClick={handleOpenProduct}
+        onMouseEnter={() => !isHovered && setIsHovered(true)}
       >
+        {isHovered && showImage && !isModalOpen && (
+          <div className="absolute inset-0 opacity-0 overflow-hidden pointer-events-none z-[-1]">
+            <Image 
+              src={product.image_url} 
+              alt="preload" 
+              fill 
+              sizes="(max-width: 768px) 100vw, 50vw" 
+              priority 
+            />
+          </div>
+        )}
         <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
             <Image
