@@ -1,6 +1,7 @@
 from sqlalchemy import (
     ARRAY,
     Column,
+    Index,
     Integer,
     String,
     Float,
@@ -109,8 +110,8 @@ class Producto(Base):
     clics_count = Column(Integer, default=0)
 
     # Relaciones base
-    categoria_id = Column(Integer, ForeignKey("categorias.id"))
-    marca_id = Column(Integer, ForeignKey("marcas.id"))
+    categoria_id = Column(Integer, ForeignKey("categorias.id"), index=True)
+    marca_id = Column(Integer, ForeignKey("marcas.id"), index=True)
     categoria = relationship("Categoria")
     marca = relationship("Marca")
 
@@ -144,10 +145,11 @@ class Oferta(Base):
     """
 
     __tablename__ = "ofertas"
+    __table_args__ = (Index('ix_oferta_activo_tienda', 'activo', 'tienda'),)
 
     id = Column(Integer, primary_key=True, index=True)
     producto_id = Column(
-        Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     tienda = Column(String, index=True, nullable=False)  # Ej: "HSN", "Farma2Go"
@@ -156,7 +158,7 @@ class Oferta(Base):
     precio_por_kg = Column(Float, nullable=True)
     afiliado_url = Column(String, nullable=False)
 
-    activo = Column(Boolean, default=True)
+    activo = Column(Boolean, default=True, index=True)
 
     publicado_telegram = Column(Boolean, default=False)
     fecha_publicacion_telegram = Column(DateTime, nullable=True)
