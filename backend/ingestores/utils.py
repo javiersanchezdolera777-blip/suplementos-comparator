@@ -61,6 +61,13 @@ def normalizar_descripcion_ui(texto: str) -> str:
 
     t = t[:idx_corte].strip()
 
+    # Salvaguarda anti thin-content: si el recorte dejó el texto demasiado corto,
+    # preferimos devolver el texto original completo (ya limpio de HTML).
+    texto_original_limpio = html.unescape(re.sub(r"<[^>]+>", " ", str(texto))).strip()
+    texto_original_limpio = re.sub(r"\s+", " ", texto_original_limpio)
+    if len(t) < 80 and len(texto_original_limpio) >= 80:
+        t = texto_original_limpio
+
     if not t:
         return ""
 
@@ -695,6 +702,7 @@ def clasificar_producto(
     # ==========================================
     # 1. FORMATO (Diccionario Súper-Ampliado)
     # ==========================================
+    # PRIORIDAD 1: Formato físico explícito en el TÍTULO (nunca se pisa)
     c["formato"] = None
     if any(
         p in n
@@ -784,8 +792,13 @@ def clasificar_producto(
     ):
         c["formato"] = FormatoEnum.gominolas.value
 
+    # PRIORIDAD 2 (Fallback): Si no se detectó formato explícito,
+    # inferir "Polvo" para productos típicamente en polvo por su nombre.
+    _keywords_polvo = ["whey", "proteina", "proteína", "creatina", "gainer", "bcaa", "powder", "mass"]
     if not c["formato"]:
-        if c.get("categoria") in [
+        if any(kw in n for kw in _keywords_polvo):
+            c["formato"] = FormatoEnum.polvo.value
+        elif c.get("categoria") in [
             CategoriaEnum.proteinas.value,
             CategoriaEnum.creatinas.value,
         ]:

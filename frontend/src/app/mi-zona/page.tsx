@@ -9,9 +9,10 @@ import ModalEditarPerfil from '@/components/ModalEditarPerfil';
 import NavbarSocial from '@/components/navBarSocial';
 
 export default function MiZonaPage() {
-  const { isLoggedIn, openLoginModal } = useAuth();
+  const { isLoggedIn, openLoginModal, authChecked } = useAuth();
   const [perfil, setPerfil] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [necesitaLogin, setNecesitaLogin] = useState(false);
   const [necesitaPerfil, setNecesitaPerfil] = useState(false);
   
@@ -38,6 +39,8 @@ export default function MiZonaPage() {
   }, [necesitaPerfil]);
 
   useEffect(() => {
+    if (!authChecked) return; // Esperar a que el auth se verifique
+    setLoadingAuth(false);
     if (isLoggedIn) {
       setLoading(true);
       setNecesitaLogin(false);
@@ -47,7 +50,7 @@ export default function MiZonaPage() {
       setPerfil(null); 
       setLoading(false);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, authChecked]);
 
   const comprobarEstado = async () => {
     try {
@@ -108,7 +111,7 @@ export default function MiZonaPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-semibold">Cargando tu zona...</div>;
+  if (loadingAuth || loading) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-semibold"><svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Cargando tu zona...</div>;
 
   if (necesitaLogin) {
     return (

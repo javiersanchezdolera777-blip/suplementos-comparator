@@ -24,11 +24,30 @@ const decodeHTML = (str: string) => {
 };
 
 const normalizar_descripcion_ui = (desc: string | null | undefined, productName: string, brandName: string, categoryName: string) => {
-  const decoded = desc ? decodeHTML(desc).trim() : "";
-  if (decoded.length < 80) {
+  const textoOriginal = desc ? decodeHTML(desc).trim() : "";
+  if (textoOriginal.length < 80) {
     return `Descubre ${productName} de la marca ${brandName}, tu mejor aliado en suplementación dentro de la categoría de ${categoryName}. Compara ahora el mejor precio entre nuestras tiendas asociadas y empieza a ahorrar en tus compras.`;
   }
-  return decoded;
+
+  // Tijera inteligente: cortar en etiquetas de ingredientes/relleno
+  const corteTags = ["ingredientes:", "¿para qué sirve", "¿a quién va dirigido", "beneficios de"];
+  let textoRecortado = textoOriginal;
+  const lowerOriginal = textoOriginal.toLowerCase();
+  let idxCorte = textoOriginal.length;
+  for (const tag of corteTags) {
+    const idx = lowerOriginal.indexOf(tag);
+    if (idx > 0 && idx < idxCorte) {
+      idxCorte = idx;
+    }
+  }
+  textoRecortado = textoOriginal.slice(0, idxCorte).trim();
+
+  // Salvaguarda anti thin-content: si el recorte deja < 80 chars, devolver el original
+  if (textoRecortado.length < 80 && textoOriginal.length >= 80) {
+    return textoOriginal;
+  }
+
+  return textoRecortado;
 };
 
 async function getProduct(slug: string) {
@@ -60,7 +79,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const cleanName = decodeHTML(product.name);
+  const nombreBase = decodeHTML(product.name);
+  const normalizeStr = (str: string) => str.toLowerCase().replace(/\s+/g, '');
+  const cleanName = product.presentacion && !normalizeStr(nombreBase).includes(normalizeStr(product.presentacion))
+    ? `${nombreBase} - ${product.presentacion}`
+    : nombreBase;
   const brandName = product.brand?.name || "Sin marca";
   const categoryName = product.category?.name || "Suplementos";
   
@@ -103,7 +126,11 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const cleanName = decodeHTML(product.name);
+  const nombreBase = decodeHTML(product.name);
+  const normalizeStr = (str: string) => str.toLowerCase().replace(/\s+/g, '');
+  const cleanName = product.presentacion && !normalizeStr(nombreBase).includes(normalizeStr(product.presentacion))
+    ? `${nombreBase} - ${product.presentacion}`
+    : nombreBase;
   const hasImage = product.image_url && product.image_url.trim() !== "";
   const categoryName = product.category?.name || "Suplementos";
   const brandName = product.brand?.name || "Sin marca";
@@ -213,8 +240,8 @@ export default async function ProductDetailPage({ params }: Props) {
                   src={product.image_url}
                   alt={cleanName}
                   fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority={true}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
                 />
               </div>
