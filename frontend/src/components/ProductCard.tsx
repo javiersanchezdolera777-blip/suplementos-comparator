@@ -49,9 +49,8 @@ interface Product {
   creatine_type?: string;
   amino_profile?: string;
   vitamin_type?: string;
-  price_per_kg?: number | null;
   flavor?: string[] | string | null;
-  presentacion?: string;
+  presentacion?: string | null;
   ofertas?: Oferta[];
 }
 
@@ -170,7 +169,11 @@ export default function ProductCard({ product }: { product: Product }) {
     ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100)
     : 0;
 
-  const formattedName = formatTitle(decodeHTML(product.name), product.brand?.name);
+  const nombreBase = formatTitle(decodeHTML(product.name), product.brand?.name);
+  const normalizeStr = (str: string) => str.toLowerCase().replace(/\s+/g, '');
+  const formattedName = product.presentacion && !normalizeStr(nombreBase).includes(normalizeStr(product.presentacion))
+    ? `${nombreBase} - ${product.presentacion}`
+    : nombreBase;
 
   const handleOpenProduct = () => {
     trackViewItem(formattedName, product.category?.name || 'Desconocida');
@@ -249,12 +252,12 @@ export default function ProductCard({ product }: { product: Product }) {
       >
         {isHovered && showImage && !isModalOpen && (
           <div className="absolute inset-0 opacity-0 overflow-hidden pointer-events-none z-[-1]">
-            <Image 
-              src={product.image_url} 
-              alt="preload" 
-              fill 
-              sizes="(max-width: 768px) 100vw, 50vw" 
-              priority 
+            <Image
+              src={product.image_url}
+              alt="preload"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
             />
           </div>
         )}
@@ -265,7 +268,8 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={formattedName}
               onError={() => setImageError(true)}
               fill
-              sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 20vw"
+              priority={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
@@ -389,7 +393,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="w-full md:w-1/2 h-48 md:h-full bg-slate-50 p-6 md:p-8 flex items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
               {showImage ? (
-                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain drop-shadow-md" />
+                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} fill priority={true} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-contain drop-shadow-md" />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
                   <span className="text-slate-400 font-black tracking-[0.2em] text-base uppercase mb-1">Tus Suplementos</span>

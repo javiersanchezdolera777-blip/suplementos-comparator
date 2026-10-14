@@ -372,7 +372,7 @@ class CheckDiario(Base):
         Integer, ForeignKey("perfiles.id", ondelete="CASCADE"), nullable=False
     )
     # Guardamos solo la fecha (sin hora) para saber si hizo el check del día
-    fecha = Column(Date, default=datetime.utcnow().date, nullable=False)
+    fecha = Column(Date, default=lambda: datetime.utcnow().date(), nullable=False)
     puntos_ganados = Column(Integer, default=10)
 
     perfil = relationship("Perfil", back_populates="checkins")
