@@ -25,6 +25,7 @@ from schemas import (
 from ingestores.http_client import create_session, get_with_backoff
 from database import SessionLocal
 import models
+from sqlalchemy.orm import selectinload
 import random
 import time
 import traceback
@@ -231,10 +232,7 @@ def inyectar_en_bd():
         print("🧹 Cargando catálogo antiguo de HSN en memoria (Upsert)...")
         productos_bd = {
             p.slug: p
-            for p in db.query(models.Producto)
-            .join(models.Oferta)
-            .filter(models.Oferta.tienda == "HSN")
-            .all()
+            for p in db.query(models.Producto).options(selectinload(models.Producto.ofertas)).all()
         }
         print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
