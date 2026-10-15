@@ -9,6 +9,7 @@ import html
 import unicodedata
 
 import models
+from sqlalchemy.orm import selectinload
 from database import SessionLocal
 from ingestores.http_client import download_json_with_cache
 from ingestores.utils import (
@@ -113,15 +114,13 @@ def inyectar_en_bd():
         print("🧹 Cargando catálogo antiguo de Sportlive en memoria (Upsert)...")
         productos_bd = {
             p.slug: p
-            for p in db.query(models.Producto)
-            .join(models.Oferta)
-            .filter(models.Oferta.tienda == "Sportlive")
-            .all()
+            for p in db.query(models.Producto).options(selectinload(models.Producto.ofertas)).all()
         }
         print(f"✨ {len(productos_bd)} productos en memoria. Iniciando ingesta...")
 
         datos = descargar_datos()
         productos_nuevos = []
+        total_nuevos = 0
         actualizados = 0
 
         for item in datos.get("products", []):
@@ -160,6 +159,9 @@ def inyectar_en_bd():
                     if historial and "price" in historial[0]:
                         precio = float(historial[0]["price"].get("value", 0))
 
+            if precio <= 0:
+                continue
+
             img = item.get("productImage", {}).get("url", "")
             imagen_url = (
                 img
@@ -179,7 +181,8 @@ def inyectar_en_bd():
                 p_existente.nombre = nombre
                 p_existente.descripcion = descripcion_ui
                 p_existente.imagen_url = imagen_url
-                p_existente.marca_id = marca_oficial.id
+                if not p_existente.marca_id:
+                    p_existente.marca_id = marca_oficial.id
                 p_existente.categoria_id = categoria_id
                 p_existente.sabor = etiquetas.get("sabor")
                 p_existente.formato = etiquetas.get("formato")
@@ -191,8 +194,10 @@ def inyectar_en_bd():
                 p_existente.tipo_creatina = etiquetas.get("tipo_creatina")
                 p_existente.perfil_aminoacidos = etiquetas.get("perfil_aminoacidos")
                 p_existente.tipo_vitamina = etiquetas.get("tipo_vitamina")
-                p_existente.peso_gramos = metricas["peso_gramos"]
-                p_existente.presentacion = presentacion_ext
+                if metricas["peso_gramos"]:
+                    p_existente.peso_gramos = metricas["peso_gramos"]
+                if presentacion_ext:
+                    p_existente.presentacion = presentacion_ext
 
                 # --- NUEVA LÓGICA DE OFERTAS MULTI-TIENDA ---
                 oferta_sl = next(
@@ -269,10 +274,33 @@ def inyectar_en_bd():
                 productos_nuevos.append(nuevo_producto)
                 productos_bd[slug_norm] = nuevo_producto
 
-        db.add_all(productos_nuevos)
-        db.commit()
+            if len(productos_nuevos) >= 50:
+                try:
+                    db.add_all(productos_nuevos)
+                    db.commit()
+                    total_nuevos += len(productos_nuevos)
+                except Exception as db_err:
+                    db.rollback()
+                    for p_fallido in productos_nuevos:
+                        productos_bd.pop(p_fallido.slug, None)
+                    print(f"⚠️ Advertencia BD en lote: {db_err}")
+                finally:
+                    productos_nuevos = []
+
+        try:
+            db.add_all(productos_nuevos)
+            db.commit()
+            total_nuevos += len(productos_nuevos)
+        except Exception as db_err:
+            db.rollback()
+            for p_fallido in productos_nuevos:
+                productos_bd.pop(p_fallido.slug, None)
+            print(f"⚠️ Advertencia BD en lote final: {db_err}")
+        finally:
+            productos_nuevos = []
+
         print(
-            f"\n🎉 ¡Limpieza completada! {len(productos_nuevos)} productos nuevos y {actualizados} actualizados de {nombre_marca}."
+            f"\n🎉 ¡Limpieza completada! {total_nuevos} productos nuevos y {actualizados} actualizados de {nombre_marca}."
         )
 
     except Exception as e:
