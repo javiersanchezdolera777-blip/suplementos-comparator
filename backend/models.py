@@ -383,6 +383,7 @@ class HistorialPrecio(Base):
     Registro histórico de variaciones de precio de una Oferta.
     """
     __tablename__ = "precios_historicos"
+    __table_args__ = (Index('idx_oferta_fecha', 'oferta_id', 'fecha'),)
 
     id = Column(Integer, primary_key=True, index=True)
     oferta_id = Column(
@@ -401,7 +402,7 @@ class Notificacion(Base):
     __tablename__ = "notificaciones"
 
     id = Column(Integer, primary_key=True, index=True)
-    perfil_id = Column(Integer, ForeignKey("perfiles.id", ondelete="CASCADE"), nullable=False)
+    perfil_id = Column(Integer, ForeignKey("perfiles.id", ondelete="CASCADE"), nullable=False, index=True)
     tipo = Column(String, nullable=False)  # ej. "nuevo_seguidor"
     mensaje = Column(String, nullable=False)
     leida = Column(Boolean, default=False)
