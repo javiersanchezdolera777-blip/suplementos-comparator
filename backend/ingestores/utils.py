@@ -418,19 +418,15 @@ def clasificar_producto(
     if es_colageno:
         c["categoria"] = CategoriaEnum.salud.value
 
-    # 2. ALIMENTACIÓN SALUDABLE (Postres, cafés proteicos, cremas, harinas)
-    elif es_espinaca or es_alimentacion_preparada:
-        c["categoria"] = CategoriaEnum.alimentacion.value
-
-    # 3. PROTEÍNAS (Si contiene términos de proteína, NO debe ser secuestrado por 'digezyme' ni 'keto')
+    # 2. PROTEÍNAS (Prioridad Core)
     elif tiene_termino_proteina:
         c["categoria"] = CategoriaEnum.proteinas.value
 
-    # 4. CREATINAS
+    # 3. CREATINAS (Prioridad Core)
     elif "creatin" in n or "kre-alkalyn" in n:
         c["categoria"] = CategoriaEnum.creatinas.value
 
-    # 5. AMINOÁCIDOS (Aminograma completo: L-Histidina, Metionina, Treonina, etc.)
+    # 4. AMINOÁCIDOS (Prioridad Core)
     elif bool(re.search(r"\bnac\b", n)) or any(
         p in n
         for p in [
@@ -482,7 +478,7 @@ def clasificar_producto(
     ):
         c["categoria"] = CategoriaEnum.aminoacidos.value
 
-    # 6. PRE-ENTRENOS, INTRA Y RENDIMIENTO
+    # 5. PRE-ENTRENOS, INTRA Y RENDIMIENTO
     elif any(
         p in n
         for p in [
@@ -522,6 +518,10 @@ def clasificar_producto(
         ]
     ):
         c["categoria"] = CategoriaEnum.pre_entrenos.value
+
+    # 6. ALIMENTACIÓN SALUDABLE (Solo si no fue atrapado por los "core")
+    elif es_espinaca or es_alimentacion_preparada:
+        c["categoria"] = CategoriaEnum.alimentacion.value
 
     # 7. VITAMINAS Y MINERALES
     elif any(
