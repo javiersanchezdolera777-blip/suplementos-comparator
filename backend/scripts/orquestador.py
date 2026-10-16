@@ -37,15 +37,16 @@ def disparar_alertas_agrupadas():
     alertas_pendientes.clear()
 
 
-def generar_alertas(db):
+def generar_alertas(db, desde_fecha: datetime = None):
     print("🔍 Buscando ofertas con bajada de precio para notificar...")
     try:
-        # Buscamos ofertas que se hayan modificado en la última hora y que representen una bajada de precio
-        hace_una_hora = datetime.utcnow() - timedelta(hours=1)
+        # Fallback de seguridad de 6 horas por si se llama sin fecha, coincidiendo con el CRON
+        limite_tiempo = desde_fecha if desde_fecha else datetime.utcnow() - timedelta(hours=6)
+
         ofertas_rebajadas = db.query(models.Oferta).filter(
             models.Oferta.precio_anterior != None,
             models.Oferta.precio < models.Oferta.precio_anterior,
-            models.Oferta.ultima_actualizacion >= hace_una_hora
+            models.Oferta.ultima_actualizacion >= limite_tiempo
         ).all()
 
         for oferta in ofertas_rebajadas:
@@ -80,6 +81,7 @@ def generar_alertas(db):
 def ejecutar_orquestador():
     # 1. Capturamos la hora EXACTA en el milisegundo que arranca el script (antes de que HSN consuma tiempo)
     hora_arranque_utc = datetime.now(timezone.utc).hour
+    timestamp_inicio = datetime.utcnow()
     
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Iniciando Orquestador Maestro...")
     print(f"🕒 Hora de arranque UTC capturada: {hora_arranque_utc}")
@@ -112,7 +114,7 @@ def ejecutar_orquestador():
     # 4. Generar alertas después de la ingesta
     db = SessionLocal()
     try:
-        generar_alertas(db)
+        generar_alertas(db, desde_fecha=timestamp_inicio)
         disparar_alertas_agrupadas()
     finally:
         db.close()
