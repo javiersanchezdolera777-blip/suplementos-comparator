@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Política de Privacidad | Tus Suplementos",
+  description: "Información sobre el tratamiento de datos personales, privacidad y cookies de afiliación en Tus Suplementos.",
+  alternates: {
+    canonical: "https://www.tussuplementos.com/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   return (

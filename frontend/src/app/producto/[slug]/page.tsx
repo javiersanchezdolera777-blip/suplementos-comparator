@@ -50,6 +50,44 @@ const normalizar_descripcion_ui = (desc: string | null | undefined, productName:
   return textoRecortado;
 };
 
+const getCategoryHref = (categoryName: string): string => {
+  if (!categoryName) return "/";
+
+  const normalized = categoryName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  if (normalized === "proteinas" || normalized === "proteina") {
+    return "/categoria/proteinas";
+  }
+  if (normalized === "creatinas" || normalized === "creatina") {
+    return "/categoria/creatinas";
+  }
+  if (
+    normalized === "vitaminas y minerales" ||
+    normalized === "vitaminas" ||
+    normalized === "vitamina" ||
+    normalized === "minerales"
+  ) {
+    return "/categoria/vitaminas";
+  }
+  if (normalized === "aminoacidos" || normalized === "aminoacido") {
+    return "/categoria/aminoacidos";
+  }
+  if (
+    normalized === "pre-entrenos" ||
+    normalized === "pre-entreno" ||
+    normalized === "preentrenos" ||
+    normalized === "preentreno"
+  ) {
+    return "/categoria/pre-entrenos";
+  }
+
+  return `/?categoria=${encodeURIComponent(categoryName)}`;
+};
+
 async function getProduct(slug: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   try {
@@ -202,7 +240,7 @@ export default async function ProductDetailPage({ params }: Props) {
               Inicio
             </Link>
             <span>/</span>
-            <Link href={`/?categoria=${encodeURIComponent(categoryName)}`} className="text-slate-600 font-semibold hover:text-blue-600 transition-colors">
+            <Link href={getCategoryHref(categoryName)} className="text-slate-600 font-semibold hover:text-blue-600 transition-colors">
               {categoryName}
             </Link>
             <span>/</span>

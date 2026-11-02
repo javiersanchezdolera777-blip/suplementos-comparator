@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Aviso Legal | Tus Suplementos",
+  description: "Aviso legal, términos de uso, condiciones de afiliación y exención de responsabilidad médica de la plataforma Tus Suplementos.",
+  alternates: {
+    canonical: "https://www.tussuplementos.com/legal",
+  },
+};
 
 export default function LegalPage() {
   return (
