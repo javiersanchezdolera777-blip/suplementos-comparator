@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Quiénes Somos | Tus Suplementos",
+  description: "Conoce la misión de Tus Suplementos: transparencia y ahorro en nutrición deportiva comparando precios oficiales en tiempo real.",
+  alternates: {
+    canonical: "https://www.tussuplementos.com/about",
+  },
+};
 
 export default function AboutPage() {
   return (

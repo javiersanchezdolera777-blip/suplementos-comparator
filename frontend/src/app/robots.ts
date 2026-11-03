@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://www.tussuplementos.com/sitemap.xml',
+    sitemap: 'https://www.tussuplementos.com/sitemap-index.xml',
   };
 }

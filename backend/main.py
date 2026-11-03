@@ -130,12 +130,32 @@ def obtener_sitemap_batch(
     limit: int = Query(5000, le=10000),
     db: Session = Depends(get_db)
 ):
-    """Devuelve únicamente slugs para generación masiva de sitemaps. Sin joins."""
-    total = db.query(models.Producto.id).count()
+    """Devuelve únicamente slugs para generación masiva de sitemaps. Sin joins.
+
+    Solo incluye productos candidatos a SEO:
+      - slug no nulo y no vacío
+      - nombre no nulo y no vacío
+      - al menos una oferta activa con precio positivo
+    La condición de ofertas se resuelve con EXISTS (ofertas.any) para no duplicar filas.
+    """
+    filtros_elegibilidad = (
+        models.Producto.slug.isnot(None),
+        func.trim(models.Producto.slug) != "",
+        models.Producto.nombre.isnot(None),
+        func.trim(models.Producto.nombre) != "",
+        models.Producto.ofertas.any(
+            (models.Oferta.activo.is_(True))
+            & (models.Oferta.precio.isnot(None))
+            & (models.Oferta.precio > 0)
+        ),
+    )
+
+    total = db.query(models.Producto.id).filter(*filtros_elegibilidad).count()
 
     # Extraemos solo el slug para minimizar el payload y uso de memoria
     productos = (
         db.query(models.Producto.slug)
+        .filter(*filtros_elegibilidad)
         .order_by(models.Producto.id.asc())
         .offset(offset)
         .limit(limit)

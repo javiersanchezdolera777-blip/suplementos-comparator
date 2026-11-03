@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Política de Cookies | Tus Suplementos",
+  description: "Conoce qué cookies utilizamos en Tus Suplementos, su finalidad técnica y de afiliación, y cómo gestionarlas en tu navegador.",
+  alternates: {
+    canonical: "https://www.tussuplementos.com/cookies",
+  },
+};
 
 export default function CookiesPage() {
   return (

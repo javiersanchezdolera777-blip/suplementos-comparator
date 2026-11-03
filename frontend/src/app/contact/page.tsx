@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Contacto | Tus Suplementos",
+  description: "Contacta con el equipo de Tus Suplementos para sugerencias, dudas o propuestas comerciales a través de hola@tussuplementos.com.",
+  alternates: {
+    canonical: "https://www.tussuplementos.com/contact",
+  },
+};
 
 export default function ContactPage() {
   return (
