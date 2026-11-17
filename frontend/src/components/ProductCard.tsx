@@ -2,11 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
-import ModalAñadirStack from './ModalAñadirStack';
-import PriceHistoryChart from './PriceHistoryChart';
+
+const ModalAñadirStack = dynamic(() => import('./ModalAñadirStack'), { ssr: false });
+const PriceHistoryChart = dynamic(() => import('./PriceHistoryChart'), { ssr: false });
 // Usamos la ruta correcta para la tienda de Javi
 import { useCompareStore } from '@/store/useCompareStore';
 import { trackAffiliateClick, trackViewItem, trackInteraction } from '@/utils/analytics';
