@@ -16,7 +16,7 @@ export default function AffiliateButton({ href, className, productName, storeNam
     <a
       href={href}
       target="_blank"
-      rel="nofollow noopener noreferrer"
+      rel="sponsored nofollow noopener noreferrer"
       className={className}
       onClick={() => trackAffiliateClick(productName, storeName, categoryName)}
     >
