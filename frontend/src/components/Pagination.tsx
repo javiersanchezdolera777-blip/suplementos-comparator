@@ -15,6 +15,11 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   const getPageUrl = (page: number) => {
     const params = new URLSearchParams(searchParams?.toString() || "");
+    if (page <= 1) {
+      params.delete("page");
+      const q = params.toString();
+      return q ? `?${q}#catalogo` : "#catalogo";
+    }
     params.set("page", page.toString());
     return `?${params.toString()}#catalogo`;
   };

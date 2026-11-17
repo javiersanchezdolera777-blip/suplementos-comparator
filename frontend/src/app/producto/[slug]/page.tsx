@@ -124,7 +124,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : nombreBase;
   const brandName = product.brand?.name || "Sin marca";
   const categoryName = product.category?.name || "Suplementos";
-  
+
   const finalDescriptionFull = normalizar_descripcion_ui(product.description, cleanName, brandName, categoryName);
   const cleanDescription = finalDescriptionFull.slice(0, 150);
 
@@ -194,19 +194,14 @@ export default async function ProductDetailPage({ params }: Props) {
         "lowPrice": Math.min(...prices),
         "highPrice": Math.max(...prices),
         "offerCount": activeOffers.length,
-        "offers": activeOffers.map((o: any) => {
-          const nextWeek = new Date();
-          nextWeek.setDate(nextWeek.getDate() + 7);
-          return {
-            "@type": "Offer",
-            "price": o.precio,
-            "priceCurrency": "EUR",
-            "availability": "https://schema.org/InStock",
-            "priceValidUntil": nextWeek.toISOString().split("T")[0],
-            "seller": { "@type": "Organization", "name": o.tienda },
-            "url": `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${o.tienda.toLowerCase()}/${product.slug}`
-          };
-        })
+        "offers": activeOffers.map((o: any) => ({
+          "@type": "Offer",
+          "price": o.precio,
+          "priceCurrency": "EUR",
+          "availability": o.activo && o.precio > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          "seller": { "@type": "Organization", "name": o.tienda },
+          "url": `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/out/${o.tienda.toLowerCase()}/${product.slug}`
+        }))
       };
     }
   }
@@ -228,7 +223,7 @@ export default async function ProductDetailPage({ params }: Props) {
     <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <ProductViewTracker productId={product.id} />
       <div className="max-w-6xl mx-auto">
@@ -337,6 +332,7 @@ export default async function ProductDetailPage({ params }: Props) {
                       >
                         <div className="flex flex-col mb-3 sm:mb-0">
                           <span className="font-extrabold text-slate-900 text-lg">{oferta.tienda}</span>
+
 
                         </div>
 
