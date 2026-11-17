@@ -184,7 +184,7 @@ export default function ProductCard({ product }: { product: Product }) {
     setIsModalOpen(false);
   };
 
-  const [isHovered, setIsHovered] = useState(false);
+
 
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -248,19 +248,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div
         className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-1 cursor-pointer"
         onClick={handleOpenProduct}
-        onMouseEnter={() => !isHovered && setIsHovered(true)}
       >
-        {isHovered && showImage && !isModalOpen && (
-          <div className="absolute inset-0 opacity-0 overflow-hidden pointer-events-none z-[-1]">
-            <Image
-              src={product.image_url}
-              alt="preload"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-            />
-          </div>
-        )}
         <div className="relative aspect-square p-6 sm:p-8 flex items-center justify-center bg-slate-50 overflow-hidden">
           {showImage ? (
             <Image
@@ -268,7 +256,6 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={formattedName}
               onError={() => setImageError(true)}
               fill
-              priority={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
@@ -334,7 +321,19 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
 
           <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug flex-grow">
-            {formattedName}
+            {product.slug ? (
+              <Link
+                href={`/producto/${product.slug}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                className="hover:underline"
+              >
+                {formattedName}
+              </Link>
+            ) : (
+              formattedName
+            )}
           </h3>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-auto pt-3 md:pt-4 gap-2">
@@ -353,7 +352,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <a
               href={product.affiliate_url || "#"}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="sponsored nofollow noopener noreferrer"
               onClick={(e) => {
                 e.stopPropagation();
                 trackAffiliateClick(product.name, sellerStore || 'Desconocida', product.category?.name || 'Desconocida');
@@ -393,7 +392,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
             <div className="w-full md:w-1/2 h-48 md:h-full bg-slate-50 p-6 md:p-8 flex items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
               {showImage ? (
-                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} fill priority={true} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-contain drop-shadow-md" />
+                <Image src={product.image_url} alt={formattedName} onError={() => setImageError(true)} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-contain drop-shadow-md" />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
                   <span className="text-slate-400 font-black tracking-[0.2em] text-base uppercase mb-1">Tus Suplementos</span>
@@ -514,7 +513,7 @@ export default function ProductCard({ product }: { product: Product }) {
                             <a
                               href={product.slug && oferta.tienda ? `${apiUrl}/api/out/${oferta.tienda.toLowerCase()}/${product.slug}` : (product.affiliate_url || "#")}
                               target="_blank"
-                              rel="nofollow noopener noreferrer"
+                              rel="sponsored nofollow noopener noreferrer"
                               onClick={(e) => { e.stopPropagation(); trackAffiliateClick(product.name, oferta.tienda || 'Desconocida', product.category?.name || 'Desconocida'); }}
                               className="px-4 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md cursor-pointer"
                             >
@@ -528,7 +527,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   <a
                     href={product.affiliate_url || "#"}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="sponsored nofollow noopener noreferrer"
                     onClick={(e) => { e.stopPropagation(); trackAffiliateClick(product.name, sellerStore || 'Desconocida', product.category?.name || 'Desconocida'); }}
                     className="w-full flex justify-center py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-lg active:scale-95 cursor-pointer"
                   >
