@@ -1,18 +1,38 @@
 import os
-from dotenv import load_dotenv # <-- NUEVO
+import sys
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Cargamos las variables de entorno desde el archivo .env del backend
+# Añadimos el directorio backend al sys.path si es necesario para importar security_guards
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(dotenv_path=os.path.join(BACKEND_DIR, ".env"))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
-if not SQLALCHEMY_DATABASE_URL:
-    raise RuntimeError("DATABASE_URL no está definido. Revisa el archivo .env del backend.")
+from security_guards import get_active_database_url, is_test_environment
 
-print("Conectando a la base de datos configurada en el backend/.env")
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Solo cargamos backend/.env si no se ha prohibido explícitamente y no pisa variables existentes
+load_dotenv(dotenv_path=os.path.join(BACKEND_DIR, ".env"), override=False)
+
+# Obtenemos la URL blindada según el entorno (testing vs dev/prod)
+SQLALCHEMY_DATABASE_URL = get_active_database_url()
+
+# Creamos el engine principal con opciones de pooling
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    pool_size=10,
+    max_overflow=20
+)
+
+# Indicador de conexión seguro (sin contraseñas)
+entorno_str = "TESTING LOCAL" if is_test_environment() else "DESARROLLO / PRODUCCIÓN"
+try:
+    safe_target = engine.url.render_as_string(hide_password=True)
+except Exception:
+    safe_target = f"{engine.url.host or 'local'}/{engine.url.database}"
+print(f"🔌 Conectando a la base de datos ({entorno_str}): {safe_target}")
 
 
 def ensure_schema_compatibility():
@@ -72,16 +92,8 @@ def ensure_schema_compatibility():
 
 ensure_schema_compatibility()
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    pool_pre_ping=True,       # <--- Esto es la clave: comprueba si la BD está viva antes de usarla
-    pool_recycle=3600,        # <--- Recicla la conexión cada hora para que no caduque
-    pool_size=10,             # Mantener un pequeño pool de conexiones
-    max_overflow=20
-)
-
-# 3. Creamos una "fábrica de sesiones" (las sesiones son como carritos de la compra para sacar/meter datos)
+# Fábrica de sesiones
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 4. Base es la clase principal de la que heredarán nuestros modelos (nuestras tablas)
+# Base declarativa para modelos
 Base = declarative_base()

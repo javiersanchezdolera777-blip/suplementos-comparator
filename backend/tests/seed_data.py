@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import text
 
 import models
+from security_guards import validate_engine_for_testing
 
 CATEGORIAS = [
     "Proteínas",
@@ -79,6 +80,14 @@ def _valor_json(rng, catalogo):
 
 
 def seed(engine, n_productos=400, seed_value=1234, max_ofertas=4, historial=True):
+    # BLINDAJE DE SEGURIDAD: Impide truncar cualquier base de datos que no sea local de test,
+    # y exige la presencia explícita de ALLOW_DESTRUCTIVE_TEST_DB=true.
+    validate_engine_for_testing(
+        engine,
+        check_destructive_flag=True,
+        flag_name="ALLOW_DESTRUCTIVE_TEST_DB",
+    )
+
     rng = random.Random(seed_value)
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))

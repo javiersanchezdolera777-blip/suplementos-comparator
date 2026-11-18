@@ -1,16 +1,27 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import SessionLocal
+# BLINDAJE DE SEGURIDAD PRE-IMPORTACIÓN:
+# Exige entorno local de test y flag antes de cargar database.py o inicializar SQLAlchemy.
+from security_guards import enforce_local_test_environment, validate_destructive_script_execution
+
+enforce_local_test_environment("reprocesar_nlp.py", "ALLOW_MAINTENANCE_REPROCESAR_NLP")
+
+from database import SessionLocal, engine
 from models import Producto, Categoria
 from ingestores.utils import clasificar_producto
 
 
 def reprocesar_todo():
+    validate_destructive_script_execution(
+        engine=engine,
+        script_name="reprocesar_nlp.py",
+        flag_name="ALLOW_MAINTENANCE_REPROCESAR_NLP",
+    )
     db = SessionLocal()
-    print("🧠 Iniciando reprocesamiento masivo con NLP en Producción...")
+    print("🧠 Iniciando reprocesamiento masivo con NLP en base local de test...")
 
     productos = db.query(Producto).all()
     mapa_cats = {c.nombre: c.id for c in db.query(Categoria).all()}
@@ -20,10 +31,7 @@ def reprocesar_todo():
         if not p.nombre:
             continue
 
-        # Usamos la descripción que ya está en la base de datos
         desc = p.descripcion or ""
-
-        # Pasamos el producto por tu cerebro NLP actualizado
         etiquetas = clasificar_producto(p.nombre, desc)
 
         if etiquetas and etiquetas.get("categoria"):
@@ -33,7 +41,6 @@ def reprocesar_todo():
 
             p.formato = etiquetas.get("formato")
 
-            # Aseguramos que el sabor se guarde como array si no lo es
             sabor_nuevo = etiquetas.get("sabor")
             p.sabor = (
                 sabor_nuevo
