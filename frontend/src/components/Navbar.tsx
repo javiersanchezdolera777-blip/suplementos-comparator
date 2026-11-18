@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -7,12 +8,27 @@ import { useAuth } from '../context/AuthContext';
 import { useCompareStore } from '@/store/useCompareStore';
 import SearchOmnibox from './SearchOmnibox';
 
+function OfertasLink({ active = false }: { active?: boolean }) {
+  return (
+    <Link
+      href="/?solo_ofertas=true#catalogo"
+      className={active ? "bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all shadow-sm" : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-all"}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+      <span>Ofertas</span>
+    </Link>
+  );
+}
+
+function OfertasLinkWithSearchParams() {
+  const searchParams = useSearchParams();
+  return <OfertasLink active={searchParams.get('solo_ofertas') === 'true'} />;
+}
+
 export default function Navbar() {
   const { isLoggedIn, openLoginModal, logout, favoriteIds } = useAuth();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { compareIds } = useCompareStore();
-  const isSoloOfertas = searchParams ? searchParams.get('solo_ofertas') === 'true' : false;
 
   const handleVersusClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,7 +84,9 @@ export default function Navbar() {
 
           {/* 2. ZONA CENTRAL: BUSCADOR */}
           <div className="order-3 md:order-2 w-full md:flex-1 md:max-w-md lg:max-w-xl">
-            <SearchOmnibox />
+            <Suspense fallback={<div aria-hidden="true" className="h-[38px] w-full rounded-xl border border-slate-200 bg-slate-50" />}>
+              <SearchOmnibox />
+            </Suspense>
           </div>
 
           {/* 3. ZONA DERECHA: ENLACES Y BOTONES */}
@@ -79,10 +97,9 @@ export default function Navbar() {
               <Link href="/#catalogo" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-sm font-medium transition-all">
                 Catálogo
               </Link>
-              <Link href="/?solo_ofertas=true#catalogo" className={isSoloOfertas ? "bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all shadow-sm" : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-all"}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                <span>Ofertas</span>
-              </Link>
+              <Suspense fallback={<OfertasLink />}>
+                <OfertasLinkWithSearchParams />
+              </Suspense>
               
               {/* Botón Social Inteligente */}
               <button onClick={handleSocialClick} className="group/social relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-all cursor-pointer">
