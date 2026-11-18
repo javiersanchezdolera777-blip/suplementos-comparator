@@ -1,8 +1,12 @@
-"""Herramienta de diagnóstico de conectividad a la base de datos (Solo Lectura).
+"""Herramienta de diagnóstico de conectividad a la base de datos (100% Solo Lectura).
 
 Realiza comprobaciones exclusivamente de lectura (SELECT 1 y conteos de tablas).
 NO importa database.py para evitar cualquier ejecución de DDL o ajuste de secuencias
 (ensure_schema_compatibility). Totalmente inocuo para cualquier entorno.
+
+Uso unívoco:
+    python backend/scripts/ping_bd.py --test   (Diagnostica la base local TEST_DATABASE_URL)
+    python backend/scripts/ping_bd.py --dev    (Diagnostica la base DATABASE_URL de backend/.env)
 """
 import os
 import sys
@@ -11,18 +15,58 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-# Cargar variables de entorno del backend si están presentes
+# Añadir ruta del backend para importar security_guards
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
+
+from security_guards import validate_test_database_url, is_test_environment
+
 load_dotenv(os.path.join(BACKEND_DIR, ".env"), override=False)
 
 
-def ping():
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("TEST_DATABASE_URL")
-    if not db_url:
-        print("❌ Error: No se ha encontrado DATABASE_URL ni TEST_DATABASE_URL en el entorno.")
-        sys.exit(1)
+def select_target_url() -> tuple[str, str]:
+    """Determina unívocamente la URL a diagnosticar según flags o variables explícitas."""
+    args = sys.argv[1:]
 
-    # Enmascarar contraseña para mostrar en pantalla
+    if "--test" in args:
+        test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+        if not test_url:
+            print("❌ Error: Se solicitó modo testing (--test), pero TEST_DATABASE_URL no está definido.")
+            sys.exit(1)
+        validate_test_database_url(test_url)
+        return test_url, "TESTING LOCAL (PostgreSQL _test)"
+
+    if "--dev" in args:
+        dev_url = os.environ.get("DATABASE_URL", "").strip()
+        if not dev_url:
+            print("❌ Error: Se solicitó modo desarrollo (--dev), pero DATABASE_URL no está configurado.")
+            sys.exit(1)
+        return dev_url, "DESARROLLO / PRODUCCIÓN"
+
+    # Si se ejecuta dentro de un contexto declarado de testing
+    if is_test_environment() or ("TEST_DATABASE_URL" in os.environ and "DATABASE_URL" not in os.environ):
+        test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+        if not test_url:
+            print("❌ Error: Entorno de testing detectado pero TEST_DATABASE_URL no está definido.")
+            sys.exit(1)
+        validate_test_database_url(test_url)
+        return test_url, "TESTING LOCAL (PostgreSQL _test)"
+
+    if "DATABASE_URL" in os.environ:
+        return os.environ["DATABASE_URL"].strip(), "DESARROLLO / PRODUCCIÓN (default)"
+
+    print("⚠️  Selección de destino requerida:")
+    print("Debes especificar unívocamente qué entorno deseas diagnosticar:")
+    print("    python backend/scripts/ping_bd.py --test   (Diagnostica TEST_DATABASE_URL)")
+    print("    python backend/scripts/ping_bd.py --dev    (Diagnostica DATABASE_URL)")
+    sys.exit(1)
+
+
+def ping():
+    db_url, modo_str = select_target_url()
+
+    # Enmascarar credenciales para reporte seguro
     parsed = urlparse(db_url)
     host_display = parsed.hostname or "local"
     db_name = (parsed.path or "").strip("/")
@@ -30,10 +74,10 @@ def ping():
     safe_target = f"{user}@{host_display}:{parsed.port or 5432}/{db_name}"
 
     print("\n" + "=" * 60)
-    print("📡 PING DE BASE DE DATOS (100% SOLO LECTURA)")
+    print(f"📡 PING DE BASE DE DATOS [{modo_str}]")
     print("=" * 60)
-    print(f"Destino: {safe_target}")
-    print("Garantía: Sin DDL, sin alteración de secuencias, sin escrituras.")
+    print(f"Destino:  {safe_target}")
+    print("Garantía: 100% Solo Lectura (sin DDL, sin alteración de secuencias).")
 
     # Conexión aislada de solo lectura (sin importar database.py)
     engine = create_engine(
@@ -49,7 +93,7 @@ def ping():
             conn.execute(text("SELECT 1"))
             latency_ms = (time.perf_counter() - t0) * 1000
 
-            # 2. Conteo seguro de tablas públicas
+            # 2. Conteo de tablas públicas
             res_tables = conn.execute(text(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
             )).fetchall()

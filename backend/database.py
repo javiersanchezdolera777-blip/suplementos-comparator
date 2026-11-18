@@ -68,11 +68,6 @@ def ensure_schema_compatibility():
                 print("✅ Columna presentacion añadida a productos")
 
             if conn.dialect.name == "postgresql":
-                try:
-                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-                except Exception as ext_err:
-                    print(f"⚠️ No se pudo verificar o crear la extensión pg_trgm: {ext_err}")
-
                 for table, pk in [("marcas", "id"), ("categorias", "id"), ("productos", "id"), ("usuarios", "id"), ("favoritos", "id")]:
                     exists_table = conn.execute(text("""
                         SELECT EXISTS (

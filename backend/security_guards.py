@@ -5,15 +5,18 @@ o reseteo en bases de datos no autorizadas (como ramas de Neon de desarrollo, st
 """
 import os
 import sys
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
-HOSTS_LOCALES_PERMITIDOS = {"localhost", "127.0.0.1", "::1", ""}
+HOSTS_LOCALES_PERMITIDOS = {"localhost", "127.0.0.1", "::1"}
+PARAMETROS_QUERY_PROHIBIDOS = {"host", "hostaddr", "service"}
 
 
 def is_local_host(host: str | None) -> bool:
-    """Comprueba si un host corresponde a una interfaz de loopback local."""
-    h = (host or "").strip().lower()
-    return h in HOSTS_LOCALES_PERMITIDOS or h == "localhost"
+    """Comprueba si un host corresponde a una interfaz de loopback local explícita."""
+    if not host:
+        return False
+    h = host.strip().lower()
+    return h in HOSTS_LOCALES_PERMITIDOS
 
 
 def is_remote_url(url: str) -> bool:
@@ -30,11 +33,13 @@ def is_remote_url(url: str) -> bool:
 def validate_test_database_url(url: str) -> None:
     """Valida rigurosamente que una URL corresponda a un PostgreSQL local de pruebas.
 
-    Reglas:
+    Reglas estrictas:
     1. No puede ser vacía.
-    2. No puede ser remota ni contener referencias a Neon.
-    3. El host debe ser estrictamente localhost, 127.0.0.1 o ::1.
-    4. El nombre de la base de datos debe terminar en '_test'.
+    2. Debe usar exclusivamente el driver PostgreSQL (postgresql:// o postgresql+...).
+    3. El host debe ser explícitamente localhost, 127.0.0.1 o ::1 (no vacío).
+    4. No puede contener referencias a Neon en URL ni host.
+    5. No puede contener parámetros en query que redirijan la conexión (host, hostaddr, service).
+    6. El nombre de la base de datos debe terminar estrictamente en '_test'.
     """
     if not url or not url.strip():
         raise RuntimeError(
@@ -44,14 +49,40 @@ def validate_test_database_url(url: str) -> None:
         )
 
     parsed = urlparse(url)
-    host = (parsed.hostname or "").strip().lower()
+    scheme = (parsed.scheme or "").lower()
 
-    if is_remote_url(url):
+    # 1. Driver PostgreSQL obligatorio (rechaza sqlite, mysql, etc.)
+    if not scheme.startswith("postgresql"):
+        raise RuntimeError(
+            f"TEST_DATABASE_URL inseguro: esquema o dialecto no autorizado ({scheme!r}). "
+            "Solo se admiten URLs de conexión PostgreSQL (ej: postgresql://...)."
+        )
+
+    # 2. Host explícito no vacío
+    host = (parsed.hostname or "").strip().lower()
+    if not host:
+        raise RuntimeError(
+            "TEST_DATABASE_URL inseguro: no se especificó un host explícito. "
+            "Se requiere un hostname explícito de loopback (127.0.0.1, localhost o ::1)."
+        )
+
+    if not is_local_host(host) or "neon" in url.lower():
         raise RuntimeError(
             f"TEST_DATABASE_URL inseguro: se detectó un host remoto o no autorizado ({host!r}). "
             "Está estrictamente prohibido ejecutar pruebas, benchmarks o scripts de mantenimiento contra bases remotas o Neon."
         )
 
+    # 3. Parámetros de query prohibidos que podrían desviar la conexión física
+    if parsed.query:
+        query_params = parse_qs(parsed.query, keep_blank_values=True)
+        for param in PARAMETROS_QUERY_PROHIBIDOS:
+            if param in query_params:
+                raise RuntimeError(
+                    f"TEST_DATABASE_URL inseguro: se detectó el parámetro de conexión '{param}' en la query URL, "
+                    "lo cual podría desviar la conexión hacia un host remoto no autorizado."
+                )
+
+    # 4. Sufijo _test obligatorio
     db_name = (parsed.path or "").strip("/")
     if not db_name.endswith("_test"):
         raise RuntimeError(
@@ -103,32 +134,50 @@ def validate_engine_for_testing(
     check_destructive_flag: bool = False,
     flag_name: str = "ALLOW_DESTRUCTIVE_TEST_DB",
 ) -> None:
-    """Verifica que un SQLAlchemy Engine apunte exclusivamente a una base de datos local de test.
+    """Verifica que un SQLAlchemy Engine apunte exclusivamente a una base de datos PostgreSQL local de test.
 
     Opcionalmente exige que una variable de entorno de autorización explícita esté presente.
     """
     if engine is None or not hasattr(engine, "url"):
         raise ValueError("Engine inválido o nulo proporcionado a validate_engine_for_testing.")
 
+    # 1. Comprobar dialecto
+    dialect_name = getattr(getattr(engine, "dialect", None), "name", "")
+    if dialect_name != "postgresql":
+        raise RuntimeError(
+            f"OPERACIÓN ABORTADA POR SEGURIDAD: Dialecto del motor no autorizado ({dialect_name!r}). "
+            "Solo se permite dialecto 'postgresql'."
+        )
+
     url = engine.url
     host = (url.host or "").strip().lower()
     database = (url.database or "").strip()
 
-    # Comprobar host
-    if not is_local_host(host) or "neon" in str(url).lower():
+    # 2. Comprobar host
+    if not host or not is_local_host(host) or "neon" in str(url).lower():
         raise RuntimeError(
-            f"OPERACIÓN ABORTADA POR SEGURIDAD: El engine apunta a un host remoto o no autorizado ({host!r}). "
+            f"OPERACIÓN ABORTADA POR SEGURIDAD: El engine apunta a un host remoto, vacío o no autorizado ({host!r}). "
             "Las operaciones de prueba, benchmark o mantenimiento solo están permitidas en PostgreSQL local."
         )
 
-    # Comprobar nombre de base de datos
+    # 3. Comprobar query parameters en url del engine
+    url_query = getattr(url, "query", {})
+    if isinstance(url_query, dict):
+        for param in PARAMETROS_QUERY_PROHIBIDOS:
+            if param in url_query:
+                raise RuntimeError(
+                    f"OPERACIÓN ABORTADA POR SEGURIDAD: El engine contiene el parámetro de conexión '{param}', "
+                    "lo cual podría desviar la conexión hacia un host remoto no autorizado."
+                )
+
+    # 4. Comprobar nombre de base de datos
     if not database.endswith("_test"):
         raise RuntimeError(
             f"OPERACIÓN ABORTADA POR SEGURIDAD: El engine apunta a la base de datos {database!r}, "
             "que no termina en '_test'. Operación cancelada para proteger datos de desarrollo/producción."
         )
 
-    # Comprobar flag destructivo si se solicita
+    # 5. Comprobar flag destructivo si se solicita
     if check_destructive_flag:
         flag_val = os.environ.get(flag_name, "").strip().lower()
         if flag_val not in ("1", "true", "yes"):
