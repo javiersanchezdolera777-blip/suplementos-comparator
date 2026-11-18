@@ -98,7 +98,7 @@ const formatStoreName = (name: string) => {
   return lower.replace(/\b\w/g, c => c.toUpperCase());
 };
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -258,6 +258,7 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={formattedName}
               onError={() => setImageError(true)}
               fill
+              priority={priority}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
