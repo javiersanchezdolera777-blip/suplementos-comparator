@@ -4,17 +4,20 @@ import sys
 # Aseguramos que la raíz del backend esté en sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# BLINDAJE DE SEGURIDAD PRE-IMPORTACIÓN:
+# La validación se ejecuta ANTES de importar database.py para impedir cualquier
+# efecto secundario DDL o setval() en bases de datos remotas.
+from security_guards import enforce_local_test_environment, validate_destructive_script_execution
+
+enforce_local_test_environment("reset_db.py", "ALLOW_DESTRUCTIVE_RESET")
+
 from database import engine
-from security_guards import validate_destructive_script_execution
 import models
 
-# BLINDAJE DE SEGURIDAD: Prohibido ejecutar en Neon o producción.
-# Solo permitido en PostgreSQL local de pruebas (*_test) con flag explícito.
 validate_destructive_script_execution(
     engine=engine,
     script_name="reset_db.py",
     flag_name="ALLOW_DESTRUCTIVE_RESET",
-    allow_non_test=False,
 )
 
 print(f"⚠️  Borrando tablas en base de datos local de test ({engine.url.database})...")

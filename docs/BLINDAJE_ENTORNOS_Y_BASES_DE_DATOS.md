@@ -1,6 +1,6 @@
 # Blindaje de Entornos, Bases de Datos y Scripts de Mantenimiento (PR P0)
 
-Este documento describe la arquitectura de seguridad implementada para garantizar el aislamiento estricto de las bases de datos en **Tus Suplementos**, impidiendo que cualquier prueba, benchmark o script de mantenimiento afecte accidentalmente a bases de datos de desarrollo o producción.
+Este documento describe la arquitectura de seguridad implementada para garantizar el aislamiento estricto de las bases de datos en **Tus Suplementos**, impidiendo que cualquier prueba, benchmark o script de mantenimiento afecte a bases de datos de desarrollo o producción.
 
 ---
 
@@ -10,88 +10,119 @@ El proyecto cuenta con tres entornos claramente diferenciados:
 
 | Entorno | Ubicación | Base de Datos | Variable de Configuración | Operaciones Permitidas |
 | :--- | :--- | :--- | :--- | :--- |
-| **Producción** | Neon (`production`) | `neondb` | Inyectada en Render y GitHub Actions | Exclusivamente consultas de la API pública y jobs autorizados de producción. **Nunca tests ni benchmarks.** |
-| **Desarrollo Local** | Neon (`desarrollo-local-javi`) | `neondb` | `backend/.env` (`DATABASE_URL`) | Desarrollo del backend, pruebas de APIs en servidor local. **Nunca tests ni benchmarks destructivos.** |
-| **Testing / Benchmarks** | PostgreSQL Local (`127.0.0.1:54329`) | `tus_suplementos_test` | `TEST_DATABASE_URL` | Ejecución de tests (`pytest`), benchmarks de rendimiento, creación de datasets sintéticos y `TRUNCATE CASCADE`. |
+| **Producción** | Neon (`production`) | `neondb` | Inyectada en Render y GitHub Actions | Consultas públicas de la API y jobs autorizados de CI/CD. **Prohibido ejecutar tests, benchmarks o scripts de mantenimiento.** |
+| **Desarrollo Local** | Neon (`desarrollo-local-javi`) | `neondb` | `backend/.env` (`DATABASE_URL`) | Desarrollo interactivo del backend local. **Prohibido ejecutar tests, benchmarks o scripts de mantenimiento.** |
+| **Testing / Mantenimiento** | PostgreSQL Local (`127.0.0.1:54329`) | `tus_suplementos_test` | `TEST_DATABASE_URL` | **Único entorno autorizado** para `pytest`, benchmarks, `seed_data`, reseteos y scripts de mantenimiento. |
 
 ---
 
 ## 2. Componentes de Blindaje Implementados
 
 ### 2.1 Módulo Central: `backend/security_guards.py`
-Proporciona validaciones deterministas e independientes de la plataforma:
+Proporciona validaciones deterministas e independientes:
 - **`validate_test_database_url(url)`**:
   - Verifica que la URL no esté vacía.
   - Rechaza cualquier host remoto o que contenga `neon.tech` / `neon`.
   - Exige que el host sea local (`localhost`, `127.0.0.1`, `::1`).
-  - Exige que la base de datos termine estrictamente en `_test`.
+  - Exige que el nombre de la base de datos termine estrictamente en `_test`.
+- **`enforce_local_test_environment(script_name, flag_name)`**:
+  - **Guardia previo a la importación**: se ejecuta antes de importar `database.py` o los modelos.
+  - Exige que `TEST_DATABASE_URL` apunte a una base local `*_test` y que el flag de autorización esté activo.
+  - Impide que se ejecute cualquier sentencia DDL o ajuste de secuencias (`setval`) contra bases remotas durante la importación.
 - **`get_active_database_url()`**:
   - Si el proceso detecta modo de testing (`TESTING=1`, `ENV=test`, `pytest`, o `TEST_DATABASE_URL` presente), **exige** que `TEST_DATABASE_URL` esté definido y sea válido.
   - Aborta inmediatamente si falta `TEST_DATABASE_URL`, impidiendo que `database.py` recurra accidentalmente al `.env` de desarrollo.
 - **`validate_engine_for_testing(engine, check_destructive_flag, flag_name)`**:
   - Inspecciona el objeto SQLAlchemy `Engine` activo.
   - Verifica que su conexión física real apunte a un host local y a una base `*_test`.
-  - Opcionalmente exige una variable de entorno de autorización (ej. `ALLOW_DESTRUCTIVE_TEST_DB=true`).
-- **`validate_destructive_script_execution(engine, script_name, flag_name, allow_non_test)`**:
-  - Si `allow_non_test=False`: prohíbe terminantemente la ejecución fuera de una base local `*_test` y exige el flag.
-  - Si `allow_non_test=True`: permite la ejecución en bases de datos autorizadas de mantenimiento solo tras comprobar que el usuario ha exportado el flag correspondiente de forma consciente.
+  - Exige la variable de autorización explícita para operaciones destructivas.
 
 ### 2.2 Conexión en `backend/database.py`
 - Emplea `get_active_database_url()` al inicializarse.
 - Muestra en consola el destino de la conexión con credenciales enmascaradas (`hide_password=True`) y la etiqueta de modo (`TESTING LOCAL` vs `DESARROLLO / PRODUCCIÓN`).
+- En `ensure_schema_compatibility()`, comprueba y añade la extensión `pg_trgm` de forma idempotente (`CREATE EXTENSION IF NOT EXISTS pg_trgm`), asegurando que cualquier base de datos nueva disponga de la capacidad para funciones de similitud trigram.
 
-### 2.3 Blindaje en Pruebas (`backend/tests/conftest.py`)
-- Fija `os.environ["TESTING"] = "1"` y `os.environ["ALLOW_DESTRUCTIVE_TEST_DB"] = "true"`.
-- Valida `TEST_DATABASE_URL` con `validate_test_database_url()`.
-- Tras importar `main`, ejecuta una doble validación sobre `main.engine` antes de permitir cualquier fixture o petición.
-
-### 2.4 Generador Sintético (`backend/tests/seed_data.py`)
-- La función `seed(engine, ...)` ahora valida el engine recibido antes de ejecutar cualquier sentencia SQL.
-- Si el engine no es local o no termina en `_test`, o si falta `ALLOW_DESTRUCTIVE_TEST_DB=true`, aborta inmediatamente con `RuntimeError` antes de `TRUNCATE CASCADE`.
-
-### 2.5 Benchmark Aislado (`backend/tests/run_benchmark.py`)
-- Configura las protecciones antes de importar `main`, `seed_data` o los modelos.
-- Requiere `TEST_DATABASE_URL`. Si no existe, imprime un mensaje de error explicativo y sale con código 2 sin cargar la aplicación ni conectarse a bases remotas.
-- Valida `main.engine` tras la importación.
+### 2.3 Diagnóstico de Solo Lectura: `backend/scripts/ping_bd.py`
+- Herramienta 100% de solo lectura que **no importa `database.py`**.
+- Realiza únicamente `SELECT 1` y conteos de tablas públicas, garantizando cero mutaciones, cero DDL y cero alteraciones de secuencias.
 
 ---
 
-## 3. Inventario Definitivo y Control de Scripts Conservados
+## 3. Inventario y Control de Scripts Conservados
 
-Tras la limpieza de 44 scripts obsoletos/scratch del repositorio, el conjunto oficial de scripts en `backend/scripts/` queda organizado del siguiente modo:
+Todos los scripts de mantenimiento y reseteo están restringidos **estrictamente a PostgreSQL local de pruebas (`*_test`)**. Ningún flag permite su ejecución contra Neon dev o production en esta fase.
 
-| Script | Propósito | Entorno de Ejecución | Protección / Flag Requerido |
+| Script | Propósito | Entorno Permitido | Pre-requisito / Flag Requerido |
 | :--- | :--- | :--- | :--- |
-| `backend/scripts/orquestador.py` | Pipeline multi-tienda y alertas de bajadas de precio | GitHub Actions (`cron_precios.yml`) | Automatizado en CI/CD con secrets de producción |
+| `backend/scripts/orquestador.py` | Pipeline multi-tienda y alertas | GitHub Actions (`cron_precios.yml`) | Automatizado en CI/CD con secrets de producción |
 | `backend/scripts/reset_cooldown.py` | Reseteo semanal de cooldown de alertas | GitHub Actions (`cron_precios.yml`) | Automatizado en CI/CD con secrets de producción |
-| `backend/scripts/ping_bd.py` | Diagnóstico rápido de conectividad (SELECT 1 y conteos) | Local / CLI manual | Solo lectura |
-| `backend/scripts/reset_db.py` | Reseteo completo del esquema en entorno local de pruebas | **Estrictamente local `*_test`** | `ALLOW_DESTRUCTIVE_RESET=true` |
-| `backend/scripts/fusionar_duplicados.py` | Fusión relacional de clones conservando favoritos, ofertas y vistas | Mantenimiento asistido | `ALLOW_MAINTENANCE_FUSION=true` |
-| `backend/scripts/limpiar_historicos_duplicados.py` | Sanitización de registros redundantes en `precios_historicos` | Mantenimiento asistido (`--dry-run` por defecto) | `ALLOW_MAINTENANCE_PURGE_HISTORICOS=true` |
-| `backend/scripts/limpiar_suscriptor.py` | Supresión de email por derecho de baja / RGPD | Mantenimiento asistido | `ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR=true` |
-| `backend/scripts/reprocesar_nlp.py` | Re-etiquetado NLP retroactivo sin re-scrapear la web | Mantenimiento asistido | `ALLOW_MAINTENANCE_REPROCESAR_NLP=true` |
+| `backend/scripts/ping_bd.py` | Diagnóstico de conectividad (SELECT 1) | Local / CLI manual | 100% Solo lectura (sin DDL ni setval) |
+| `backend/scripts/reset_db.py` | Reseteo de esquema desde cero | **Exclusivamente local `*_test`** | `ALLOW_DESTRUCTIVE_RESET=true` |
+| `backend/scripts/fusionar_duplicados.py` | Fusión relacional de clones | **Exclusivamente local `*_test`** | `ALLOW_MAINTENANCE_FUSION=true` |
+| `backend/scripts/limpiar_historicos_duplicados.py` | Sanitización de histórico de precios | **Exclusivamente local `*_test`** | `ALLOW_MAINTENANCE_PURGE_HISTORICOS=true` (con `--execute`) |
+| `backend/scripts/limpiar_suscriptor.py` | Supresión de email por baja / RGPD | **Exclusivamente local `*_test`** | `ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR=true` |
+| `backend/scripts/reprocesar_nlp.py` | Re-etiquetado NLP retroactivo | **Exclusivamente local `*_test`** | `ALLOW_MAINTENANCE_REPROCESAR_NLP=true` |
+
+> [!CAUTION]
+> **Operaciones Remotas Prohibidas:** Los scripts de mantenimiento conservados no admiten ejecución contra bases remotas ni ramas de Neon. Si se intenta ejecutar sin una base local `*_test`, abortan inmediatamente antes de importar módulos de conexión.
 
 ---
 
-## 4. Guía de Uso Seguro para Desarrolladores
+## 4. Guía de Ejecución para Desarrolladores
 
-### Para ejecutar los tests unitarios:
+### 4.1 Ejecutar Tests Unitarios (Pytest)
 ```powershell
 # En Windows PowerShell
 $env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
 python -m pytest backend/tests -v
 ```
 
-### Para ejecutar el benchmark comparativo:
+### 4.2 Ejecutar Benchmark de Rendimiento
 ```powershell
 # En Windows PowerShell
 $env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
 python backend/tests/run_benchmark.py
 ```
 
-### Para ejecutar un script de mantenimiento en caso necesario:
+### 4.3 Ejecutar Diagnóstico de Conectividad (Solo Lectura)
 ```powershell
-# El script indicará qué base de datos y host se verán afectados y exigirá el flag correspondiente:
+# En Windows PowerShell (prueba la BD activa en .env o TEST_DATABASE_URL)
+python backend/scripts/ping_bd.py
+```
+
+### 4.4 Ejecutar Reseteo de Base de Datos Local de Pruebas
+```powershell
+# En Windows PowerShell
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+$env:ALLOW_DESTRUCTIVE_RESET = "true"
+python backend/scripts/reset_db.py
+```
+
+### 4.5 Ejecutar Scripts de Mantenimiento en Base Local de Pruebas
+Todos los scripts de mantenimiento exigen `TEST_DATABASE_URL` y su flag específico:
+
+```powershell
+# Fusión de duplicados:
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+$env:ALLOW_MAINTENANCE_FUSION = "true"
+python backend/scripts/fusionar_duplicados.py
+
+# Purga de históricos duplicados (dry-run):
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+python backend/scripts/limpiar_historicos_duplicados.py --dry-run
+
+# Purga de históricos duplicados (ejecución real):
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
 $env:ALLOW_MAINTENANCE_PURGE_HISTORICOS = "true"
 python backend/scripts/limpiar_historicos_duplicados.py --execute
+
+# Re-procesamiento NLP:
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+$env:ALLOW_MAINTENANCE_REPROCESAR_NLP = "true"
+python backend/scripts/reprocesar_nlp.py
+
+# Supresión de suscriptor RGPD:
+$env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+$env:ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR = "true"
+python backend/scripts/limpiar_suscriptor.py "usuario@ejemplo.com"
 ```

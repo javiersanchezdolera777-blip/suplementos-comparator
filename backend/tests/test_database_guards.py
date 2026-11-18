@@ -5,7 +5,9 @@ Verifica que:
 2. Las URLs remotas, de Neon o no terminadas en _test sean estrictamente rechazadas.
 3. El modo de testing exija TEST_DATABASE_URL y nunca use la base de desarrollo por accidente.
 4. seed_data.seed() rechace engines remotos y exija ALLOW_DESTRUCTIVE_TEST_DB=true.
-5. Los guardias de scripts destructivos impidan operaciones sin los flags de autorización requeridos.
+5. enforce_local_test_environment() bloquee Neon dev, Neon prod o hosts remotos antes de cualquier importación,
+   incluso si se define el flag de mantenimiento.
+6. ping_bd.py no ejecute operaciones DDL ni mutaciones de secuencias.
 """
 import os
 from unittest.mock import MagicMock
@@ -15,6 +17,7 @@ from security_guards import (
     validate_test_database_url,
     validate_engine_for_testing,
     validate_destructive_script_execution,
+    enforce_local_test_environment,
     get_active_database_url,
     is_test_environment,
     is_remote_url,
@@ -51,6 +54,7 @@ def test_validate_test_database_url_valid():
     ("   ", "espacios"),
     ("postgresql://user:pass@ep-fancy-glitter.c-4.eu-central-1.aws.neon.tech/neondb", "Neon remoto"),
     ("postgresql://user:pass@ep-fancy-glitter.c-4.eu-central-1.aws.neon.tech/neondb_test", "Neon con sufijo _test"),
+    ("postgresql://user:pass@ep-twilight-base-ass5vshw-pooler.c-4.eu-central-1.aws.neon.tech/neondb", "Neon dev"),
     ("postgresql://user:pass@db.produccion.com:5432/prod_test", "Host remoto"),
     ("postgresql://postgres@127.0.0.1:54329/tus_suplementos_dev", "No termina en _test"),
     ("postgresql://postgres@localhost:5432/neondb", "No termina en _test"),
@@ -99,7 +103,7 @@ def test_validate_engine_for_testing():
 
     # Con chequeo de flag destructivo sin setear
     os.environ.pop("ALLOW_DESTRUCTIVE_TEST_DB", None)
-    with pytest.raises(RuntimeError, match="OPERACIÓN DESTRUCTIVA BLOQUEADA"):
+    with pytest.raises(RuntimeError, match="OPERACIÓN BLOQUEADA"):
         validate_engine_for_testing(mock_engine, check_destructive_flag=True, flag_name="ALLOW_DESTRUCTIVE_TEST_DB")
 
     # Con flag seteado a true
@@ -155,12 +159,62 @@ def test_seed_data_guards(monkeypatch):
     local_engine.url = local_url
 
     monkeypatch.delenv("ALLOW_DESTRUCTIVE_TEST_DB", raising=False)
-    with pytest.raises(RuntimeError, match="OPERACIÓN DESTRUCTIVA BLOQUEADA"):
+    with pytest.raises(RuntimeError, match="OPERACIÓN BLOQUEADA"):
         seed_data.seed(local_engine)
 
 
-def test_validate_destructive_script_execution(monkeypatch):
-    # Script estricto de test (allow_non_test=False)
+def test_enforce_local_test_environment_missing_url(monkeypatch):
+    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="EJECUCIÓN BLOQUEADA"):
+        enforce_local_test_environment("fusionar_duplicados.py", "ALLOW_MAINTENANCE_FUSION")
+
+
+def test_enforce_local_test_environment_rejects_neon_dev(monkeypatch):
+    # Neon dev URL debe ser bloqueado inmediatamente
+    neon_dev = "postgresql://neondb_owner:pass@ep-twilight-base-ass5vshw-pooler.c-4.eu-central-1.aws.neon.tech/neondb"
+    monkeypatch.setenv("TEST_DATABASE_URL", neon_dev)
+    with pytest.raises(RuntimeError, match="inseguro"):
+        enforce_local_test_environment("reprocesar_nlp.py", "ALLOW_MAINTENANCE_REPROCESAR_NLP")
+
+
+def test_enforce_local_test_environment_rejects_neon_prod(monkeypatch):
+    # Neon prod URL debe ser bloqueado inmediatamente
+    neon_prod = "postgresql://user:pass@ep-fancy-glitter-ascs2vpv-pooler.c-4.eu-central-1.aws.neon.tech/neondb"
+    monkeypatch.setenv("TEST_DATABASE_URL", neon_prod)
+    with pytest.raises(RuntimeError, match="inseguro"):
+        enforce_local_test_environment("fusionar_duplicados.py", "ALLOW_MAINTENANCE_FUSION")
+
+
+def test_enforce_local_test_environment_rejects_remote_even_with_flag(monkeypatch):
+    # Incluso con flag de autorización activo, si la URL es remota debe ser rechazada
+    monkeypatch.setenv("ALLOW_MAINTENANCE_FUSION", "true")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://user:pass@db.example.com:5432/remote_test")
+    with pytest.raises(RuntimeError, match="inseguro"):
+        enforce_local_test_environment("fusionar_duplicados.py", "ALLOW_MAINTENANCE_FUSION")
+
+
+def test_enforce_local_test_environment_requires_flag(monkeypatch):
+    # URL local _test válida pero sin flag de autorización
+    valid_test_url = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+    monkeypatch.setenv("TEST_DATABASE_URL", valid_test_url)
+    monkeypatch.delenv("ALLOW_MAINTENANCE_PURGE_HISTORICOS", raising=False)
+    with pytest.raises(RuntimeError, match="OPERACIÓN BLOQUEADA"):
+        enforce_local_test_environment("limpiar_historicos_duplicados.py", "ALLOW_MAINTENANCE_PURGE_HISTORICOS")
+
+
+def test_enforce_local_test_environment_success(monkeypatch):
+    # Con URL local _test válida Y flag de autorización
+    valid_test_url = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+    monkeypatch.setenv("TEST_DATABASE_URL", valid_test_url)
+    monkeypatch.setenv("ALLOW_MAINTENANCE_FUSION", "true")
+
+    url_ret = enforce_local_test_environment("fusionar_duplicados.py", "ALLOW_MAINTENANCE_FUSION")
+    assert url_ret == valid_test_url
+    assert os.environ["TESTING"] == "1"
+    assert os.environ["DATABASE_URL"] == valid_test_url
+
+
+def test_validate_destructive_script_execution_strictly_local(monkeypatch):
     local_engine = MagicMock()
     local_url = MagicMock()
     local_url.host = "127.0.0.1"
@@ -170,12 +224,11 @@ def test_validate_destructive_script_execution(monkeypatch):
 
     # Sin flag
     monkeypatch.delenv("ALLOW_DESTRUCTIVE_RESET", raising=False)
-    with pytest.raises(RuntimeError, match="OPERACIÓN DESTRUCTIVA BLOQUEADA"):
+    with pytest.raises(RuntimeError, match="OPERACIÓN BLOQUEADA"):
         validate_destructive_script_execution(
             engine=local_engine,
             script_name="reset_db.py",
             flag_name="ALLOW_DESTRUCTIVE_RESET",
-            allow_non_test=False,
         )
 
     # Con flag
@@ -184,32 +237,20 @@ def test_validate_destructive_script_execution(monkeypatch):
         engine=local_engine,
         script_name="reset_db.py",
         flag_name="ALLOW_DESTRUCTIVE_RESET",
-        allow_non_test=False,
     )
 
-    # Script de mantenimiento en base que no es _test (allow_non_test=True)
-    dev_engine = MagicMock()
-    dev_url = MagicMock()
-    dev_url.host = "ep-dev.neon.tech"
-    dev_url.database = "neondb"
-    dev_url.__str__.return_value = "postgresql://user:pass@ep-dev.neon.tech/neondb"
-    dev_engine.url = dev_url
+    # Intento contra Neon remoto, incluso si alguien pasa un flag
+    remote_engine = MagicMock()
+    remote_url = MagicMock()
+    remote_url.host = "ep-fancy-glitter.neon.tech"
+    remote_url.database = "neondb"
+    remote_url.__str__.return_value = "postgresql://user:pass@ep-fancy-glitter.neon.tech/neondb"
+    remote_engine.url = remote_url
 
-    # Sin flag específico de mantenimiento
-    monkeypatch.delenv("ALLOW_MAINTENANCE_OP", raising=False)
-    with pytest.raises(RuntimeError, match="EJECUCIÓN BLOQUEADA"):
+    monkeypatch.setenv("ALLOW_MAINTENANCE_FUSION", "true")
+    with pytest.raises(RuntimeError, match="host remoto o no autorizado"):
         validate_destructive_script_execution(
-            engine=dev_engine,
-            script_name="reprocesar_nlp.py",
-            flag_name="ALLOW_MAINTENANCE_OP",
-            allow_non_test=True,
+            engine=remote_engine,
+            script_name="fusionar_duplicados.py",
+            flag_name="ALLOW_MAINTENANCE_FUSION",
         )
-
-    # Con flag específico de mantenimiento
-    monkeypatch.setenv("ALLOW_MAINTENANCE_OP", "true")
-    validate_destructive_script_execution(
-        engine=dev_engine,
-        script_name="reprocesar_nlp.py",
-        flag_name="ALLOW_MAINTENANCE_OP",
-        allow_non_test=True,
-    )

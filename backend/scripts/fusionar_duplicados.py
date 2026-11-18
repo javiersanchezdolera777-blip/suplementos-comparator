@@ -1,25 +1,27 @@
 import sys
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import SessionLocal
-from security_guards import validate_destructive_script_execution
+# BLINDAJE DE SEGURIDAD PRE-IMPORTACIÓN:
+# La validación se ejecuta ANTES de importar database.py para impedir cualquier
+# efecto secundario DDL o de setval() en bases de datos remotas (Neon dev o prod).
+from security_guards import enforce_local_test_environment, validate_destructive_script_execution
+
+enforce_local_test_environment("fusionar_duplicados.py", "ALLOW_MAINTENANCE_FUSION")
+
+from database import SessionLocal, engine
 import models
 from sqlalchemy import func, text
 
 
 def fusionar_duplicados():
-    db = SessionLocal()
-    # BLINDAJE DE SEGURIDAD: Exige flag de autorización explícito para operaciones de mantenimiento
     validate_destructive_script_execution(
-        engine=db.get_bind(),
+        engine=engine,
         script_name="fusionar_duplicados.py",
         flag_name="ALLOW_MAINTENANCE_FUSION",
-        allow_non_test=True,
     )
+    db = SessionLocal()
     print("🔍 Buscando productos duplicados (mismo slug)...")
 
     try:

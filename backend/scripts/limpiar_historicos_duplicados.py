@@ -7,11 +7,12 @@ anterior para la misma oferta_id.
 
 Uso:
     cd backend
-    python scripts/limpiar_historicos_duplicados.py
+    $env:TEST_DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
+    python scripts/limpiar_historicos_duplicados.py --dry-run
 
-    Flags:
-        --dry-run   (por defecto) Solo analiza y reporta, NO borra nada.
-        --execute   Ejecuta la purga real en la base de datos.
+    Para ejecutar la purga en base local de test:
+    $env:ALLOW_MAINTENANCE_PURGE_HISTORICOS = "true"
+    python scripts/limpiar_historicos_duplicados.py --execute
 """
 
 import sys
@@ -20,12 +21,25 @@ import os
 # Aseguramos que el directorio raíz del backend esté en el PATH
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# BLINDAJE DE SEGURIDAD PRE-IMPORTACIÓN:
+# Exige entorno local de test antes de cargar database.py o inicializar SQLAlchemy.
+from security_guards import enforce_local_test_environment, validate_destructive_script_execution
+
+requires_exec_flag = "ALLOW_MAINTENANCE_PURGE_HISTORICOS" if "--execute" in sys.argv else None
+enforce_local_test_environment("limpiar_historicos_duplicados.py", requires_exec_flag)
+
 from sqlalchemy import text
-from database import SessionLocal
-from security_guards import validate_destructive_script_execution
+from database import SessionLocal, engine
 
 
 def limpiar_historicos(execute: bool = False):
+    if execute:
+        validate_destructive_script_execution(
+            engine=engine,
+            script_name="limpiar_historicos_duplicados.py",
+            flag_name="ALLOW_MAINTENANCE_PURGE_HISTORICOS",
+        )
+
     db = SessionLocal()
 
     try:
@@ -89,12 +103,6 @@ def limpiar_historicos(execute: bool = False):
             return
 
         if execute:
-            validate_destructive_script_execution(
-                engine=db.get_bind(),
-                script_name="limpiar_historicos_duplicados.py",
-                flag_name="ALLOW_MAINTENANCE_PURGE_HISTORICOS",
-                allow_non_test=True,
-            )
             print(f"\n🗑️  Ejecutando purga de {len(ids_a_borrar)} registros redundantes...")
 
             # Borrar en lotes de 500 para no saturar la BD
@@ -110,22 +118,18 @@ def limpiar_historicos(execute: bool = False):
 
             print(f"\n🎉 ¡Purga completada! Se eliminaron {len(ids_a_borrar)} registros fantasma.")
         else:
-            print(f"\n⚠️  MODO DRY-RUN: No se ha borrado nada.")
-            print(f"   Para ejecutar la purga real, usa: python scripts/limpiar_historicos_duplicados.py --execute")
+            print("\n⚠️  MODO DRY-RUN (SIMULACIÓN)")
+            print(f"   Se encontraron {len(ids_a_borrar)} registros redundantes.")
+            print("   Para eliminarlos definitivamente en la base local de pruebas, ejecuta con:")
+            print("       python scripts/limpiar_historicos_duplicados.py --execute")
 
     except Exception as e:
         db.rollback()
-        print(f"\n❌ Error durante la sanitización: {e}")
-        raise
+        print(f"❌ Error durante la sanitización: {e}")
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    modo_execute = "--execute" in sys.argv
-    if modo_execute:
-        print("🔴 MODO EJECUCIÓN REAL — Los registros se borrarán de la base de datos.\n")
-    else:
-        print("🟡 MODO DRY-RUN — Solo análisis, sin borrar nada.\n")
-
-    limpiar_historicos(execute=modo_execute)
+    ejecutar = "--execute" in sys.argv
+    limpiar_historicos(execute=ejecutar)
