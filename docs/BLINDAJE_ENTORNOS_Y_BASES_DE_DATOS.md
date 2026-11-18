@@ -1,4 +1,4 @@
-# Blindaje de Entornos, Bases de Datos y Scripts Destructivos (PR P0)
+# Blindaje de Entornos, Bases de Datos y Scripts de Mantenimiento (PR P0)
 
 Este documento describe la arquitectura de seguridad implementada para garantizar el aislamiento estricto de las bases de datos en **Tus Suplementos**, impidiendo que cualquier prueba, benchmark o script de mantenimiento afecte accidentalmente a bases de datos de desarrollo o producción.
 
@@ -56,18 +56,20 @@ Proporciona validaciones deterministas e independientes de la plataforma:
 
 ---
 
-## 3. Inventario y Control de Scripts Destructivos
+## 3. Inventario Definitivo y Control de Scripts Conservados
 
-Todos los scripts con potencial destructivo o de modificación masiva cuentan ahora con guardias automáticos:
+Tras la limpieza de 44 scripts obsoletos/scratch del repositorio, el conjunto oficial de scripts en `backend/scripts/` queda organizado del siguiente modo:
 
-| Script | Riesgo Original | Nivel de Restricción | Flag Requerido |
+| Script | Propósito | Entorno de Ejecución | Protección / Flag Requerido |
 | :--- | :--- | :--- | :--- |
-| `backend/scripts/scratch_drop_all.py` | `meta.drop_all()` destructivo total | **Solo base de datos local `*_test`** | `ALLOW_DESTRUCTIVE_SCRATCH=true` |
-| `backend/scripts/reset_db.py` | `models.Base.metadata.drop_all()` | **Solo base de datos local `*_test`** | `ALLOW_DESTRUCTIVE_RESET=true` |
-| `backend/scripts/fusionar_duplicados.py` | Fusión y borrado de clones de productos | Mantenimiento asistido | `ALLOW_MAINTENANCE_FUSION=true` |
-| `backend/scripts/limpiar_historicos_duplicados.py` | Purga masiva en `precios_historicos` | Mantenimiento asistido (con `--execute`) | `ALLOW_MAINTENANCE_PURGE_HISTORICOS=true` |
-| `backend/scripts/limpiar_suscriptor.py` | Borrado de usuarios/suscriptores por email | Mantenimiento asistido | `ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR=true` |
-| `backend/scripts/limpiar_basura.py` | Borrado de productos sin enlace o imagen | Mantenimiento asistido | `ALLOW_MAINTENANCE_PURGE_BASURA=true` |
+| `backend/scripts/orquestador.py` | Pipeline multi-tienda y alertas de bajadas de precio | GitHub Actions (`cron_precios.yml`) | Automatizado en CI/CD con secrets de producción |
+| `backend/scripts/reset_cooldown.py` | Reseteo semanal de cooldown de alertas | GitHub Actions (`cron_precios.yml`) | Automatizado en CI/CD con secrets de producción |
+| `backend/scripts/ping_bd.py` | Diagnóstico rápido de conectividad (SELECT 1 y conteos) | Local / CLI manual | Solo lectura |
+| `backend/scripts/reset_db.py` | Reseteo completo del esquema en entorno local de pruebas | **Estrictamente local `*_test`** | `ALLOW_DESTRUCTIVE_RESET=true` |
+| `backend/scripts/fusionar_duplicados.py` | Fusión relacional de clones conservando favoritos, ofertas y vistas | Mantenimiento asistido | `ALLOW_MAINTENANCE_FUSION=true` |
+| `backend/scripts/limpiar_historicos_duplicados.py` | Sanitización de registros redundantes en `precios_historicos` | Mantenimiento asistido (`--dry-run` por defecto) | `ALLOW_MAINTENANCE_PURGE_HISTORICOS=true` |
+| `backend/scripts/limpiar_suscriptor.py` | Supresión de email por derecho de baja / RGPD | Mantenimiento asistido | `ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR=true` |
+| `backend/scripts/reprocesar_nlp.py` | Re-etiquetado NLP retroactivo sin re-scrapear la web | Mantenimiento asistido | `ALLOW_MAINTENANCE_REPROCESAR_NLP=true` |
 
 ---
 
@@ -89,7 +91,7 @@ python backend/tests/run_benchmark.py
 
 ### Para ejecutar un script de mantenimiento en caso necesario:
 ```powershell
-# El script indicará qué base de datos y host se verán afectados y exigirá el flag:
+# El script indicará qué base de datos y host se verán afectados y exigirá el flag correspondiente:
 $env:ALLOW_MAINTENANCE_PURGE_HISTORICOS = "true"
 python backend/scripts/limpiar_historicos_duplicados.py --execute
 ```

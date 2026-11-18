@@ -4,12 +4,20 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import SessionLocal
+from security_guards import validate_destructive_script_execution
 from models import Producto, Categoria
 from ingestores.utils import clasificar_producto
 
 
 def reprocesar_todo():
     db = SessionLocal()
+    # BLINDAJE DE SEGURIDAD: Exige flag de autorización explícito para operaciones de mantenimiento
+    validate_destructive_script_execution(
+        engine=db.get_bind(),
+        script_name="reprocesar_nlp.py",
+        flag_name="ALLOW_MAINTENANCE_REPROCESAR_NLP",
+        allow_non_test=True,
+    )
     print("🧠 Iniciando reprocesamiento masivo con NLP en Producción...")
 
     productos = db.query(Producto).all()

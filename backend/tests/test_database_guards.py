@@ -200,7 +200,7 @@ def test_validate_destructive_script_execution(monkeypatch):
     with pytest.raises(RuntimeError, match="EJECUCIÓN BLOQUEADA"):
         validate_destructive_script_execution(
             engine=dev_engine,
-            script_name="mantenimiento.py",
+            script_name="reprocesar_nlp.py",
             flag_name="ALLOW_MAINTENANCE_OP",
             allow_non_test=True,
         )
@@ -209,7 +209,7 @@ def test_validate_destructive_script_execution(monkeypatch):
     monkeypatch.setenv("ALLOW_MAINTENANCE_OP", "true")
     validate_destructive_script_execution(
         engine=dev_engine,
-        script_name="mantenimiento.py",
+        script_name="reprocesar_nlp.py",
         flag_name="ALLOW_MAINTENANCE_OP",
         allow_non_test=True,
     )
