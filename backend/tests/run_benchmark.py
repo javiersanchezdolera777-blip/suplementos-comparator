@@ -3,7 +3,6 @@ import sys
 import time
 import tracemalloc
 from urllib.parse import urlparse
-from fastapi.testclient import TestClient
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,10 +10,34 @@ for ruta in (BACKEND_DIR, TESTS_DIR):
     if ruta not in sys.path:
         sys.path.insert(0, ruta)
 
+# BLINDAJE DE SEGURIDAD PRE-IMPORTACIÓN:
+# El benchmark SIEMPRE debe correr en una base de datos local aislada.
+# Exigimos TEST_DATABASE_URL antes de importar la app o cualquier modelo.
+os.environ["TESTING"] = "1"
+os.environ["ALLOW_DESTRUCTIVE_TEST_DB"] = "true"
+
+test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+if not test_url:
+    print("\n❌ ERROR CRÍTICO DE SEGURIDAD: TEST_DATABASE_URL no está definido.")
+    print("Para proteger las bases de datos de desarrollo y producción, el benchmark")
+    print("solo puede ejecutarse contra un PostgreSQL local aislado (*_test).")
+    print("\nConfigura la variable antes de ejecutar:")
+    print("    $env:TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:54329/tus_suplementos_test'")
+    print("    python backend/tests/run_benchmark.py\n")
+    sys.exit(2)
+
+from security_guards import validate_test_database_url, validate_engine_for_testing
+validate_test_database_url(test_url)
+os.environ["DATABASE_URL"] = test_url
+
+from fastapi.testclient import TestClient
 import main
 import seed_data
 import legacy_productos
 from sqlalchemy import event
+
+# Validación post-importación: asegurar que el engine cargado es local de test
+validate_engine_for_testing(main.engine, check_destructive_flag=True)
 
 main.app.include_router(legacy_productos.router)
 

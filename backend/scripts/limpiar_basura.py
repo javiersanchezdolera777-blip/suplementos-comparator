@@ -5,10 +5,17 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import SessionLocal
+from security_guards import validate_destructive_script_execution
 from models import Producto, Marca
 
 def purgar_fantasmas():
     db = SessionLocal()
+    validate_destructive_script_execution(
+        engine=db.get_bind(),
+        script_name="limpiar_basura.py",
+        flag_name="ALLOW_MAINTENANCE_PURGE_BASURA",
+        allow_non_test=True,
+    )
     try:
         print("🕵️‍♂️ Escaneando Neon DB en busca de productos corruptos o zombis...")
         

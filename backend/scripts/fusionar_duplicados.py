@@ -6,12 +6,20 @@ load_dotenv()
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import SessionLocal
+from security_guards import validate_destructive_script_execution
 import models
 from sqlalchemy import func, text
 
 
 def fusionar_duplicados():
     db = SessionLocal()
+    # BLINDAJE DE SEGURIDAD: Exige flag de autorización explícito para operaciones de mantenimiento
+    validate_destructive_script_execution(
+        engine=db.get_bind(),
+        script_name="fusionar_duplicados.py",
+        flag_name="ALLOW_MAINTENANCE_FUSION",
+        allow_non_test=True,
+    )
     print("🔍 Buscando productos duplicados (mismo slug)...")
 
     try:

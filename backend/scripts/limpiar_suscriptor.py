@@ -6,9 +6,16 @@ from sqlalchemy import text
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import SessionLocal
+from security_guards import validate_destructive_script_execution
 
 def limpiar_correo_automatico(email_a_borrar: str):
     db = SessionLocal()
+    validate_destructive_script_execution(
+        engine=db.get_bind(),
+        script_name="limpiar_suscriptor.py",
+        flag_name="ALLOW_MAINTENANCE_DELETE_SUSCRIPTOR",
+        allow_non_test=True,
+    )
     try:
         print("🔌 Conectando a la base de datos para escanear las tablas...")
         

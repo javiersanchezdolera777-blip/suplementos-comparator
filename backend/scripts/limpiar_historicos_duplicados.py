@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from sqlalchemy import text
 from database import SessionLocal
+from security_guards import validate_destructive_script_execution
 
 
 def limpiar_historicos(execute: bool = False):
@@ -88,6 +89,12 @@ def limpiar_historicos(execute: bool = False):
             return
 
         if execute:
+            validate_destructive_script_execution(
+                engine=db.get_bind(),
+                script_name="limpiar_historicos_duplicados.py",
+                flag_name="ALLOW_MAINTENANCE_PURGE_HISTORICOS",
+                allow_non_test=True,
+            )
             print(f"\n🗑️  Ejecutando purga de {len(ids_a_borrar)} registros redundantes...")
 
             # Borrar en lotes de 500 para no saturar la BD
