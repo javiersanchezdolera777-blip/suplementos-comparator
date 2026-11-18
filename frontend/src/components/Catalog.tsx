@@ -491,8 +491,8 @@ export default function Catalog({
           ) : productosFiltrados.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
-                {productosFiltrados.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {productosFiltrados.map((product, index) => (
+                  <ProductCard key={product.id} product={product} priority={index === 0} />
                 ))}
               </div>
 
