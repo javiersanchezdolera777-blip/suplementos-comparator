@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +10,16 @@ import EmptyState from "./EmptyState";
 import FilterSidebar from "./FilterSidebar";
 import Pagination from "./Pagination";
 import { trackFilter } from "@/utils/analytics";
+
+function SearchParamsSync({ onChange }: { onChange: (value: string) => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    onChange(searchParams.toString());
+  }, [onChange, searchParams]);
+
+  return null;
+}
 
 interface CatalogProps {
   initialProducts?: any[];
@@ -24,9 +34,13 @@ export default function Catalog({
   preselectedCategory,
   preselectedBrand,
 }: CatalogProps = {}) {
-  const searchParams = useSearchParams();
+  const [searchParamsString, setSearchParamsString] = useState("");
+  const handleSearchParamsChange = useCallback((value: string) => {
+    setSearchParamsString(value);
+  }, []);
+  const searchParams = useMemo(() => new URLSearchParams(searchParamsString), [searchParamsString]);
   const router = useRouter();
-  const soloOfertas = searchParams ? searchParams.get("solo_ofertas") === "true" : false;
+  const soloOfertas = searchParams.get("solo_ofertas") === "true";
 
   const [productos, setProductos] = useState<any[]>(initialProducts || []);
   const [loading, setLoading] = useState(initialProducts ? false : true);
@@ -272,6 +286,9 @@ export default function Catalog({
 
   return (
     <div className="w-full flex flex-col gap-1 md:gap-4">
+      <Suspense fallback={null}>
+        <SearchParamsSync onChange={handleSearchParamsChange} />
+      </Suspense>
 
       {/* HERO BANNER — Comprimido en móvil, completo en desktop */}
       <section className="w-full flex flex-col items-center text-center max-w-4xl mx-auto pt-1 md:pt-2 pb-0 md:pb-2 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
@@ -509,6 +526,7 @@ export default function Catalog({
                   currentPage={currentPage}
                   totalPages={Math.ceil(totalResultados / BATCH_SIZE)}
                   onPageChange={handlePageChange}
+                  searchParamsString={searchParamsString}
                 />
               )}
             </>

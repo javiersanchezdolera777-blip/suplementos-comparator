@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductViewTracker({ productId }: { productId: number }) {
+  const { isLoggedIn } = useAuth();
+
   useEffect(() => {
+    // Solo registramos la vista si el usuario está autenticado.
+    // El endpoint /api/historial/{id} requiere sesión; no disparamos
+    // la petición a usuarios anónimos para evitar el 401 innecesario.
+    if (!productId || !isLoggedIn) return;
+
     const trackView = async () => {
       try {
-        // La validación se hace por cookie HttpOnly, ya no necesitamos extraer del localStorage
-        const token = "dummy"; // Dummy fallback to avoid refactoring entire effect logic if not strictly needed. Wait, actually I can just use checkAuth or assume user is logged in
-        // However, I can just remove token usage.
-
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        
         await fetch(`${apiUrl}/api/historial/${productId}`, {
           method: 'POST',
           credentials: 'include',
@@ -20,15 +23,12 @@ export default function ProductViewTracker({ productId }: { productId: number })
           }
         });
       } catch (error) {
-        // Discreto, si falla no hacemos ruido en la UI
-        console.error("Tracking silencioso falló:", error);
+        // Silencioso: si falla no afecta a la UI
       }
     };
 
-    if (productId) {
-      trackView();
-    }
-  }, [productId]);
+    trackView();
+  }, [productId, isLoggedIn]);
 
   return null;
 }

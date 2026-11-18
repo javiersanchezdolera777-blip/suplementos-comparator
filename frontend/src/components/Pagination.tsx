@@ -2,19 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  searchParamsString: string;
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  const searchParams = useSearchParams();
-
+export default function Pagination({ currentPage, totalPages, onPageChange, searchParamsString }: PaginationProps) {
   const getPageUrl = (page: number) => {
-    const params = new URLSearchParams(searchParams?.toString() || "");
+    const params = new URLSearchParams(searchParamsString);
     if (page <= 1) {
       params.delete("page");
       const q = params.toString();
