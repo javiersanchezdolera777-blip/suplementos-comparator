@@ -309,7 +309,7 @@ export default function Catalog({
 
         {/* 4. Bar de Tiendas Interactivas */}
         <div className="w-full max-w-3xl mx-auto mt-0.5 md:my-0">
-          <p className="hidden md:block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 md:mb-1.5 text-center">
+          <p className="hidden md:block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-1.5 text-center">
             INTEGRADO CON EL CATÁLOGO DE
           </p>
           <div className="flex flex-row justify-center items-center gap-3 md:gap-6">
@@ -327,7 +327,7 @@ export default function Catalog({
                   href={isSelected ? "/#catalogo" : `/marca/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className={`cursor-pointer transition-all duration-200 ${isSelected
                     ? "opacity-100 scale-105 text-blue-600 font-extrabold underline underline-offset-4"
-                    : "opacity-60 hover:opacity-100 hover:scale-105 text-slate-800"
+                    : "opacity-80 hover:opacity-100 hover:scale-105 text-slate-800"
                     } ${brand.style}`}
                 >
                   {brand.displayName}
@@ -430,10 +430,15 @@ export default function Catalog({
 
           {/* Cabecera del Grid */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-6 bg-white border border-slate-200 rounded-xl md:rounded-2xl p-2.5 md:p-4 shadow-sm gap-2 sm:gap-0">
-            <div className="text-slate-600 text-xs md:text-sm">
-              Mostrando <span className="font-semibold text-slate-900">
-                {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
-              </span> de <span className="font-semibold text-slate-900">{totalResultados.toLocaleString('es-ES')}</span> productos
+            <div className="flex flex-col">
+              <h2 className="text-sm md:text-base font-bold text-slate-900">
+                {selectedCategory !== "Todas" ? selectedCategory : "Catálogo de Suplementos"}
+              </h2>
+              <span className="text-slate-500 text-xs">
+                Mostrando <strong className="font-semibold text-slate-800">
+                  {totalResultados > 0 ? (currentPage - 1) * BATCH_SIZE + 1 : 0}–{(currentPage - 1) * BATCH_SIZE + productosFiltrados.length}
+                </strong> de <strong className="font-semibold text-slate-800">{totalResultados.toLocaleString('es-ES')}</strong> productos
+              </span>
             </div>
 
             <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
@@ -459,11 +464,13 @@ export default function Catalog({
                 <span>Ofertas</span>
               </button>
 
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block ml-2">Ordenar por</label>
+              <label htmlFor="ordenar-precio" className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block ml-2">Ordenar por</label>
 
               {/* Selector Minimalista (Dropdown Nativo Optimizado) */}
               <div className="relative w-full sm:w-auto h-8 md:h-10">
                 <select
+                  id="ordenar-precio"
+                  aria-label="Ordenar productos por precio o relevancia"
                   value={ordenPrecio}
                   onChange={(e) => setOrdenPrecio(e.target.value)}
                   className="w-full h-full bg-white border border-slate-200 text-slate-700 rounded-lg pl-3 pr-8 text-[11px] font-bold uppercase tracking-widest focus:ring-1 focus:ring-slate-900 focus:border-slate-900 appearance-none cursor-pointer outline-none transition-colors"

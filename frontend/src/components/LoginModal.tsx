@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GoogleLogin } from "@react-oauth/google";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginModal() {
@@ -105,14 +105,17 @@ export default function LoginModal() {
     }
   };
 
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
   return (
-    <div 
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity"
-      onClick={closeLoginModal}
-    >
+    <GoogleOAuthProvider clientId={clientId}>
       <div 
-        className="bg-[#0a0f1d] border border-white/10 rounded-3xl w-full max-w-md p-8 relative shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-300"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity"
+        onClick={closeLoginModal}
+      >
+        <div 
+          className="bg-[#0a0f1d] border border-white/10 rounded-3xl w-full max-w-md p-8 relative shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-300"
+          onClick={(e) => e.stopPropagation()}
       >
         {/* Botón Cerrar */}
         <button 
@@ -213,5 +216,6 @@ export default function LoginModal() {
         </p>
       </div>
     </div>
+    </GoogleOAuthProvider>
   );
 }

@@ -72,6 +72,8 @@ export default function RootLayout({
         <link rel="icon" href="/Logo_icon2.png?v=3" type="image/png" sizes="any" />
         <link rel="shortcut icon" href="/Logo_icon2.png?v=3" type="image/png" />
         <link rel="apple-touch-icon" href="/Logo_icon2.png?v=3" />
+        <link rel="preconnect" href="https://tm.tradetracker.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://tm.tradetracker.net" />
       </head>
       <body className="min-h-full flex flex-col max-w-full overflow-x-hidden bg-slate-50 text-slate-900" suppressHydrationWarning>
         <Providers>
@@ -81,7 +83,7 @@ export default function RootLayout({
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID as string} />
         <Script
           id="tradetracker-verification"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               var _TradeTrackerTagOptions = {
