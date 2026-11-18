@@ -40,11 +40,14 @@ Proporciona validaciones deterministas e independientes:
 ### 2.2 Conexión en `backend/database.py`
 - Emplea `get_active_database_url()` al inicializarse.
 - Muestra en consola el destino de la conexión con credenciales enmascaradas (`hide_password=True`) y la etiqueta de modo (`TESTING LOCAL` vs `DESARROLLO / PRODUCCIÓN`).
-- **Sin DDL en importación**: La creación de extensiones se gestiona mediante migraciones Alembic oficiales (`alembic/versions/e1b2c3d4e5f6_add_pg_trgm_extension.py`), evitando ejecutar DDL innecesario en cada arranque del backend.
+- **Retirada de `CREATE EXTENSION pg_trgm` del arranque**: Se eliminó la creación dinámica de la extensión `pg_trgm` en tiempo de importación/arranque de la aplicación.
+- **Gestión de extensiones vía Alembic**: La creación de `pg_trgm` queda formalmente encomendada a las migraciones versionadas de Alembic (`backend/alembic/versions/e1b2c3d4e5f6_add_pg_trgm_extension.py`).
+- **Deuda técnica delimitada (`ensure_schema_compatibility`)**: Se constata que `database.py` todavía ejecuta `ensure_schema_compatibility()`, la cual conserva comprobaciones y operaciones de `ALTER TABLE` (columnas faltantes) y sincronización de secuencias (`setval`). Su retirada definitiva o migración íntegra hacia Alembic queda catalogada como una deuda técnica independiente para no ampliar de forma no controlada el alcance de este PR.
 
 ### 2.3 Diagnóstico Unívoco de Solo Lectura: `backend/scripts/ping_bd.py`
-- Herramienta 100% de solo lectura que **no importa `database.py`**.
-- Requiere selección explícita del destino: `--test` (valida y conecta a `TEST_DATABASE_URL`) o `--dev` (conecta a `DATABASE_URL`).
+- Herramienta 100% de solo lectura que **no importa `database.py`** (evitando así cualquier ejecución de `ensure_schema_compatibility`).
+- Selección determinista estricta mediante `argparse`: grupo mutuamente excluyente y obligatorio con `--test` (valida y conecta a `TEST_DATABASE_URL`) y `--dev` (conecta a `DATABASE_URL`).
+- Rechaza argumentos desconocidos, rechaza la ausencia de ambos y rechaza la presencia simultánea de ambos. No existe ningún fallback automático.
 - Realiza únicamente `SELECT 1` y conteos de tablas públicas, garantizando cero mutaciones, cero DDL y cero alteraciones de secuencias.
 
 ---

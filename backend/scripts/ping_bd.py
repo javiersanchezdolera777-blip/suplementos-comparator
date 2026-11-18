@@ -8,6 +8,7 @@ Uso unívoco:
     python backend/scripts/ping_bd.py --test   (Diagnostica la base local TEST_DATABASE_URL)
     python backend/scripts/ping_bd.py --dev    (Diagnostica la base DATABASE_URL de backend/.env)
 """
+import argparse
 import os
 import sys
 import time
@@ -20,51 +21,76 @@ BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from security_guards import validate_test_database_url, is_test_environment
+from security_guards import validate_test_database_url
 
 load_dotenv(os.path.join(BACKEND_DIR, ".env"), override=False)
 
 
-def select_target_url() -> tuple[str, str]:
-    """Determina unívocamente la URL a diagnosticar según flags o variables explícitas."""
-    args = sys.argv[1:]
+def create_parser() -> argparse.ArgumentParser:
+    """Crea el parser con grupo mutuamente excluyente y obligatorio (--test o --dev)."""
+    parser = argparse.ArgumentParser(
+        prog="ping_bd.py",
+        description="Diagnóstico de conectividad a base de datos (100% Solo Lectura).",
+        allow_abbrev=False,
+    )
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--test",
+        action="store_true",
+        help="Diagnostica la base de datos local de pruebas configurada en TEST_DATABASE_URL.",
+    )
+    group.add_argument(
+        "--dev",
+        action="store_true",
+        help="Diagnostica la base de desarrollo configurada en DATABASE_URL (backend/.env).",
+    )
+    return parser
 
-    if "--test" in args:
+
+def select_target_url(argv: list[str] | None = None) -> tuple[str, str]:
+    """Determina unívocamente la URL a diagnosticar usando argparse.
+
+    Requisitos estrictos:
+    - --test y --dev son mutuamente excluyentes y obligatorios.
+    - Se rechazan argumentos desconocidos.
+    - Se rechaza la ausencia de ambos.
+    - No existe fallback automático.
+    - --test exige y valida TEST_DATABASE_URL estrictamente contra PostgreSQL local *_test.
+    - --dev exige DATABASE_URL.
+    """
+    parser = create_parser()
+    args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.test:
         test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
         if not test_url:
-            print("❌ Error: Se solicitó modo testing (--test), pero TEST_DATABASE_URL no está definido.")
-            sys.exit(1)
+            raise RuntimeError(
+                "Se solicitó modo testing (--test), pero la variable de entorno "
+                "TEST_DATABASE_URL no está configurada o está vacía."
+            )
         validate_test_database_url(test_url)
         return test_url, "TESTING LOCAL (PostgreSQL _test)"
 
-    if "--dev" in args:
+    if args.dev:
         dev_url = os.environ.get("DATABASE_URL", "").strip()
         if not dev_url:
-            print("❌ Error: Se solicitó modo desarrollo (--dev), pero DATABASE_URL no está configurado.")
-            sys.exit(1)
+            raise RuntimeError(
+                "Se solicitó modo desarrollo (--dev), pero la variable de entorno "
+                "DATABASE_URL no está configurada o está vacía."
+            )
         return dev_url, "DESARROLLO / PRODUCCIÓN"
 
-    # Si se ejecuta dentro de un contexto declarado de testing
-    if is_test_environment() or ("TEST_DATABASE_URL" in os.environ and "DATABASE_URL" not in os.environ):
-        test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
-        if not test_url:
-            print("❌ Error: Entorno de testing detectado pero TEST_DATABASE_URL no está definido.")
-            sys.exit(1)
-        validate_test_database_url(test_url)
-        return test_url, "TESTING LOCAL (PostgreSQL _test)"
-
-    if "DATABASE_URL" in os.environ:
-        return os.environ["DATABASE_URL"].strip(), "DESARROLLO / PRODUCCIÓN (default)"
-
-    print("⚠️  Selección de destino requerida:")
-    print("Debes especificar unívocamente qué entorno deseas diagnosticar:")
-    print("    python backend/scripts/ping_bd.py --test   (Diagnostica TEST_DATABASE_URL)")
-    print("    python backend/scripts/ping_bd.py --dev    (Diagnostica DATABASE_URL)")
-    sys.exit(1)
+    raise RuntimeError("Selección de entorno no especificada.")
 
 
-def ping():
-    db_url, modo_str = select_target_url()
+def ping(argv: list[str] | None = None):
+    try:
+        db_url, modo_str = select_target_url(argv)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print(f"❌ Error de configuración: {exc}")
+        sys.exit(1)
 
     # Enmascarar credenciales para reporte seguro
     parsed = urlparse(db_url)

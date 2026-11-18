@@ -29,7 +29,7 @@ from security_guards import (
     is_local_host,
 )
 import seed_data
-from scripts.ping_bd import select_target_url
+from scripts.ping_bd import select_target_url, create_parser
 
 
 def test_is_local_host():
@@ -68,6 +68,9 @@ def test_validate_test_database_url_valid():
     ("sqlite:///tus_suplementos_test.db", "SQLite no permitido"),
     ("sqlite:///:memory:_test", "SQLite en memoria no permitido"),
     ("mysql://root@127.0.0.1:3306/db_test", "MySQL no permitido"),
+    ("postgresql.evil://127.0.0.1:54329/tus_suplementos_test", "Esquema postgresql.evil no permitido"),
+    ("postgresql_fake://127.0.0.1:54329/tus_suplementos_test", "Esquema postgresql_fake no permitido"),
+    ("postgresql+://127.0.0.1:54329/tus_suplementos_test", "Esquema postgresql+ sin driver no permitido"),
     ("postgresql:///tus_suplementos_test", "Sin hostname explícito"),
     ("postgresql://@localhost:5432/my_test?host=remote.com", "Host remoto en query"),
     ("postgresql://postgres@127.0.0.1:5432/my_test?hostaddr=10.0.0.1", "Hostaddr en query"),
@@ -324,30 +327,102 @@ def test_validate_destructive_script_execution_strictly_local(monkeypatch):
         )
 
 
-def test_ping_bd_selection(monkeypatch):
+def test_validate_test_database_url_rejects_evil_scheme():
+    with pytest.raises(RuntimeError, match="esquema o dialecto no autorizado"):
+        validate_test_database_url("postgresql.evil://127.0.0.1:54329/tus_suplementos_test")
+
+    with pytest.raises(RuntimeError, match="esquema o dialecto no autorizado"):
+        validate_test_database_url("postgresql_fake://127.0.0.1:54329/tus_suplementos_test")
+
+    with pytest.raises(RuntimeError, match="esquema o dialecto no autorizado"):
+        validate_test_database_url("postgresql+://127.0.0.1:54329/tus_suplementos_test")
+
+    # Confirmar esquemas válidos
+    validate_test_database_url("postgresql://127.0.0.1:54329/tus_suplementos_test")
+    validate_test_database_url("postgresql+psycopg2://127.0.0.1:54329/tus_suplementos_test")
+    validate_test_database_url("postgresql+asyncpg://127.0.0.1:54329/tus_suplementos_test")
+
+
+def test_ping_bd_argparse_parser():
+    parser = create_parser()
+
+    # 1. --test solo
+    args_test = parser.parse_args(["--test"])
+    assert args_test.test is True
+    assert args_test.dev is False
+
+    # 2. --dev solo
+    args_dev = parser.parse_args(["--dev"])
+    assert args_dev.test is False
+    assert args_dev.dev is True
+
+    # 3. Sin argumentos -> error
+    with pytest.raises(SystemExit):
+        parser.parse_args([])
+
+    # 4. Con ambos: --test --dev -> error
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--test", "--dev"])
+
+    # 5. Con ambos: --dev --test -> error
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--dev", "--test"])
+
+    # 6. Argumentos desconocidos -> error
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--foo"])
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--test", "--extra"])
+
+
+def test_ping_bd_select_target_url_execution(monkeypatch):
     test_url = "postgresql://postgres@127.0.0.1:54329/tus_suplementos_test"
     dev_url = "postgresql://neondb_owner:pass@ep-twilight-base.neon.tech/neondb"
 
     monkeypatch.setenv("TEST_DATABASE_URL", test_url)
     monkeypatch.setenv("DATABASE_URL", dev_url)
 
-    # 1. Con --test explícito
-    monkeypatch.setattr(sys, "argv", ["ping_bd.py", "--test"])
-    url, modo = select_target_url()
+    # 1. --test funciona correctamente
+    url, modo = select_target_url(["--test"])
     assert url == test_url
-    assert "TESTING" in modo
+    assert "TESTING LOCAL" in modo
 
-    # 2. Con --dev explícito
-    monkeypatch.setattr(sys, "argv", ["ping_bd.py", "--dev"])
-    url, modo = select_target_url()
+    # 2. --dev funciona correctamente
+    url, modo = select_target_url(["--dev"])
     assert url == dev_url
     assert "DESARROLLO" in modo
 
-    # 3. Con --test pero sin TEST_DATABASE_URL
-    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
-    monkeypatch.setattr(sys, "argv", ["ping_bd.py", "--test"])
+    # 3. Sin argumentos se produce error
     with pytest.raises(SystemExit):
-        select_target_url()
+        select_target_url([])
+
+    # 4. Con --test --dev se produce error
+    with pytest.raises(SystemExit):
+        select_target_url(["--test", "--dev"])
+
+    # 5. Con --dev --test se produce error
+    with pytest.raises(SystemExit):
+        select_target_url(["--dev", "--test"])
+
+    # 6. Con argumentos desconocidos se produce error
+    with pytest.raises(SystemExit):
+        select_target_url(["--unknown"])
+
+    # 7. Con --test y URL ausente se aborta la ejecución
+    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="TEST_DATABASE_URL no está configurada"):
+        select_target_url(["--test"])
+
+    # 8. Con --test y URL insegura se aborta la ejecución
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://user:pass@ep-fancy.neon.tech/neondb")
+    with pytest.raises(RuntimeError, match="inseguro"):
+        select_target_url(["--test"])
+
+    # 9. Con --dev y DATABASE_URL ausente se aborta la ejecución
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="DATABASE_URL no está configurada"):
+        select_target_url(["--dev"])
 
 
 def test_database_py_does_not_execute_create_extension():

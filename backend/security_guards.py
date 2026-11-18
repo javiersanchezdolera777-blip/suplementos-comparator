@@ -11,6 +11,19 @@ HOSTS_LOCALES_PERMITIDOS = {"localhost", "127.0.0.1", "::1"}
 PARAMETROS_QUERY_PROHIBIDOS = {"host", "hostaddr", "service"}
 
 
+def is_valid_postgres_scheme(scheme: str) -> bool:
+    """Verifica que el esquema sea exclusivamente 'postgresql' o 'postgresql+<driver>'.
+
+    Rechaza esquemas como 'postgresql.evil', 'postgresql_fake', 'sqlite', 'mysql', etc.
+    """
+    if scheme == "postgresql":
+        return True
+    if scheme.startswith("postgresql+"):
+        driver = scheme[len("postgresql+"):]
+        return bool(driver) and driver.replace("_", "").isalnum()
+    return False
+
+
 def is_local_host(host: str | None) -> bool:
     """Comprueba si un host corresponde a una interfaz de loopback local explícita."""
     if not host:
@@ -51,11 +64,11 @@ def validate_test_database_url(url: str) -> None:
     parsed = urlparse(url)
     scheme = (parsed.scheme or "").lower()
 
-    # 1. Driver PostgreSQL obligatorio (rechaza sqlite, mysql, etc.)
-    if not scheme.startswith("postgresql"):
+    # 1. Driver PostgreSQL obligatorio (rechaza sqlite, mysql, postgresql.evil, etc.)
+    if not is_valid_postgres_scheme(scheme):
         raise RuntimeError(
             f"TEST_DATABASE_URL inseguro: esquema o dialecto no autorizado ({scheme!r}). "
-            "Solo se admiten URLs de conexión PostgreSQL (ej: postgresql://...)."
+            "Solo se admiten URLs de conexión PostgreSQL ('postgresql' o 'postgresql+<driver>')."
         )
 
     # 2. Host explícito no vacío
