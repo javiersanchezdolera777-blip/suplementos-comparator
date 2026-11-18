@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import or_, func, nulls_last, desc
+from sqlalchemy import or_, func, nulls_last, desc, case, select, literal, literal_column, false, Text
 from typing import List, Optional
 from datetime import datetime
 from fastapi.responses import RedirectResponse
@@ -459,53 +459,11 @@ def obtener_productos(
                 condiciones_token.append(models.Categoria.nombre.ilike(patron))
             query = query.filter(or_(*condiciones_token))
 
-    # ... (deja igual los subfiltros y buscador de texto libre) ...
-
-    # 7. ORDENACIÓN (Ahora tira de Oferta)
-
-
-    if sort_final in ["precio_asc", "price_asc", "asc"]:
-        query = query.order_by(models.Oferta.precio.asc())
-    elif sort_final in ["precio_desc", "price_desc", "desc"]:
-        query = query.order_by(models.Oferta.precio.desc())
-    elif sort_final == "descuento":
-        query = query.order_by(
-            (models.Oferta.precio_anterior - models.Oferta.precio).desc()
-        )
-    else:
-        # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
-        if busqueda_final:
-            text_score = func.similarity(
-                models.Producto.nombre,
-                busqueda_final).label("text_score")
-            query = query.order_by(
-                text_score.desc(),
-                nulls_last(models.Producto.clics_count.desc()),
-                models.Producto.id.asc(),
-            )
-        else:
-            query = query.order_by(
-                nulls_last(models.Producto.clics_count.desc()),
-                models.Producto.id.asc(),
-            )
-
-    # 8. Extraer y filtrar Sabores y Objetivos (Arrays Multiselección)
-    # ESTRATEGIA OPTIMIZADA: Solo pedimos a SQL los campos mínimos para filtrar y ordenar (IDs, sabor, objetivo)
-    
-    # Extraemos solo las tuplas ligeras manteniendo el orden de la query original
-    datos_raw_duplicados = query.with_entities(
-        models.Producto.id, 
-        models.Producto.sabor, 
-        models.Producto.objetivo
-    ).all()
-
-    datos_raw = []
-    vistos = set()
-    for row in datos_raw_duplicados:
-        if row.id not in vistos:
-            vistos.add(row.id)
-            datos_raw.append(row)
-
+    # 7. Filtros de Sabores y Objetivos (columnas JSON) resueltos en PostgreSQL.
+    # Reproducen exactamente la semántica del antiguo filtrado en Python:
+    #   - JSON array  -> algún elemento (en minúsculas) es igual a algún valor pedido.
+    #   - JSON string -> algún valor pedido es subcadena del texto (en minúsculas).
+    #   - NULL, JSON null, números, objetos, booleanos -> no cumple.
     sabor_str = sabores or sabor
     sabores_lista = (
         [s.strip().lower() for s in sabor_str.split(",") if s.strip()]
@@ -520,48 +478,88 @@ def obtener_productos(
         else []
     )
 
-    def cumple_filtros_arrays(fila):
-        # ¿Cumple el sabor?
-        if sabores_lista:
-            valor_sabor = fila.sabor
-            if isinstance(valor_sabor, list):
-                if not any(str(item).lower() in sabores_lista for item in valor_sabor):
-                    return False
-            elif isinstance(valor_sabor, str):
-                if not any(s in valor_sabor.lower() for s in sabores_lista):
-                    return False
-            else:
-                return False
+    if sabores_lista:
+        query = query.filter(
+            _filtro_json_lista_o_texto(models.Producto.sabor, sabores_lista)
+        )
+    if objetivos_lista:
+        query = query.filter(
+            _filtro_json_lista_o_texto(models.Producto.objetivo, objetivos_lista)
+        )
 
-        # ¿Cumple el objetivo?
-        if objetivos_lista:
-            valor_obj = fila.objetivo
-            if isinstance(valor_obj, list):
-                if not any(str(item).lower() in objetivos_lista for item in valor_obj):
-                    return False
-            elif isinstance(valor_obj, str):
-                if not any(o in valor_obj.lower() for o in objetivos_lista):
-                    return False
-            else:
-                return False
+    # 8. ORDENACIÓN sobre productos únicos.
+    # Antes se ordenaban filas producto x oferta y se conservaba la PRIMERA
+    # aparición de cada producto. Eso equivale a ordenar cada producto por el
+    # agregado de sus filas (MIN/MAX), respetando la colocación de NULLs por
+    # defecto de PostgreSQL (ASC -> NULLS LAST, DESC -> NULLS FIRST).
+    # Se añade Producto.id ASC como desempate estable (antes no había ninguno
+    # en los órdenes por precio/descuento).
+    if necesita_join_ofertas:
+        # Un producto con varias ofertas aparece varias veces: colapsamos a
+        # una fila por producto antes de contar y paginar.
+        query = query.group_by(models.Producto.id)
 
-        return True
-
-    if sabores_lista or objetivos_lista:
-        datos_filtrados = [d for d in datos_raw if cumple_filtros_arrays(d)]
+    if sort_final in ["precio_asc", "price_asc", "asc"]:
+        orden_sql = [
+            func.min(models.Oferta.precio).asc().nulls_last(),
+            models.Producto.id.asc(),
+        ]
+    elif sort_final in ["precio_desc", "price_desc", "desc"]:
+        orden_sql = [
+            func.max(models.Oferta.precio).desc().nulls_first(),
+            models.Producto.id.asc(),
+        ]
+    elif sort_final == "descuento":
+        # Con ORDER BY (precio_anterior - precio) DESC, una diferencia NULL
+        # (sin precio_anterior o sin ofertas) va primero; por tanto la clave
+        # efectiva del producto es NULL si alguna de sus filas es NULL.
+        diferencia = models.Oferta.precio_anterior - models.Oferta.precio
+        orden_sql = [
+            case(
+                (func.bool_or(diferencia.is_(None)), None),
+                else_=func.max(diferencia),
+            ).desc().nulls_first(),
+            models.Producto.id.asc(),
+        ]
     else:
-        datos_filtrados = datos_raw
+        # ORDEN POR DEFECTO: RELEVANCIA INTELIGENTE
+        if busqueda_final:
+            orden_sql = [
+                func.similarity(models.Producto.nombre, busqueda_final).desc(),
+                nulls_last(models.Producto.clics_count.desc()),
+                models.Producto.id.asc(),
+            ]
+        else:
+            orden_sql = [
+                nulls_last(models.Producto.clics_count.desc()),
+                models.Producto.id.asc(),
+            ]
 
-    # 9. Paginación y Carga Real de los Productos Finales
-    total_resultados = len(datos_filtrados)
+    # 9. Recuento de productos únicos en la base de datos.
+    ids_filtrados = query.with_entities(models.Producto.id).subquery()
+    total_resultados = db.query(func.count()).select_from(ids_filtrados).scalar() or 0
+
+    # 10. Paginación en la base de datos (solo se traen los IDs de la página).
     offset_real = skip if skip > 0 else (page - 1) * limit
-    
-    # Extraemos SOLO los IDs que pertenecen a la página actual (ej. 36 IDs)
-    ids_pagina = [d.id for d in datos_filtrados[offset_real: offset_real + limit]]
-    
+    # Mantiene exactamente la semántica del antiguo slicing de Python
+    # lista[offset_real : offset_real + limit] (incluidos valores límite).
+    inicio, fin, _ = slice(offset_real, offset_real + limit).indices(total_resultados)
+    tamano_pagina = max(0, fin - inicio)
+
+    ids_pagina = []
+    if tamano_pagina > 0:
+        ids_pagina = [
+            fila.id
+            for fila in query.with_entities(models.Producto.id)
+            .order_by(*orden_sql)
+            .offset(inicio)
+            .limit(tamano_pagina)
+            .all()
+        ]
+
     productos = []
     if ids_pagina:
-        # Hacemos una única query final para traer SOLO los 36 objetos completos
+        # Una única query final para traer SOLO los objetos completos de la página
         productos_bd = (
             db.query(models.Producto)
             .options(
@@ -571,12 +569,37 @@ def obtener_productos(
             .filter(models.Producto.id.in_(ids_pagina))
             .all()
         )
-        
-        # Volvemos a ordenarlos según el orden exacto que determinó la query principal (ids_pagina)
+
+        # Reordenamos según el orden exacto que determinó la query paginada
         productos_dict = {p.id: p for p in productos_bd}
         productos = [productos_dict[id_] for id_ in ids_pagina if id_ in productos_dict]
 
     return {"total_resultados": total_resultados, "productos": productos}
+
+
+def _filtro_json_lista_o_texto(columna, valores_lower):
+    """Condición SQL equivalente al antiguo filtro Python de sabor/objetivo.
+
+    `valores_lower` ya viene normalizado (strip + lower, sin vacíos).
+    CASE garantiza que json_array_elements_text solo se evalúa sobre arrays.
+    """
+    tipo_json = func.json_typeof(columna)
+    elementos = func.json_array_elements_text(columna).table_valued("value").alias(
+        "elem_json"
+    )
+    algun_elemento_coincide = (
+        select(literal(1))
+        .select_from(elementos)
+        .where(func.lower(elementos.c.value).in_(valores_lower))
+        .exists()
+    )
+    texto = func.lower(columna.op("#>>", return_type=Text)(literal_column("'{}'::text[]")))
+    alguna_subcadena = or_(*[func.strpos(texto, valor) > 0 for valor in valores_lower])
+    return case(
+        (tipo_json == "array", algun_elemento_coincide),
+        (tipo_json == "string", alguna_subcadena),
+        else_=false(),
+    )
 
 
 # ==========================================
