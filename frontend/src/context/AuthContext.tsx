@@ -31,7 +31,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setUser(data);
+        // Nuevo contrato: { authenticated: bool, user: {...} | null }
+        if (data.authenticated && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -83,9 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
-
-  // Evitamos hidratación incorrecta hasta que Auth se verifique
-  if (!authChecked) return null;
 
   return (
     <AuthContext.Provider

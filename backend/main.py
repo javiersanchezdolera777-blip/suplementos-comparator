@@ -827,6 +827,39 @@ def obtener_usuario_actual(
     return usuario
 
 
+def obtener_usuario_opcional(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Igual que obtener_usuario_actual pero no lanza 401 para visitantes anónimos.
+    Devuelve el usuario autenticado o None si no hay sesión válida.
+    Solo para endpoints que deben responder a visitantes públicos.
+    """
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+    if not token:
+        return None
+
+    try:
+        payload = security.jwt.decode(
+            token, security.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+    except security.jwt.JWTError:
+        return None
+
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.email == email).first()
+    return usuario
+
+
 class GoogleToken(BaseModel):
     token: str
 
@@ -890,10 +923,15 @@ def logout(response: Response):
 
 
 @app.get("/api/auth/me", tags=["Autenticación y Sesión"])
-def quien_soy(usuario_actual: models.Usuario = Depends(obtener_usuario_actual)):
+def quien_soy(usuario_actual: models.Usuario = Depends(obtener_usuario_opcional)):
+    if usuario_actual is None:
+        return {"authenticated": False, "user": None}
     return {
-        "id": usuario_actual.id,
-        "email": usuario_actual.email
+        "authenticated": True,
+        "user": {
+            "id": usuario_actual.id,
+            "email": usuario_actual.email,
+        }
     }
 
 
