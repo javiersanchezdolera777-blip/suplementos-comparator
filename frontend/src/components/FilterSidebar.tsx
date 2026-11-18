@@ -133,6 +133,7 @@ export default function FilterSidebar({
         {openSections.category !== false && (
           <div className="pt-0.5">
             <select
+              aria-label="Filtrar por categoría"
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
@@ -179,6 +180,7 @@ export default function FilterSidebar({
                 Formato
               </label>
               <select
+                aria-label="Filtrar por formato"
                 value={selectedFormat}
                 onChange={(e) => {
                   setSelectedFormat(e.target.value);
@@ -202,6 +204,7 @@ export default function FilterSidebar({
                     Tipo de Proteína
                   </label>
                   <select
+                    aria-label="Filtrar por tipo de proteína"
                     value={selectedProteinType}
                     onChange={(e) => {
                       setSelectedProteinType(e.target.value);
@@ -222,6 +225,7 @@ export default function FilterSidebar({
                     % Proteína Mínimo
                   </label>
                   <select
+                    aria-label="Filtrar por porcentaje de proteína"
                     value={selectedProteinPercentage}
                     onChange={(e) => {
                       setSelectedProteinPercentage(e.target.value);
@@ -245,6 +249,7 @@ export default function FilterSidebar({
                   Tipo de Creatina
                 </label>
                 <select
+                  aria-label="Filtrar por tipo de creatina"
                   value={selectedCreatineType}
                   onChange={(e) => {
                     setSelectedCreatineType(e.target.value);
@@ -270,6 +275,7 @@ export default function FilterSidebar({
                     Tipo de Vitamina / Mineral
                   </label>
                   <select
+                    aria-label="Filtrar por tipo de vitamina o mineral"
                     value={selectedVitaminType}
                     onChange={(e) => {
                       setSelectedVitaminType(e.target.value);
@@ -293,6 +299,7 @@ export default function FilterSidebar({
                   Perfil de Aminoácidos
                 </label>
                 <select
+                  aria-label="Filtrar por perfil de aminoácidos"
                   value={selectedAminoProfile}
                   onChange={(e) => {
                     setSelectedAminoProfile(e.target.value);
@@ -315,6 +322,7 @@ export default function FilterSidebar({
                 Sabor
               </label>
               <select
+                aria-label="Filtrar por sabor"
                 value={selectedFlavor}
                 onChange={(e) => {
                   setSelectedFlavor(e.target.value);
@@ -336,6 +344,7 @@ export default function FilterSidebar({
                 Sello Calidad
               </label>
               <select
+                aria-label="Filtrar por sello de calidad"
                 value={selectedQualitySeal}
                 onChange={(e) => {
                   setSelectedQualitySeal(e.target.value);
@@ -488,7 +497,7 @@ export default function FilterSidebar({
                   return (
                     <label
                       key={brand}
-                      className={`flex items-center justify-between px-1.5 py-0.5 rounded text-[11px] font-medium cursor-pointer transition-colors select-none ${isChecked
+                      className={`flex items-center justify-between px-2 py-1.5 min-h-[28px] rounded text-[11px] font-medium cursor-pointer transition-colors select-none ${isChecked
                           ? "bg-blue-50 text-blue-700 font-bold"
                           : "hover:bg-slate-100 text-slate-700"
                         }`}
@@ -504,7 +513,7 @@ export default function FilterSidebar({
                             );
                             if (newChecked) trackFilter('marca', brand);
                           }}
-                          className="w-3 h-3 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
+                          className="w-3.5 h-3.5 accent-blue-600 rounded cursor-pointer border-slate-300 focus:ring-blue-500"
                         />
                         <span className="truncate">{brand}</span>
                       </div>

@@ -259,7 +259,7 @@ export default function ProductCard({ product, priority = false }: { product: Pr
               onError={() => setImageError(true)}
               fill
               priority={priority}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out relative z-10"
             />
           ) : (
@@ -345,7 +345,7 @@ export default function ProductCard({ product, priority = false }: { product: Pr
                 {currentPrice?.toFixed(2)} €
               </span>
               {hasOffer && (
-                <span className="text-xs md:text-sm font-semibold text-slate-400 line-through ml-1">
+                <span className="text-xs md:text-sm font-semibold text-slate-500 line-through ml-1">
                   {previousPrice?.toFixed(2)} €
                 </span>
               )}
@@ -356,6 +356,7 @@ export default function ProductCard({ product, priority = false }: { product: Pr
               href={product.affiliate_url || "#"}
               target="_blank"
               rel="sponsored nofollow noopener noreferrer"
+              aria-label={`Ver oferta de ${formattedName} en ${sellerStore || 'tienda oficial'}`}
               onClick={(e) => {
                 e.stopPropagation();
                 trackAffiliateClick(product.name, sellerStore || 'Desconocida', product.category?.name || 'Desconocida');
