@@ -3,9 +3,15 @@ Configuración centralizada para las tiendas de afiliados e ingestión de feeds.
 """
 import os
 
+
+def _get_tradedoubler_feed_url(fid: str) -> str:
+    token = (os.environ.get("TRADEDOUBLER_PRODUCTS_TOKEN") or "").strip()
+    return f"https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid={fid}?token={token}" if token else ""
+
+
 TIENDAS_AFILIADOS = {
     "SportLive": {
-        "url_feed": "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=108208?token=D496D89D3425492898437BED5EE5EEB677232059",
+        "url_feed": _get_tradedoubler_feed_url("108208"),
         "formato": "json",
         "marca_modo": "fija",
         "marca_defecto": "Drasanví",
@@ -15,11 +21,11 @@ TIENDAS_AFILIADOS = {
             "precio": "offers.0.price.value",
             "precio_anterior": "offers.0.previousPrice.value",
             "imagen_url": "productImage.url",
-            "afiliado_url": "offers.0.productUrl"
-        }
+            "afiliado_url": "offers.0.productUrl",
+        },
     },
     "Pharma2Go": {
-        "url_feed": os.getenv("URL_FEED_PHARMA2GO", "https://api.tradedoubler.com/1.0/productsUnlimited.json;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"),
+        "url_feed": os.getenv("URL_FEED_PHARMA2GO", _get_tradedoubler_feed_url("256625")),
         "formato": "json",
         "delimitador": ",",
         "encoding": "utf-8",
@@ -34,7 +40,7 @@ TIENDAS_AFILIADOS = {
             "precio_anterior": ["offers.0.previousPrice.value", "offers.0.priceHistory.0.previousPrice.value"],
             "imagen_url": "productImage.url",
             "afiliado_url": ["offers.0.productUrl", "offers.0.feedOfferUrl"],
-            "peso_gramos": "weight"
-        }
-    }
+            "peso_gramos": "weight",
+        },
+    },
 }

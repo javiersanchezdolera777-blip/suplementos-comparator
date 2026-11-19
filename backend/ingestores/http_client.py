@@ -3,10 +3,12 @@ import io
 import json
 import os
 import random
+import re
 import time
 import zipfile
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -18,6 +20,46 @@ DEFAULT_HEADERS = {
     "Accept-Language": "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3",
     "Connection": "keep-alive",
 }
+
+SENSITIVE_PARAMS = {"token", "access_token", "api_key", "key", "secret", "password"}
+
+
+def sanitize_url(url: str) -> str:
+    """Sanitiza una URL enmascarando cualquier parámetro sensible (token, key, secret, etc.)."""
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+        if parsed.query:
+            query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+            sanitized_pairs = []
+            for k, v in query_pairs:
+                if k.lower() in SENSITIVE_PARAMS:
+                    sanitized_pairs.append((k, "***"))
+                else:
+                    sanitized_pairs.append((k, v))
+            sanitized_query = urlencode(sanitized_pairs)
+            url = urlunparse(parsed._replace(query=sanitized_query))
+    except Exception:
+        pass
+
+    # Regex secundaria para capturar parámetros en query o matriz (ej: ?token=... o ;token=...)
+    return re.sub(
+        r"(?i)(token|access_token|api_key|key|secret|password)=([^&;\s'\"]+)",
+        r"\1=***",
+        url,
+    )
+
+
+def sanitize_error_message(msg: str) -> str:
+    """Elimina o enmascara parámetros sensibles que aparezcan en mensajes de error o URLs."""
+    if not msg:
+        return ""
+    return re.sub(
+        r"(?i)(token|access_token|api_key|key|secret|password)=([^&;\s'\"]+)",
+        r"\1=***",
+        str(msg),
+    )
 
 
 def create_session(headers: Optional[Dict[str, str]] = None) -> requests.Session:
@@ -45,7 +87,11 @@ def create_session(headers: Optional[Dict[str, str]] = None) -> requests.Session
 def _read_cache(cache_path: str, ttl_hours: int, allow_stale: bool = False) -> Optional[Any]:
     candidate_paths = [cache_path]
     if cache_path.startswith(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
-        legacy_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache_ingestores", os.path.basename(cache_path))
+        legacy_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "cache_ingestores",
+            os.path.basename(cache_path),
+        )
         if legacy_path not in candidate_paths:
             candidate_paths.append(legacy_path)
 
@@ -81,31 +127,6 @@ def _read_cache(cache_path: str, ttl_hours: int, allow_stale: bool = False) -> O
 
     return None
 
-    try:
-        modified_at = datetime.fromtimestamp(os.path.getmtime(cache_path))
-    except OSError:
-        return None
-
-    age_hours = (datetime.now() - modified_at).total_seconds() / 3600
-    if age_hours < ttl_hours:
-        try:
-            with open(cache_path, "r", encoding="utf-8") as fh:
-                return json.load(fh)
-        except (json.JSONDecodeError, OSError):
-            print("⚠️ La caché estaba corrupta. Se volverá a descargar.")
-            try:
-                os.remove(cache_path)
-            except OSError:
-                pass
-    elif allow_stale:
-        try:
-            with open(cache_path, "r", encoding="utf-8") as fh:
-                print(f"⚠️ Usando caché antigua ({age_hours:.1f}h) porque la descarga falló.")
-                return json.load(fh)
-        except (json.JSONDecodeError, OSError):
-            return None
-    return None
-
 
 def _write_cache(cache_path: str, payload: Any) -> None:
     os.makedirs(os.path.dirname(cache_path), exist_ok=True)
@@ -126,7 +147,8 @@ def download_json_with_cache(
         return cached
 
     session = create_session(headers)
-    last_error: Optional[Exception] = None
+    last_error_desc: Optional[str] = None
+    sanitized_url = sanitize_url(url)
 
     for attempt in range(1, 5):
         if attempt > 1:
@@ -138,12 +160,19 @@ def download_json_with_cache(
             response = session.get(url, timeout=timeout)
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
-                wait_seconds = int(retry_after) if retry_after and retry_after.isdigit() else min(60, 2 ** attempt)
-                print(f"⚠️ 429 recibido. Esperando {wait_seconds}s antes de reintentar...")
+                wait_seconds = (
+                    int(retry_after)
+                    if retry_after and retry_after.isdigit()
+                    else min(60, 2 ** attempt)
+                )
+                print(f"⚠️ 429 recibido en {sanitized_url}. Esperando {wait_seconds}s antes de reintentar...")
                 time.sleep(wait_seconds)
                 continue
 
-            response.raise_for_status()
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"Error HTTP {response.status_code} al descargar el feed desde {sanitized_url}"
+                )
 
             try:
                 content = gzip.decompress(response.content)
@@ -157,41 +186,74 @@ def download_json_with_cache(
                         with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
                             payload = json.load(zf.open(zf.namelist()[0]))
                     except Exception as exc:
-                        raise RuntimeError(f"No se pudo interpretar la respuesta del feed: {exc}") from exc
+                        raise RuntimeError(f"No se pudo interpretar la respuesta del feed: {exc}") from None
 
             _write_cache(cache_path, payload)
             return payload
+
         except requests.RequestException as exc:
-            last_error = exc
+            sanitized_err = sanitize_error_message(str(exc))
+            err_type = type(exc).__name__
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            status_str = f" (Status {status_code})" if status_code else ""
+            last_error_desc = f"{err_type}{status_str}: {sanitized_err}"
+
             if attempt == 4:
-                raise RuntimeError(f"No se pudo descargar el feed tras 4 intentos: {exc}") from exc
+                raise RuntimeError(
+                    f"No se pudo descargar el feed tras 4 intentos [{last_error_desc}] desde {sanitized_url}"
+                ) from None
+        except RuntimeError as exc:
+            sanitized_msg = sanitize_error_message(str(exc))
+            raise RuntimeError(sanitized_msg) from None
 
-    if last_error is not None:
-        raise RuntimeError(f"No se pudo completar la descarga del feed: {last_error}") from last_error
+    if last_error_desc is not None:
+        raise RuntimeError(
+            f"No se pudo completar la descarga del feed tras reintentos [{last_error_desc}] desde {sanitized_url}"
+        ) from None
 
-    raise RuntimeError("No se pudo completar la descarga del feed")
+    raise RuntimeError(f"No se pudo completar la descarga del feed desde {sanitized_url}")
 
 
 def get_with_backoff(session: requests.Session, url: str, timeout: int = 30) -> requests.Response:
+    sanitized_url = sanitize_url(url)
     for attempt in range(1, 5):
         if attempt > 1:
             delay = min(60, 2 ** (attempt - 1)) + round(random.uniform(0, 1.5), 2)
             time.sleep(delay)
 
-        response = session.get(url, timeout=timeout)
+        try:
+            response = session.get(url, timeout=timeout)
+        except requests.RequestException as exc:
+            sanitized_err = sanitize_error_message(str(exc))
+            if attempt == 4:
+                raise RuntimeError(
+                    f"Error de red tras 4 intentos [{type(exc).__name__}: {sanitized_err}] en {sanitized_url}"
+                ) from None
+            continue
+
         if response.status_code == 429:
             retry_after = response.headers.get("Retry-After")
-            wait_seconds = int(retry_after) if retry_after and retry_after.isdigit() else min(60, 2 ** attempt)
-            print(f"⚠️ 429 recibido al acceder a {url}. Esperando {wait_seconds}s...")
+            wait_seconds = (
+                int(retry_after)
+                if retry_after and retry_after.isdigit()
+                else min(60, 2 ** attempt)
+            )
+            print(f"⚠️ 429 recibido al acceder a {sanitized_url}. Esperando {wait_seconds}s...")
             time.sleep(wait_seconds)
             continue
 
         if response.status_code in {500, 502, 503, 504}:
             if attempt == 4:
-                response.raise_for_status()
+                raise RuntimeError(
+                    f"Error del servidor HTTP {response.status_code} tras 4 intentos en {sanitized_url}"
+                )
             continue
 
-        response.raise_for_status()
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"Error HTTP {response.status_code} al consultar {sanitized_url}"
+            )
+
         return response
 
-    raise RuntimeError(f"No se pudo completar la petición tras 4 intentos: {url}")
+    raise RuntimeError(f"No se pudo completar la petición tras 4 intentos en {sanitized_url}")
