@@ -95,6 +95,7 @@ def ejecutar_orquestador():
 
     # 3. Lógica de Bloques Horarios (Ventanas impenetrables de 6 horas)
     # Bloque 1: de 00:00 a 05:59 UTC | Bloque 3: de 12:00 a 17:59 UTC
+    errores_criticos = []
     if (0 <= hora_arranque_utc < 6) or (12 <= hora_arranque_utc < 18):
         print("🎯 Ventana TradeDoubler activa (Bloque 00h-05h o 12h-17h). Ejecutando Farma2Go y Sportlive...")
         try:
@@ -102,12 +103,14 @@ def ejecutar_orquestador():
             inyectar_pharma2go()
         except Exception as e:
             print(f"❌ Error crítico en ingestor Farma2Go: {e}")
+            errores_criticos.append(("Farma2Go", e))
 
         try:
             print("\n--- Ejecutando Sportlive ---")
             inyectar_sportlive()
         except Exception as e:
             print(f"❌ Error crítico en ingestor Sportlive: {e}")
+            errores_criticos.append(("Sportlive", e))
     else:
         print("⏸️ Fuera de la ventana TradeDoubler (Bloque 06h-11h o 18h-23h). Saltando Farma2Go y Sportlive.")
 
@@ -118,7 +121,12 @@ def ejecutar_orquestador():
         disparar_alertas_agrupadas()
     finally:
         db.close()
-    
+
+    if errores_criticos:
+        tiendas_fallidas = ", ".join(tienda for tienda, _ in errores_criticos)
+        print(f"\n❌ El orquestador finalizó con errores críticos en las siguientes tiendas: {tiendas_fallidas}")
+        sys.exit(1)
+
     print("\n✅ Orquestador finalizado.")
 
 if __name__ == "__main__":

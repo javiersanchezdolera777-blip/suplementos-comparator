@@ -32,7 +32,7 @@ from schemas import (
     normalizar_marca,
 )
 
-URL_FEED = "https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid=256625?token=D496D89D3425492898437BED5EE5EEB677232059"
+FEED_ID = "256625"
 ARCHIVO_CACHE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "cache_ingestores",
@@ -40,10 +40,24 @@ ARCHIVO_CACHE = os.path.join(
 )
 
 
+def obtener_url_feed() -> str:
+    """Construye dinámicamente la URL del feed de Farma2Go usando TRADEDOUBLER_PRODUCTS_TOKEN.
+
+    Aborta si la variable está ausente o vacía antes de realizar cualquier petición HTTP.
+    """
+    token = (os.environ.get("TRADEDOUBLER_PRODUCTS_TOKEN") or "").strip()
+    if not token:
+        raise ValueError(
+            "Error de configuración en Farma2Go: la variable de entorno TRADEDOUBLER_PRODUCTS_TOKEN "
+            "no está configurada o está vacía. Se aborta la ejecución antes de realizar peticiones HTTP."
+        )
+    return f"https://api.tradedoubler.com/1.0/productsUnlimited.json;compress=gz;fid={FEED_ID}?token={token}"
+
 
 def descargar_datos():
+    url_feed = obtener_url_feed()
     return download_json_with_cache(
-        url=URL_FEED,
+        url=url_feed,
         cache_path=ARCHIVO_CACHE,
         ttl_hours=12,
         timeout=45,
@@ -68,14 +82,14 @@ def generar_slug(nombre: str) -> str:
 
 
 def inyectar_en_bd():
-    db = SessionLocal()
     print("🔄 Descargando y procesando datos de Farma2Go...")
-    try:
-        datos = descargar_datos()
-        if not datos:
-            print("⚠️ No se recibieron datos del feed. Se aborta la inserción.")
-            return
+    datos = descargar_datos()
+    if not datos:
+        print("⚠️ No se recibieron datos del feed. Se aborta la inserción.")
+        return
 
+    db = SessionLocal()
+    try:
         mapa_categorias = {}
         for cat in CategoriaEnum:
             cat_db = db.query(models.Categoria).filter_by(nombre=cat.value).first()
@@ -94,7 +108,10 @@ def inyectar_en_bd():
         productos_nuevos = []
         total_nuevos = 0
         actualizados = 0
+        actualizados_lote = 0
         cache_marcas = {}
+        errores_persistencia = []
+        lote_num = 0
         print("🧹 Cargando catálogo antiguo de Farma2Go en memoria (Upsert)...")
         productos_bd = {
             p.slug: p
@@ -341,7 +358,7 @@ def inyectar_en_bd():
                     p_existente.ofertas.append(nueva_oferta)
 
                 db.add(p_existente)
-                actualizados += 1
+                actualizados_lote += 1
             else:
                 nuevo_producto = models.Producto(
                     nombre=nombre,
@@ -380,30 +397,49 @@ def inyectar_en_bd():
                 productos_nuevos.append(nuevo_producto)
                 productos_bd[slug_norm] = nuevo_producto
 
-            if len(productos_nuevos) >= 50:
+            if len(productos_nuevos) + actualizados_lote >= 50:
+                lote_num += 1
                 try:
-                    db.add_all(productos_nuevos)
+                    if productos_nuevos:
+                        db.add_all(productos_nuevos)
                     db.commit()
                     total_nuevos += len(productos_nuevos)
+                    actualizados += actualizados_lote
                 except Exception as db_err:
                     db.rollback()
                     for p_fallido in productos_nuevos:
                         productos_bd.pop(p_fallido.slug, None)
-                    print(f"⚠️ Advertencia BD en lote: {db_err}")
+                    detalle = f"Lote #{lote_num} ({len(productos_nuevos)} nuevos, {actualizados_lote} actualizados): {type(db_err).__name__}"
+                    errores_persistencia.append(detalle)
+                    print(f"⚠️ Advertencia BD en lote #{lote_num}: {detalle}")
                 finally:
                     productos_nuevos = []
+                    actualizados_lote = 0
 
-        try:
-            db.add_all(productos_nuevos)
-            db.commit()
-            total_nuevos += len(productos_nuevos)
-        except Exception as db_err:
-            db.rollback()
-            for p_fallido in productos_nuevos:
-                productos_bd.pop(p_fallido.slug, None)
-            print(f"⚠️ Advertencia BD en lote final: {db_err}")
-        finally:
-            productos_nuevos = []
+        if productos_nuevos or actualizados_lote > 0:
+            lote_num += 1
+            try:
+                if productos_nuevos:
+                    db.add_all(productos_nuevos)
+                db.commit()
+                total_nuevos += len(productos_nuevos)
+                actualizados += actualizados_lote
+            except Exception as db_err:
+                db.rollback()
+                for p_fallido in productos_nuevos:
+                    productos_bd.pop(p_fallido.slug, None)
+                detalle = f"Lote final #{lote_num} ({len(productos_nuevos)} nuevos, {actualizados_lote} actualizados): {type(db_err).__name__}"
+                errores_persistencia.append(detalle)
+                print(f"⚠️ Advertencia BD en lote final: {detalle}")
+            finally:
+                productos_nuevos = []
+                actualizados_lote = 0
+
+        if errores_persistencia:
+            resumen = "; ".join(errores_persistencia)
+            raise RuntimeError(
+                f"Fallo de persistencia en Farma2Go: {len(errores_persistencia)} lote(s) fallaron durante el guardado. Resumen: [{resumen}]"
+            )
 
         print(
             f"\n🎉 ¡Inyección de Farma2Go completada! {total_nuevos} suplementos nuevos guardados, {actualizados} actualizados."
@@ -415,6 +451,7 @@ def inyectar_en_bd():
         print(f"❌ ERROR CRÍTICO en Farma2Go: {e}")
         import traceback
         traceback.print_exc()
+        raise
     finally:
         db.close()
         print("🚪 Conexión a la base de datos de Farma2Go cerrada.")

@@ -34,5 +34,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          TRADEDOUBLER_PRODUCTS_TOKEN: ${{ secrets.TRADEDOUBLER_PRODUCTS_TOKEN }}
         run: |
           python backend/scripts/orquestador.py
